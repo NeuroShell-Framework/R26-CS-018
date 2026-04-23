@@ -1,0 +1,23 @@
+[tool.poetry]
+name = "neuroshell-shared"
+version = "0.1.0"
+description = "Shared utilities for NeuroShell microservices"
+authors = ["NeuroShell Team <team@neuroshell.ai>"]
+readme = "README.md"
+packages = [{include = "src/neuroshell_shared", from = "."}]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+pydantic = "^2.9.0"
+pydantic-settings = "^2.6.0"
+python-jose = {extras = ["cryptography"], version = "^3.3.0"}
+loguru = "^0.47.0"
+python-multipart = "^0.0.12"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.3.3"
+pytest-asyncio = "^0.24.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
