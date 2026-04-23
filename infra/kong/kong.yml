@@ -1,0 +1,98 @@
+_format_version: "3.0"
+_transform: true
+
+services:
+  - name: adaptive-execution-error-recovery
+    url: http://adaptive-execution-error-recovery:8000
+    routes:
+      - name: adaptive-error-recovery-route
+        paths:
+          - /api/adaptive-error-recovery
+        strip_path: true
+    plugins:
+      - name: rate-limiting
+        config:
+          minute: 60
+          policy: local
+          fault_tolerant: true
+
+  - name: ai-vulnerability-analysis
+    url: http://ai-vulnerability-analysis:8000
+    routes:
+      - name: ai-vulnerability-analysis-route
+        paths:
+          - /api/ai-vulnerability-analysis
+        strip_path: true
+    plugins:
+      - name: rate-limiting
+        config:
+          minute: 60
+          policy: local
+          fault_tolerant: true
+
+  - name: dynamic-planner-rag
+    url: http://dynamic-planner-rag:8000
+    routes:
+      - name: dynamic-planner-rag-route
+        paths:
+          - /api/dynamic-planner-rag
+        strip_path: true
+    plugins:
+      - name: rate-limiting
+        config:
+          minute: 60
+          policy: local
+          fault_tolerant: true
+
+  - name: intent-recognition
+    url: http://intent-recognition:8000
+    routes:
+      - name: intent-recognition-route
+        paths:
+          - /api/intent-recognition
+        strip_path: true
+    plugins:
+      - name: rate-limiting
+        config:
+          minute: 60
+          policy: local
+          fault_tolerant: true
+
+  - name: api-gateway
+    url: http://api-gateway:8000
+    routes:
+      - name: api-gateway-route
+        paths:
+          - /api/gateway
+        strip_path: true
+
+plugins:
+  - name: cors
+    config:
+      origins:
+        - "*"
+      methods:
+        - GET
+        - POST
+        - PUT
+        - DELETE
+        - PATCH
+        - OPTIONS
+      headers:
+        - Accept
+        - Authorization
+        - Content-Type
+      credentials: true
+      max_age: 3600
+
+  - name: request-transformer
+    config:
+      add:
+        headers:
+          - X-Gateway-Version:1.0
+
+  - name: response-transformer
+    config:
+      add:
+        headers:
+          - X-Service-Name:neuroshell-core

@@ -1,0 +1,105 @@
+version: "3.8"
+
+services:
+  kong:
+    build:
+      context: ../infra/kong
+      dockerfile: Dockerfile
+    container_name: neuroshell-kong
+    ports:
+      - "8000:8000"
+      - "8443:8443"
+    environment:
+      KONG_DATABASE: "off"
+      KONG_DECLARATIVE_CONFIG: /usr/local/kong/declarative/kong.yml
+      KONG_PROXY_LISTEN: 0.0.0.0:8000
+      KONG_ADMIN_LISTEN: 0.0.0.0:8001
+      KONG_LOG_LEVEL: info
+      KONG_PLUGINS: bundled,cors,rate-limiting,request-transformer,response-transformer
+    networks:
+      - neuroshell-network
+    restart: unless-stopped
+
+  adaptive-execution-error-recovery:
+    build:
+      context: ../../apps/services/adaptive-execution-error-recovery
+      dockerfile: Dockerfile
+    container_name: neuroshell-adaptive-error-recovery
+    ports:
+      - "8001:8000"
+    environment:
+      - APP_NAME=adaptive-execution-error-recovery
+      - ENVIRONMENT=development
+      - DEBUG=true
+      - LOG_LEVEL=DEBUG
+    volumes:
+      - ../../apps/services/adaptive-execution-error-recovery:/app
+    networks:
+      - neuroshell-network
+    restart: unless-stopped
+    depends_on:
+      - kong
+
+  ai-vulnerability-analysis:
+    build:
+      context: ../../apps/services/ai-vulnerability-analysis
+      dockerfile: Dockerfile
+    container_name: neuroshell-ai-vulnerability-analysis
+    ports:
+      - "8002:8000"
+    environment:
+      - APP_NAME=ai-vulnerability-analysis
+      - ENVIRONMENT=development
+      - DEBUG=true
+      - LOG_LEVEL=DEBUG
+    volumes:
+      - ../../apps/services/ai-vulnerability-analysis:/app
+    networks:
+      - neuroshell-network
+    restart: unless-stopped
+    depends_on:
+      - kong
+
+  dynamic-planner-rag:
+    build:
+      context: ../../apps/services/dynamic-planner-rag
+      dockerfile: Dockerfile
+    container_name: neuroshell-dynamic-planner-rag
+    ports:
+      - "8003:8000"
+    environment:
+      - APP_NAME=dynamic-planner-rag
+      - ENVIRONMENT=development
+      - DEBUG=true
+      - LOG_LEVEL=DEBUG
+    volumes:
+      - ../../apps/services/dynamic-planner-rag:/app
+    networks:
+      - neuroshell-network
+    restart: unless-stopped
+    depends_on:
+      - kong
+
+  intent-recognition:
+    build:
+      context: ../../apps/services/intent-recognition
+      dockerfile: Dockerfile
+    container_name: neuroshell-intent-recognition
+    ports:
+      - "8004:8000"
+    environment:
+      - APP_NAME=intent-recognition
+      - ENVIRONMENT=development
+      - DEBUG=true
+      - LOG_LEVEL=DEBUG
+    volumes:
+      - ../../apps/services/intent-recognition:/app
+    networks:
+      - neuroshell-network
+    restart: unless-stopped
+    depends_on:
+      - kong
+
+networks:
+  neuroshell-network:
+    driver: bridge

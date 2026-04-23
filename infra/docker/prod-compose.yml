@@ -1,0 +1,165 @@
+version: "3.8"
+
+services:
+  kong:
+    build:
+      context: ../kong
+      dockerfile: Dockerfile
+    container_name: neuroshell-kong
+    ports:
+      - "8000:8000"
+      - "8443:8443"
+    environment:
+      KONG_DATABASE: "off"
+      KONG_DECLARATIVE_CONFIG: /usr/local/kong/declarative/kong.yml
+      KONG_PROXY_LISTEN: 0.0.0.0:8000
+      KONG_ADMIN_LISTEN: 0.0.0.0:8001
+      KONG_LOG_LEVEL: warn
+      KONG_PLUGINS: bundled,cors,rate-limiting,request-transformer,response-transformer
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 512M
+        reservations:
+          cpus: "0.25"
+          memory: 256M
+    networks:
+      - neuroshell-network
+
+  adaptive-execution-error-recovery:
+    build:
+      context: ../../apps/services/adaptive-execution-error-recovery
+      dockerfile: Dockerfile
+    image: neuroshell-adaptive-error-recovery:latest
+    container_name: neuroshell-adaptive-error-recovery
+    ports:
+      - "8001:8000"
+    environment:
+      - APP_NAME=adaptive-execution-error-recovery
+      - ENVIRONMENT=production
+      - DEBUG=false
+      - LOG_LEVEL=INFO
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 1024M
+        reservations:
+          cpus: "0.5"
+          memory: 512M
+    networks:
+      - neuroshell-network
+    depends_on:
+      - kong
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  ai-vulnerability-analysis:
+    build:
+      context: ../../apps/services/ai-vulnerability-analysis
+      dockerfile: Dockerfile
+    image: neuroshell-ai-vulnerability-analysis:latest
+    container_name: neuroshell-ai-vulnerability-analysis
+    ports:
+      - "8002:8000"
+    environment:
+      - APP_NAME=ai-vulnerability-analysis
+      - ENVIRONMENT=production
+      - DEBUG=false
+      - LOG_LEVEL=INFO
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 1024M
+        reservations:
+          cpus: "0.5"
+          memory: 512M
+    networks:
+      - neuroshell-network
+    depends_on:
+      - kong
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  dynamic-planner-rag:
+    build:
+      context: ../../apps/services/dynamic-planner-rag
+      dockerfile: Dockerfile
+    image: neuroshell-dynamic-planner-rag:latest
+    container_name: neuroshell-dynamic-planner-rag
+    ports:
+      - "8003:8000"
+    environment:
+      - APP_NAME=dynamic-planner-rag
+      - ENVIRONMENT=production
+      - DEBUG=false
+      - LOG_LEVEL=INFO
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 1024M
+        reservations:
+          cpus: "0.5"
+          memory: 512M
+    networks:
+      - neuroshell-network
+    depends_on:
+      - kong
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  intent-recognition:
+    build:
+      context: ../../apps/services/intent-recognition
+      dockerfile: Dockerfile
+    image: neuroshell-intent-recognition:latest
+    container_name: neuroshell-intent-recognition
+    ports:
+      - "8004:8000"
+    environment:
+      - APP_NAME=intent-recognition
+      - ENVIRONMENT=production
+      - DEBUG=false
+      - LOG_LEVEL=INFO
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 1024M
+        reservations:
+          cpus: "0.5"
+          memory: 512M
+    networks:
+      - neuroshell-network
+    depends_on:
+      - kong
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+networks:
+  neuroshell-network:
+    driver: bridge
