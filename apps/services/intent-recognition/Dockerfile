@@ -1,0 +1,30 @@
+FROM python:3.11-slim as builder
+
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y --no-install-recommends gcc libffi-dev && rm -rf /var/lib/apt/lists/*
+
+COPY pyproject.toml .
+COPY shared/pyproject.toml shared/
+COPY shared/src shared/src
+
+RUN pip install poetry && \
+    poetry config virtualenvs.in-project true && \
+    poetry install --no-dev --no-interaction
+
+FROM python:3.11-slim
+
+WORKDIR /app
+
+COPY --from=builder /app/.venv /app/.venv
+COPY app /app/app
+COPY main.py /app/
+
+ENV PATH="/app/.venv/bin:$PATH" \
+    PYTHONPATH="/app" \
+    APP_NAME="intent-recognition" \
+    ENVIRONMENT="production"
+
+EXPOSE 8000
+
+CMD ["python", "main.py"]
