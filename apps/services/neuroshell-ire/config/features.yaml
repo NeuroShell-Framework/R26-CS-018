@@ -1,0 +1,37 @@
+# NeuroShell IRE — Feature Flag Configuration
+# Sprint 2 Enhancement Controls
+# Set any flag to false to disable that enhancement completely.
+# Changes take effect on server restart.
+
+features:
+  # --- Middleware: Pre-inference ---
+  session_context: true        # Multi-turn memory per session_id
+  rbac: true                   # Role-based access control
+  adversarial_detection: true  # Enhanced input threat detection
+
+  # --- Middleware: Post-inference ---
+  semantic_cache: true         # Embedding-based cache (tier 2)
+  sub_intent: true             # Hierarchical intent classification
+
+  # --- API ---
+  schema_v2: true              # Enable X-IRE-Schema-Version: 2 routing
+  xai: false                   # XAI token attribution (expensive, off by default)
+
+  # --- Research ---
+  uncertainty_estimation: false  # Monte Carlo dropout (requires GPU fine-tuned model)
+  continual_learning: false      # EWC active learning queue (Phase 3)
+  speculative_decoding: false    # Draft model acceleration (Phase 3)
+
+# --- Tuning Parameters ---
+tuning:
+  session_ttl_minutes: 30
+  session_max_turns: 8
+  session_max_sessions: 1024
+  semantic_cache_threshold: 0.82    # cosine similarity threshold for cache hit
+  semantic_cache_max_size: 512
+  adversarial_anomaly_threshold: 3.0  # Mahalanobis sigma threshold
+  adversarial_classifier_threshold: 0.7
+  sub_intent_confidence_threshold: 0.6
+  uncertainty_mc_samples: 5
+  uncertainty_ambiguity_band_low: 0.5
+  uncertainty_ambiguity_band_high: 0.85
