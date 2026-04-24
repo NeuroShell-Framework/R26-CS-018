@@ -1,0 +1,2 @@
+# NeuroShell IRE — Docker Compose
+# TODO: Implement in Phase 6 — Define services: ire-api, ollama; configure ports, volumes, and env_file

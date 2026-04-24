@@ -6,12 +6,12 @@ authors = ["NeuroShell Team <team@neuroshell.ai>"]
 packages = [{include = "app", from = "."}]
 
 [tool.poetry.dependencies]
-python = "^3.11"
+python = "^3.9"
 fastapi = "^0.115.0"
 uvicorn = {extras = ["standard"], version = "^0.32.0"}
 pydantic = "^2.9.0"
 pydantic-settings = "^2.6.0"
-loguru = "^0.47.0"
+loguru = "^0.7.0"
 neuroshell-shared = {path = "../../shared"}
 
 [tool.poetry.group.dev.dependencies]
