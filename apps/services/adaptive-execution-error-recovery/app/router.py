@@ -1,14 +1,11 @@
 """Router for Adaptive Execution Error Recovery Service."""
 
 import uuid
-from typing import Dict, Any
-
-from fastapi import APIRouter, HTTPException, status
-from fastapi.responses import JSONResponse
-
-from neuroshell_shared.logging import get_logger
 
 from app import config, models
+from fastapi import APIRouter
+from fastapi.responses import JSONResponse
+from neuroshell_shared.logging import get_logger
 
 logger = get_logger(__name__)
 router = APIRouter()
@@ -34,7 +31,10 @@ def _analyze_error(error: models.ErrorDetails) -> models.RecoveryPlan:
             models.RecoveryAction(
                 action=models.RecoveryStrategy.RETRY,
                 description="Retry the failed operation",
-                parameters={"max_attempts": config.settings.max_retry_attempts, "delay_seconds": config.settings.retry_delay_seconds},
+                parameters={
+                    "max_attempts": config.settings.max_retry_attempts,
+                    "delay_seconds": config.settings.retry_delay_seconds,
+                },
             )
         ]
         success_prob = 0.7
@@ -73,7 +73,8 @@ def _analyze_error(error: models.ErrorDetails) -> models.RecoveryPlan:
         error_id=error_id,
         selected_strategy=strategy,
         actions=actions,
-        estimated_time_seconds=config.settings.retry_delay_seconds * config.settings.max_retry_attempts,
+        estimated_time_seconds=config.settings.retry_delay_seconds
+        * config.settings.max_retry_attempts,
         success_probability=success_prob,
     )
 
@@ -100,12 +101,16 @@ async def process_error(request: models.ProcessErrorRequest) -> JSONResponse:
         message=f"Recovery plan generated using {plan.selected_strategy.value} strategy",
     )
 
-    logger.info(f"Recovery plan generated: {plan.selected_strategy.value} (success probability: {plan.success_probability:.0%})")
+    logger.info(
+        f"Recovery plan generated: {plan.selected_strategy.value} (success probability: {plan.success_probability:.0%})"
+    )
 
     return models.APIResponse(data=response)
 
 
-@router.post("/execute-recovery", response_model=models.APIResponse[models.RecoveryExecutionResponse])
+@router.post(
+    "/execute-recovery", response_model=models.APIResponse[models.RecoveryExecutionResponse]
+)
 async def execute_recovery(request: models.RecoveryExecutionRequest) -> JSONResponse:
     """Execute a recovery action."""
     logger.info(f"Executing recovery for error: {request.error_id}")

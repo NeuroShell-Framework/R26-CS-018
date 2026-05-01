@@ -1,20 +1,16 @@
 """Router for Dynamic Planner RAG Service."""
 
-import time
 import uuid
-from typing import Dict, Any
-
-from fastapi import APIRouter, HTTPException, status
-from fastapi.responses import JSONResponse
-
-from neuroshell_shared.logging import get_logger
 
 from app import config, models
+from fastapi import APIRouter, HTTPException, status
+from fastapi.responses import JSONResponse
+from neuroshell_shared.logging import get_logger
 
 logger = get_logger(__name__)
 router = APIRouter()
 
-PLAN_STORE: Dict[str, models.GeneratedPlan] = {}
+PLAN_STORE: dict[str, models.GeneratedPlan] = {}
 
 
 def _retrieve_context(query: str, limit: int) -> list[models.ContextSnippet]:
@@ -47,109 +43,117 @@ def _generate_plan(goal: str, constraints: list[str], max_steps: int) -> models.
     step_number = 1
 
     if "error" in goal.lower() or "recover" in goal.lower():
-        steps.extend([
-            models.PlanStep(
-                step_id=str(uuid.uuid4()),
-                step_number=step_number,
-                action=models.Action(
-                    action_id=str(uuid.uuid4()),
-                    action_type=models.ActionType.QUERY,
-                    description="Analyze error details",
-                    parameters={"depth": "detailed"},
+        steps.extend(
+            [
+                models.PlanStep(
+                    step_id=str(uuid.uuid4()),
+                    step_number=step_number,
+                    action=models.Action(
+                        action_id=str(uuid.uuid4()),
+                        action_type=models.ActionType.QUERY,
+                        description="Analyze error details",
+                        parameters={"depth": "detailed"},
+                    ),
                 ),
-            ),
-            models.PlanStep(
-                step_id=str(uuid.uuid4()),
-                step_number=step_number + 1,
-                action=models.Action(
-                    action_id=str(uuid.uuid4()),
-                    action_type=models.ActionType.VALIDATE,
-                    description="Determine recovery strategy",
-                    parameters={"strategy_types": ["retry", "fallback", "circuit_breaker"]},
+                models.PlanStep(
+                    step_id=str(uuid.uuid4()),
+                    step_number=step_number + 1,
+                    action=models.Action(
+                        action_id=str(uuid.uuid4()),
+                        action_type=models.ActionType.VALIDATE,
+                        description="Determine recovery strategy",
+                        parameters={"strategy_types": ["retry", "fallback", "circuit_breaker"]},
+                    ),
                 ),
-            ),
-            models.PlanStep(
-                step_id=str(uuid.uuid4()),
-                step_number=step_number + 2,
-                action=models.Action(
-                    action_id=str(uuid.uuid4()),
-                    action_type=models.ActionType.EXECUTE,
-                    description="Execute recovery plan",
+                models.PlanStep(
+                    step_id=str(uuid.uuid4()),
+                    step_number=step_number + 2,
+                    action=models.Action(
+                        action_id=str(uuid.uuid4()),
+                        action_type=models.ActionType.EXECUTE,
+                        description="Execute recovery plan",
+                    ),
                 ),
-            ),
-        ])
+            ]
+        )
         complexity = models.PlanComplexity.MODERATE
     elif "analyze" in goal.lower() or "scan" in goal.lower():
-        steps.extend([
-            models.PlanStep(
-                step_id=str(uuid.uuid4()),
-                step_number=step_number,
-                action=models.Action(
-                    action_id=str(uuid.uuid4()),
-                    action_type=models.ActionType.QUERY,
-                    description="Identify scan targets",
+        steps.extend(
+            [
+                models.PlanStep(
+                    step_id=str(uuid.uuid4()),
+                    step_number=step_number,
+                    action=models.Action(
+                        action_id=str(uuid.uuid4()),
+                        action_type=models.ActionType.QUERY,
+                        description="Identify scan targets",
+                    ),
                 ),
-            ),
-            models.PlanStep(
-                step_id=str(uuid.uuid4()),
-                step_number=step_number + 1,
-                action=models.Action(
-                    action_id=str(uuid.uuid4()),
-                    action_type=models.ActionType.TRANSFORM,
-                    description="Perform vulnerability scan",
-                    parameters={"depth": "deep"},
+                models.PlanStep(
+                    step_id=str(uuid.uuid4()),
+                    step_number=step_number + 1,
+                    action=models.Action(
+                        action_id=str(uuid.uuid4()),
+                        action_type=models.ActionType.TRANSFORM,
+                        description="Perform vulnerability scan",
+                        parameters={"depth": "deep"},
+                    ),
                 ),
-            ),
-            models.PlanStep(
-                step_id=str(uuid.uuid4()),
-                step_number=step_number + 2,
-                action=models.Action(
-                    action_id=str(uuid.uuid4()),
-                    action_type=models.ActionType.AGGREGATE,
-                    description="Compile findings",
+                models.PlanStep(
+                    step_id=str(uuid.uuid4()),
+                    step_number=step_number + 2,
+                    action=models.Action(
+                        action_id=str(uuid.uuid4()),
+                        action_type=models.ActionType.AGGREGATE,
+                        description="Compile findings",
+                    ),
                 ),
-            ),
-        ])
+            ]
+        )
         complexity = models.PlanComplexity.SIMPLE
     else:
-        steps.extend([
-            models.PlanStep(
-                step_id=str(uuid.uuid4()),
-                step_number=step_number,
-                action=models.Action(
-                    action_id=str(uuid.uuid4()),
-                    action_type=models.ActionType.QUERY,
-                    description="Understand goal requirements",
+        steps.extend(
+            [
+                models.PlanStep(
+                    step_id=str(uuid.uuid4()),
+                    step_number=step_number,
+                    action=models.Action(
+                        action_id=str(uuid.uuid4()),
+                        action_type=models.ActionType.QUERY,
+                        description="Understand goal requirements",
+                    ),
                 ),
-            ),
-            models.PlanStep(
-                step_id=str(uuid.uuid4()),
-                step_number=step_number + 1,
-                action=models.Action(
-                    action_id=str(uuid.uuid4()),
-                    action_type=models.ActionType.TRANSFORM,
-                    description="Break down into actionable steps",
+                models.PlanStep(
+                    step_id=str(uuid.uuid4()),
+                    step_number=step_number + 1,
+                    action=models.Action(
+                        action_id=str(uuid.uuid4()),
+                        action_type=models.ActionType.TRANSFORM,
+                        description="Break down into actionable steps",
+                    ),
                 ),
-            ),
-            models.PlanStep(
-                step_id=str(uuid.uuid4()),
-                step_number=step_number + 2,
-                action=models.Action(
-                    action_id=str(uuid.uuid4()),
-                    action_type=models.ActionType.EXECUTE,
-                    description="Execute plan",
+                models.PlanStep(
+                    step_id=str(uuid.uuid4()),
+                    step_number=step_number + 2,
+                    action=models.Action(
+                        action_id=str(uuid.uuid4()),
+                        action_type=models.ActionType.EXECUTE,
+                        description="Execute plan",
+                    ),
                 ),
-            ),
-        ])
+            ]
+        )
         complexity = models.PlanComplexity.MODERATE
 
     plan_constraints = []
     for c in constraints:
-        plan_constraints.append(models.PlanConstraint(
-            constraint_type="user_defined",
-            value=c,
-            description=c,
-        ))
+        plan_constraints.append(
+            models.PlanConstraint(
+                constraint_type="user_defined",
+                value=c,
+                description=c,
+            )
+        )
 
     estimated_duration = len(steps) * 2.0
 
@@ -184,7 +188,9 @@ async def create_plan(request: models.PlanRequest) -> JSONResponse:
         message=f"Plan generated with {len(plan.steps)} steps",
     )
 
-    logger.info(f"Plan generated: {plan.plan_id} with {plan.success_probability:.0%} success probability")
+    logger.info(
+        f"Plan generated: {plan.plan_id} with {plan.success_probability:.0%} success probability"
+    )
 
     from neuroshell_shared.models import APIResponse as APIResponseModel
 

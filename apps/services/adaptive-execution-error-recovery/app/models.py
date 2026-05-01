@@ -1,7 +1,7 @@
 """Request and response models for Adaptive Execution Error Recovery Service."""
 
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -29,12 +29,12 @@ class ErrorCategory(str, Enum):
 class ErrorContext(BaseModel):
     """Error context information."""
 
-    error_id: Optional[str] = None
-    timestamp: Optional[str] = None
-    service_name: Optional[str] = None
-    request_id: Optional[str] = None
-    user_id: Optional[str] = None
-    metadata: Dict[str, Any] = Field(default_factory=dict)
+    error_id: str | None = None
+    timestamp: str | None = None
+    service_name: str | None = None
+    request_id: str | None = None
+    user_id: str | None = None
+    metadata: dict[str, Any] = Field(default_factory=dict)
 
 
 class ErrorDetails(BaseModel):
@@ -42,7 +42,7 @@ class ErrorDetails(BaseModel):
 
     error_type: str
     message: str
-    stack_trace: Optional[str] = None
+    stack_trace: str | None = None
     severity: ErrorSeverity = ErrorSeverity.MEDIUM
     category: ErrorCategory = ErrorCategory.UNKNOWN
     context: ErrorContext = Field(default_factory=ErrorContext)
@@ -63,7 +63,7 @@ class RecoveryAction(BaseModel):
 
     action: RecoveryStrategy
     description: str
-    parameters: Dict[str, Any] = Field(default_factory=dict)
+    parameters: dict[str, Any] = Field(default_factory=dict)
 
 
 class RecoveryPlan(BaseModel):
@@ -71,7 +71,7 @@ class RecoveryPlan(BaseModel):
 
     error_id: str
     selected_strategy: RecoveryStrategy
-    actions: List[RecoveryAction]
+    actions: list[RecoveryAction]
     estimated_time_seconds: float
     success_probability: float = Field(..., ge=0.0, le=1.0)
 
@@ -80,7 +80,7 @@ class ProcessErrorRequest(BaseModel):
     """Process error request."""
 
     error: ErrorDetails
-    user_context: Optional[Dict[str, Any]] = None
+    user_context: dict[str, Any] | None = None
 
 
 class ProcessErrorResponse(BaseModel):
@@ -98,7 +98,7 @@ class RecoveryExecutionRequest(BaseModel):
 
     error_id: str
     strategy: RecoveryStrategy
-    parameters: Dict[str, Any] = Field(default_factory=dict)
+    parameters: dict[str, Any] = Field(default_factory=dict)
 
 
 class RecoveryExecutionResponse(BaseModel):
@@ -108,4 +108,4 @@ class RecoveryExecutionResponse(BaseModel):
     success: bool
     message: str
     execution_time_seconds: float
-    result: Optional[Dict[str, Any]] = None
+    result: dict[str, Any] | None = None

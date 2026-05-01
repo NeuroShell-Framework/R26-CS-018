@@ -1,7 +1,7 @@
 """Request and response models for Dynamic Planner RAG Service."""
 
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -30,8 +30,8 @@ class Action(BaseModel):
     action_id: str
     action_type: ActionType
     description: str
-    parameters: Dict[str, Any] = Field(default_factory=dict)
-    dependencies: List[str] = Field(default_factory=list)
+    parameters: dict[str, Any] = Field(default_factory=dict)
+    dependencies: list[str] = Field(default_factory=list)
     estimated_duration_seconds: float = 0.0
 
 
@@ -42,7 +42,7 @@ class PlanStep(BaseModel):
     step_number: int
     action: Action
     status: str = "pending"
-    result: Optional[Dict[str, Any]] = None
+    result: dict[str, Any] | None = None
 
 
 class PlanConstraint(BaseModel):
@@ -50,15 +50,15 @@ class PlanConstraint(BaseModel):
 
     constraint_type: str
     value: Any
-    description: Optional[str] = None
+    description: str | None = None
 
 
 class PlanningContext(BaseModel):
     """Planning context."""
 
-    user_id: Optional[str] = None
-    session_id: Optional[str] = None
-    metadata: Dict[str, Any] = Field(default_factory=dict)
+    user_id: str | None = None
+    session_id: str | None = None
+    metadata: dict[str, Any] = Field(default_factory=dict)
 
 
 class GeneratedPlan(BaseModel):
@@ -67,11 +67,11 @@ class GeneratedPlan(BaseModel):
     plan_id: str
     goal: str
     complexity: PlanComplexity
-    steps: List[PlanStep]
-    constraints: List[PlanConstraint] = Field(default_factory=list)
+    steps: list[PlanStep]
+    constraints: list[PlanConstraint] = Field(default_factory=list)
     estimated_duration_seconds: float
     success_probability: float = Field(..., ge=0.0, le=1.0)
-    fallback_plans: List[str] = Field(default_factory=list)
+    fallback_plans: list[str] = Field(default_factory=list)
 
 
 class ContextSnippet(BaseModel):
@@ -86,16 +86,16 @@ class PlanRequest(BaseModel):
     """Plan request."""
 
     goal: str
-    context: Optional[str] = None
-    constraints: List[str] = Field(default_factory=list)
-    max_steps: Optional[int] = None
+    context: str | None = None
+    constraints: list[str] = Field(default_factory=list)
+    max_steps: int | None = None
 
 
 class PlanResponse(BaseModel):
     """Plan response."""
 
     plan: GeneratedPlan
-    retrieved_context: List[ContextSnippet]
+    retrieved_context: list[ContextSnippet]
     message: str
 
 
@@ -112,5 +112,5 @@ class ExecuteStepResponse(BaseModel):
     plan_id: str
     step_id: str
     success: bool
-    result: Optional[Dict[str, Any]] = None
+    result: dict[str, Any] | None = None
     message: str

@@ -1,17 +1,13 @@
 """Router for Intent Recognition Service."""
 
 import time
-import uuid
-from typing import Optional
 from collections import defaultdict
-
-from fastapi import APIRouter, HTTPException, status, Request
-from fastapi.responses import JSONResponse
-
-from neuroshell_shared.logging import get_logger
 
 from app import config, models
 from app.ml import get_classifier
+from fastapi import APIRouter
+from fastapi.responses import JSONResponse
+from neuroshell_shared.logging import get_logger
 
 logger = get_logger(__name__)
 router = APIRouter()
@@ -29,22 +25,65 @@ def _keyword_based_intent(text: str) -> tuple[models.IntentType, models.IntentCa
 
     intent_patterns = {
         (models.IntentType.RECOVER_ERROR, models.IntentCategory.ERROR_RECOVERY): [
-            "error", "fail", "exception", "recover", "fix", "retry", "crash", "broken", "timeout"
+            "error",
+            "fail",
+            "exception",
+            "recover",
+            "fix",
+            "retry",
+            "crash",
+            "broken",
+            "timeout",
         ],
         (models.IntentType.SCAN_VULNERABILITY, models.IntentCategory.VULNERABILITY_SCAN): [
-            "vulnerability", "scan", "security", "threat", "risk", "exploit", "hack"
+            "vulnerability",
+            "scan",
+            "security",
+            "threat",
+            "risk",
+            "exploit",
+            "hack",
         ],
         (models.IntentType.CREATE_PLAN, models.IntentCategory.PLANNING): [
-            "plan", "schedule", "organize", "arrange", "prepare", "roadmap", "workflow"
+            "plan",
+            "schedule",
+            "organize",
+            "arrange",
+            "prepare",
+            "roadmap",
+            "workflow",
         ],
         (models.IntentType.ANALYZE, models.IntentCategory.ANALYSIS): [
-            "analyze", "analysis", "analyse", "examine", "review", "inspect", "check", "evaluate"
+            "analyze",
+            "analysis",
+            "analyse",
+            "examine",
+            "review",
+            "inspect",
+            "check",
+            "evaluate",
         ],
         (models.IntentType.QUERY, models.IntentCategory.QUERY): [
-            "what", "how", "why", "when", "where", "who", "query", "find", "search", "show"
+            "what",
+            "how",
+            "why",
+            "when",
+            "where",
+            "who",
+            "query",
+            "find",
+            "search",
+            "show",
         ],
         (models.IntentType.EXECUTE, models.IntentCategory.COMMAND): [
-            "execute", "run", "start", "trigger", "launch", "begin", "initiate", "go"
+            "execute",
+            "run",
+            "start",
+            "trigger",
+            "launch",
+            "begin",
+            "initiate",
+            "go",
         ],
     }
 
@@ -68,9 +107,7 @@ def _keyword_based_intent(text: str) -> tuple[models.IntentType, models.IntentCa
 
 
 def _recognize_intent(
-    text: str,
-    use_ml: bool = True,
-    return_alternatives: bool = False
+    text: str, use_ml: bool = True, return_alternatives: bool = False
 ) -> tuple[models.RecognizedIntent, list[models.IntentAlternative]]:
     """Recognize intent from text using ML or keyword-based approach."""
 
@@ -95,12 +132,14 @@ def _recognize_intent(
             alt_intents = []
             if return_alternatives:
                 for alt in alternatives:
-                    alt_intents.append(models.IntentAlternative(
-                        intent_type=models.IntentType(alt["intent_type"]),
-                        intent_category=models.IntentCategory(alt["intent_category"]),
-                        confidence=alt["confidence"],
-                        reason=alt["reason"],
-                    ))
+                    alt_intents.append(
+                        models.IntentAlternative(
+                            intent_type=models.IntentType(alt["intent_type"]),
+                            intent_category=models.IntentCategory(alt["intent_category"]),
+                            confidence=alt["confidence"],
+                            reason=alt["reason"],
+                        )
+                    )
 
             return intent, alt_intents
 
@@ -133,9 +172,7 @@ async def recognize(request: models.RecognizeRequest) -> JSONResponse:
     start_time = time.time()
 
     intent, alternatives = _recognize_intent(
-        request.text,
-        use_ml=request.use_ml,
-        return_alternatives=request.return_alternatives
+        request.text, use_ml=request.use_ml, return_alternatives=request.return_alternatives
     )
 
     processing_time = (time.time() - start_time) * 1000
@@ -160,7 +197,9 @@ async def recognize(request: models.RecognizeRequest) -> JSONResponse:
         message=f"Intent recognized with {intent.confidence:.0%} confidence",
     )
 
-    logger.info(f"Intent recognized: {intent.intent_type.value} ({intent.confidence:.0%}) in {processing_time:.1f}ms")
+    logger.info(
+        f"Intent recognized: {intent.intent_type.value} ({intent.confidence:.0%}) in {processing_time:.1f}ms"
+    )
 
     from neuroshell_shared.models import APIResponse as APIResponseModel
 
@@ -213,7 +252,9 @@ async def train_model(request: models.TrainingDataRequest) -> JSONResponse:
         message=f"Model trained successfully with {results['accuracy']:.1%} accuracy",
     )
 
-    logger.info(f"Model trained: accuracy={results['accuracy']:.1%}, f1={results['report']['macro avg']['f1-score']:.1%}")
+    logger.info(
+        f"Model trained: accuracy={results['accuracy']:.1%}, f1={results['report']['macro avg']['f1-score']:.1%}"
+    )
 
     from neuroshell_shared.models import APIResponse as APIResponseModel
 

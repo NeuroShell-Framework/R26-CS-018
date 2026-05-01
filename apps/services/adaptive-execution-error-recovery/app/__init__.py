@@ -1,17 +1,15 @@
 """Adaptive Execution Error Recovery Service - Main application."""
 
 import time
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
-from typing import AsyncGenerator
-
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-
-from neuroshell_shared.config import Settings, get_settings
-from neuroshell_shared.logging import setup_logging, get_logger
-from neuroshell_shared.models import APIResponse, HealthResponse
 
 from app import config, models, router
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from neuroshell_shared.config import Settings, get_settings
+from neuroshell_shared.logging import get_logger, setup_logging
+from neuroshell_shared.models import APIResponse, HealthResponse
 
 
 @asynccontextmanager

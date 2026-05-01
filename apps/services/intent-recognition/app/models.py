@@ -1,7 +1,7 @@
 """Request and response models for Intent Recognition Service."""
 
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -43,9 +43,9 @@ class RecognizedIntent(BaseModel):
     intent_type: IntentType
     intent_category: IntentCategory
     confidence: float = Field(..., ge=0.0, le=1.0)
-    parameters: List[IntentParameter] = Field(default_factory=list)
-    reasoning: Optional[str] = None
-    matched_phrases: List[str] = Field(default_factory=list)
+    parameters: list[IntentParameter] = Field(default_factory=list)
+    reasoning: str | None = None
+    matched_phrases: list[str] = Field(default_factory=list)
 
 
 class IntentAlternative(BaseModel):
@@ -76,7 +76,7 @@ class TrainingDataItem(BaseModel):
 class TrainingDataRequest(BaseModel):
     """Training data request."""
 
-    data: List[TrainingDataItem]
+    data: list[TrainingDataItem]
     test_size: float = Field(default=0.2, ge=0.1, le=0.4)
 
 
@@ -88,7 +88,7 @@ class TrainingResult(BaseModel):
     accuracy: float
     f1_macro: float
     f1_weighted: float
-    report: Dict[str, Any]
+    report: dict[str, Any]
 
 
 class TrainingResponse(BaseModel):
@@ -104,15 +104,15 @@ class ModelInfo(BaseModel):
 
     is_trained: bool
     model_type: str
-    supported_intents: List[Dict[str, str]]
-    training_samples: Optional[int] = None
+    supported_intents: list[dict[str, str]]
+    training_samples: int | None = None
 
 
 class RecognizeRequest(BaseModel):
     """Recognize request."""
 
     text: str = Field(..., min_length=1, description="Input text to analyze")
-    context: Optional[str] = Field(default=None, description="Optional context")
+    context: str | None = Field(default=None, description="Optional context")
     return_alternatives: bool = Field(default=False, description="Return alternative intents")
     use_ml: bool = Field(default=True, description="Use ML-based classification")
 
@@ -121,7 +121,7 @@ class RecognizeResponse(BaseModel):
     """Recognize response."""
 
     intent: RecognizedIntent
-    alternatives: List[IntentAlternative] = Field(default_factory=list)
+    alternatives: list[IntentAlternative] = Field(default_factory=list)
     metadata: IntentMetadata
     message: str
 
@@ -129,15 +129,15 @@ class RecognizeResponse(BaseModel):
 class BatchRecognizeRequest(BaseModel):
     """Batch recognize request."""
 
-    texts: List[str] = Field(..., min_length=1, max_length=50)
-    context: Optional[str] = None
+    texts: list[str] = Field(..., min_length=1, max_length=50)
+    context: str | None = None
     use_ml: bool = Field(default=True, description="Use ML-based classification")
 
 
 class BatchRecognizeResponse(BaseModel):
     """Batch recognize response."""
 
-    results: List[RecognizedIntent]
+    results: list[RecognizedIntent]
     processed_count: int
     message: str
 
@@ -157,6 +157,6 @@ class StatisticsResponse(BaseModel):
     """Statistics response."""
 
     total_predictions: int
-    predictions_by_intent: Dict[str, int]
+    predictions_by_intent: dict[str, int]
     average_confidence: float
     average_processing_time_ms: float
