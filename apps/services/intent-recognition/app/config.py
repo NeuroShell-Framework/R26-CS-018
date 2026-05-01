@@ -34,6 +34,10 @@ class Settings(BaseSettings):
     supported_intents: str = "error_recovery,vulnerability_scan,planning,analysis,query"
     enable_fuzzy_matching: bool = True
 
+    use_ml_by_default: bool = True
+    model_path: str = "models/intent_model.joblib"
+    default_test_size: float = 0.2
+
 
 @lru_cache
 def get_settings() -> Settings:

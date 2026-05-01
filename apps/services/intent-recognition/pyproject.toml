@@ -13,11 +13,17 @@ pydantic = "^2.9.0"
 pydantic-settings = "^2.6.0"
 loguru = "^0.47.0"
 neuroshell-shared = {path = "../../shared"}
+scikit-learn = "^1.5.0"
+numpy = "^1.26.0"
+joblib = "^1.4.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3.3"
 pytest-asyncio = "^0.24.0"
 ruff = "^0.8.0"
+
+[tool.poetry.scripts]
+train-intent-model = "app.ml.train:main"
 
 [build-system]
 requires = ["poetry-core"]
