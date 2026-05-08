@@ -1,2 +1,42 @@
-# NeuroShell IRE — Docker Compose
-# TODO: Implement in Phase 6 — Define services: ire-api, ollama; configure ports, volumes, and env_file
+version: "3.9"
+
+services:
+  ire-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: neuroshell-ire
+    ports:
+      - "8001:8001"
+    environment:
+      - OLLAMA_BASE_URL=http://ollama:11434
+      - OLLAMA_MODEL=gemma4:e4b
+      - IRE_API_KEY=${IRE_API_KEY:-dev_insecure_key}
+      - SCOPE_MODE=${SCOPE_MODE:-research}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+    depends_on:
+      ollama:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: neuroshell-ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_models:/root/.ollama
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  ollama_models:
