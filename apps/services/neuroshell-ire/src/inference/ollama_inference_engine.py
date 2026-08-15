@@ -3,7 +3,7 @@
 
 import hashlib
 import time
-from functools import lru_cache
+from collections import OrderedDict
 from typing import Optional
 import ollama
 from config.settings import get_settings
@@ -64,8 +64,7 @@ class OllamaInferenceEngine:
         self.settings = get_settings()
         self.logger = get_logger(__name__)
         self.client = ollama.Client(host=self.settings.ollama_base_url)
-        self._cache = {}
-        self._cache_order = []
+        self._cache: OrderedDict[str, str] = OrderedDict()
         self.max_cache_size = self.settings.lru_cache_max_size
         self.logger.info(
             "inference_engine_initialized",
@@ -78,17 +77,18 @@ class OllamaInferenceEngine:
 
     def _cache_get(self, key: str) -> Optional[str]:
         if key in self._cache:
-            self._cache_order.remove(key)
-            self._cache_order.append(key)
+            self._cache.move_to_end(key)
             return self._cache[key]
         return None
 
     def _cache_set(self, key: str, value: str) -> None:
+        if key in self._cache:
+            self._cache.move_to_end(key)
+            self._cache[key] = value
+            return
         if len(self._cache) >= self.max_cache_size:
-            oldest = self._cache_order.pop(0)
-            del self._cache[oldest]
+            self._cache.popitem(last=False)
         self._cache[key] = value
-        self._cache_order.append(key)
 
     def _build_messages(self, enriched_input: str) -> list:
         messages = [{"role": "system", "content": SYSTEM_PROMPT}]

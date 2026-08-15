@@ -291,15 +291,24 @@ neuroshell-ire/
 ├── models/                            # Fine-tuned LoRA adapters
 ├── tests/
 │   ├── __init__.py
-│   ├── unit/                          # 136 unit tests
-│   │   ├── test_input_normalizer.py   # 30 tests
+│   ├── unit/                          # 394 unit tests
+│   │   ├── test_input_normalizer.py   # 31 tests
 │   │   ├── test_alias_resolver.py     # 20 tests
 │   │   ├── test_json_parser.py        # 15 tests
 │   │   ├── test_schema_validator.py   # 20 tests
 │   │   ├── test_regex_validator.py    # 40 tests
-│   │   └── test_scope_guard.py        # 10 tests
-│   └── integration/                   # 12 integration tests
-│       └── test_api.py                # Full API coverage
+│   │   ├── test_scope_guard.py        # 10 tests
+│   │   ├── test_semantic_cache.py     # 37 tests
+│   │   ├── test_session_context.py    # 35 tests
+│   │   ├── test_adversarial_detector.py # 42 tests
+│   │   ├── test_sub_intent_classifier.py # 46 tests
+│   │   ├── test_feature_flags.py      # 29 tests
+│   │   ├── test_rbac_guard.py         # 24 tests
+│   │   ├── test_network_validator.py  # 20 tests
+│   │   └── test_planner_contract.py   # 25 tests
+│   └── integration/                   # 42 integration tests
+│       ├── test_api.py                # 12 tests
+│       └── test_api_v2.py             # 30 tests
 ├── config/
 │   ├── lora_config.yaml               # Fine-tuning parameters
 │   └── settings.py                    # Pydantic settings

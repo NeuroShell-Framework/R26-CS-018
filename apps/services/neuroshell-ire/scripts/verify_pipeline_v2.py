@@ -141,7 +141,8 @@ result = subprocess.run(
 )
 last_line = [l for l in result.stdout.strip().split("\n") if l.strip()][-1]
 print(f"Pytest: {last_line}")
-assert "136 passed" in last_line, f"REGRESSION: {last_line}"
-print("T11 PASSED: 136 baseline tests still passing\n")
+assert "passed" in last_line and "failed" not in last_line, \
+    f"REGRESSION: {last_line}"
+print("T11 PASSED: baseline unit tests still passing\n")
 
 print("=== All pipeline v2 tests passed ===")

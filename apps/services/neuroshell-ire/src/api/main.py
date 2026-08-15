@@ -20,13 +20,14 @@ from src.schemas.intent_schema import (
     IREResponse, IREResponseV2
 )
 from src.pipeline.contract_builder import ContractBuilder
+from src.validation.contract_validator import ContractValidator
 from src.utils.logging_config import get_logger
 
 
 settings = get_settings()
 flags = get_feature_flags()
 logger = get_logger(__name__)
-limiter = Limiter(key_func=get_remote_address, default_limits=["30/minute"])
+limiter = Limiter(key_func=get_remote_address)
 
 pipeline: Optional[IREPipeline] = None
 API_KEY_HEADER = APIKeyHeader(name="X-API-Key", auto_error=False)
@@ -38,6 +39,7 @@ async def lifespan(app: FastAPI):
     logger.info("ire_startup", status="initializing")
     pipeline = IREPipeline()
     app.state.contract_builder = ContractBuilder()
+    app.state.contract_validator = ContractValidator()
     logger.info(
         "ire_startup",
         status="ready",
@@ -262,6 +264,22 @@ async def parse_for_planner(
             session_id=body.session_id,
             scope_warnings=v2_response.scope_warnings or [],
         )
+
+        try:
+            contract, contract_warnings = \
+                app.state.contract_validator.validate(contract)
+        except ValueError as e:
+            logger.error("contract_validation_failed", error=str(e))
+            return JSONResponse(
+                status_code=422,
+                content={
+                    "status": "error",
+                    "error": "CONTRACT_VALIDATION_FAILED",
+                    "stage": "contract_validator",
+                    "detail": str(e),
+                    "contract": None,
+                }
+            )
 
         if v2_response.sub_intent:
             contract.sub_intent = v2_response.sub_intent

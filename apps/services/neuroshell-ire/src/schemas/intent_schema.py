@@ -102,7 +102,7 @@ class IREResponse(BaseModel):
         cls,
         schema: "IntentSchema",
         latency_ms: int,
-        scope_warnings: List[str] = []
+        scope_warnings: Optional[List[str]] = None,
     ) -> "IREResponse":
         return cls(
             status="success",
@@ -115,7 +115,7 @@ class IREResponse(BaseModel):
             schedule=schema.schedule,
             confidence=schema.confidence,
             rejection_reason=schema.rejection_reason,
-            scope_warnings=scope_warnings,
+            scope_warnings=scope_warnings or [],
             latency_ms=latency_ms,
         )
 
