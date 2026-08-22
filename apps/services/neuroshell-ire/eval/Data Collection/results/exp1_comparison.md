@@ -10,19 +10,19 @@ Prove the validation pipeline adds measurable value over raw LLM inference.
 | Metric | Raw Gemma | Raw Qwen 2.5 | Pipeline + Gemma | Pipeline + Qwen 2.5 |
 | :--- | :---: | :---: | :---: | :---: |
 | **Intent Accuracy** | 68.0% | 69.0% | 86.0% | 85.0% |
-| **Hallucination Catch Rate** | 0.0% | 0.0% | 52.0% | 52.0% |
+| **Hallucination Catch Rate** | 0.0% | 0.0% | 52.0% | 50.0% |
 | **False Positive Rate** | 32.0% | 31.0% | 14.0% | 15.0% |
-| **p50 Latency** | 11.5s | 13.5s | 27.7s | **0.68s** |
-| **p95 Latency** | 63.3s | 16.5s | 148.3s | **1.80s** |
-| **p99 Latency** | 93.7s | 17.4s | 220.8s | **2.24s** |
-| **Mean Latency** | 25.3s | 13.4s | 39.6s | **0.93s** |
+| **p50 Latency** | 11.5s | 13.5s | 27.7s | 32.8s |
+| **p95 Latency** | 63.3s | 16.5s | 148.3s | 177.7s |
+| **p99 Latency** | 93.7s | 17.4s | 220.8s | 247.2s |
+| **Mean Latency** | 25.3s | 13.4s | 39.6s | 45.2s |
 
 ### Delta: Pipeline vs Raw
 
 | Metric | Gemma Delta | Qwen Delta |
 | :--- | :---: | :---: |
 | Intent Accuracy | +18pp | +16pp |
-| Hallucination Catch | +52pp | +52pp |
+| Hallucination Catch | +52pp | +50pp |
 | False Positive Rate | -18pp | -16pp |
 
 ---
@@ -60,19 +60,19 @@ Prove the validation pipeline adds measurable value over raw LLM inference.
 ## Key Findings
 
 ### 1. Pipeline is Model-Agnostic
-Gemma and Qwen achieve near-identical performance through the same validation stack (86% vs 85% accuracy, 52% vs 52% catch rate). The validation layers normalize performance regardless of which LLM backbone is used. This is a strong paper claim.
+Gemma and Qwen achieve near-identical performance through the same validation stack (86% vs 85% accuracy, 52% vs 50% catch rate). The validation layers normalize performance regardless of which LLM backbone is used. This is a strong paper claim.
 
 ### 2. Validation Adds +16-18pp Accuracy
 Raw LLMs achieve ~68-69% intent accuracy. The pipeline adds 16-18 percentage points through schema validation, regex validation, and network architecture checks.
 
-### 3. Hallucination Defense: 0% → 52%
-Raw LLMs catch zero hallucinations. The pipeline catches 52% of all hallucination attempts through CVE grounding, parameter validation, target type checking, and adversarial detection.
+### 3. Hallucination Defense: 0% → 50-52%
+Raw LLMs catch zero hallucinations. The pipeline catches 50-52% of all hallucination attempts through CVE grounding, parameter validation, target type checking, and adversarial detection.
 
 ### 4. False Positive Rate Halved
 Raw LLMs produce 31-32% false positives (incorrectly classifying well-formed inputs). The pipeline reduces this to 14-15% through sub-intent classification and semantic cache normalization.
 
-### 5. Qwen is 82x Faster Than Gemma Through Pipeline
-Qwen achieves 1.8s p95 vs Gemma's 148.3s p95 while matching accuracy. This makes Qwen the operationally viable choice for real-time deployment.
+### 5. Qwen and Gemma Have Comparable Pipeline Latency
+Qwen achieves 32.8s p50 vs Gemma's 27.7s p50 through the pipeline. Both models have similar latency profiles when running through the full validation stack — the self-consistency Tier-2 sampling adds significant latency for uncertain records regardless of model. Neither model meets the sub-2s threshold for real-time deployment.
 
 ### 6. Adversarial & RBAC Defense is Perfect
 Both adversarial injection (100%) and RBAC violation (100%) defense are perfect across all pipeline configs. These are regex/policy-based layers that are completely model-agnostic.

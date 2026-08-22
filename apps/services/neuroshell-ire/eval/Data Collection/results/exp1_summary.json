@@ -36,21 +36,21 @@
     },
     "Full Pipeline (Qwen 2.5)": {
       "intent_accuracy_pct": 85.0,
-      "hallucination_catch_rate_pct": 52.0,
+      "hallucination_catch_rate_pct": 50.0,
       "false_positive_rate_pct": 15.0,
-      "p50_latency_ms": 677.9,
-      "p95_latency_ms": 1799.1,
-      "p99_latency_ms": 2237.0,
-      "mean_latency_ms": 933.4
+      "p50_latency_ms": 32754.6,
+      "p95_latency_ms": 177666.2,
+      "p99_latency_ms": 247243.1,
+      "mean_latency_ms": 45208.5
     }
   },
   "analysis": {
     "key_findings": [
       "The validation pipeline is model-agnostic: Gemma (86%) and Qwen (85%) achieve near-identical intent accuracy through the same validation stack",
-      "Hallucination catch rate is identical at 52% for both models — validation layers normalize detection performance regardless of LLM backbone",
+      "Hallucination catch rate is near-identical at 52% (Gemma) and 50% (Qwen) — validation layers normalize detection performance regardless of LLM backbone",
       "False positive rates converge at 14-15% through the pipeline vs 31-32% raw — the pipeline reduces FPR by more than half",
-      "Qwen + pipeline p95 latency is 1.8s vs Gemma + pipeline 148s — Qwen is 82x faster while matching accuracy",
-      "Raw LLMs achieve only ~69% accuracy with 0% hallucination catch — the pipeline adds 16-17 percentage points of accuracy plus 52% hallucination defense",
+      "Qwen + pipeline p50 latency is 32.8s vs Gemma + pipeline 27.7s — both models have comparable latency through the pipeline, with Gemma slightly faster",
+      "Raw LLMs achieve only ~69% accuracy with 0% hallucination catch — the pipeline adds 16-17 percentage points of accuracy plus 50-52% hallucination defense",
       "Adversarial injection defense is perfect (100%) for both models — regex-based detection is model-agnostic",
       "RBAC enforcement is perfect (100%) for both models — policy-based blocking is model-agnostic",
       "out_of_scope detection is 0% for all configs — the scope_guard regex does not catch domain-name targets (e.g. 'amazon.com', 'google.com')",
@@ -61,12 +61,12 @@
     ],
     "paper_claims_supported": [
       "Multi-layer validation adds +17pp intent accuracy over raw LLM inference",
-      "Validation pipeline provides 52% hallucination defense with zero hallucination defense from raw LLMs",
-      "Pipeline reduces false positive rate by more than half (31% -> 14-15%)",
-      "Validation stack is model-agnostic — same performance with different LLM backbones",
+      "Validation pipeline provides 50-52% hallucination defense with zero hallucination defense from raw LLMs",
+      "Pipeline reduces false positive rate by more than half (31% -> 14-15%) for both models",
+      "Validation stack is model-agnostic — same accuracy and catch rate with different LLM backbones",
       "Adversarial defense achieves 100% catch rate via regex-based detection",
       "RBAC enforcement is perfect (100%) via policy-based blocking",
-      "Qwen + pipeline achieves sub-2s p95 latency, meeting operational viability threshold",
+      "Both models have comparable pipeline latency (28-33s p50) — validation overhead is the dominant cost, not the LLM backbone",
       "Pipeline is conservative: all false positives are rejections (safe default for security tooling)"
     ],
     "known_gaps": [
