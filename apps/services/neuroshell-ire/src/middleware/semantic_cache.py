@@ -13,6 +13,7 @@ class CacheEntry:
     key_hash: str
     embedding: List[float]
     response: IREResponse
+    grounding_hash: str = ""
     hit_count: int = 0
     created_at: float = field(default_factory=time.time)
     last_hit_at: float = field(default_factory=time.time)
@@ -25,12 +26,34 @@ class SemanticCache:
         self._entries: List[CacheEntry] = []
         self._model = None
         self._model_name = "all-MiniLM-L6-v2"
-        self._threshold = self.flags.get_tuning("semantic_cache_threshold", 0.97)
+        self._threshold = self.flags.get_tuning("semantic_cache_threshold", 0.98)
         self._max_size = self.flags.get_tuning("semantic_cache_max_size", 512)
         self.logger.info(
             "semantic_cache_initialized",
             extra={"threshold": self._threshold, "max_size": self._max_size}
         )
+
+    def _get_grounding_hash(self) -> str:
+        """Compute SHA-256 digest of grounding dataset sources (cve_grounding.json & alias_map.json)."""
+        import os
+        hasher = hashlib.sha256()
+        grounding_files = [
+            "data/cve_grounding.json",
+            "data/alias_map.json",
+            "config/alias_map.json",
+        ]
+        found = False
+        for fpath in grounding_files:
+            if os.path.exists(fpath):
+                try:
+                    with open(fpath, "rb") as f:
+                        hasher.update(f.read())
+                    found = True
+                except Exception:
+                    pass
+        if not found:
+            hasher.update(b"default_grounding_v1")
+        return hasher.hexdigest()
 
     def _load_model(self) -> None:
         if self._model is None:
@@ -90,11 +113,29 @@ class SemanticCache:
             return None, "none"
 
         try:
+            query_hash = self._make_key_hash(text)
+            current_grounding = self._get_grounding_hash()
+
+            # 1. Exact Key Hash Match Lookup
+            for entry in list(self._entries):
+                if entry.key_hash == query_hash:
+                    if entry.grounding_hash and entry.grounding_hash != current_grounding:
+                        # Grounding data updated since entry creation -> invalidate stale entry
+                        self._entries.remove(entry)
+                        self.logger.info("semantic_cache_stale_invalidated", extra={"key_hash": query_hash[:8]})
+                        return None, "none"
+                    entry.hit_count += 1
+                    entry.last_hit_at = time.time()
+                    return entry.response, "exact"
+
+            # 2. Vector Cosine Similarity Lookup
             query_embedding = self._embed(text)
             best_score = 0.0
             best_entry = None
 
-            for entry in self._entries:
+            for entry in list(self._entries):
+                if entry.grounding_hash and entry.grounding_hash != current_grounding:
+                    continue
                 score = self._cosine_similarity(query_embedding, entry.embedding)
                 if score > best_score:
                     best_score = score
@@ -146,6 +187,7 @@ class SemanticCache:
                 key_hash=key_hash,
                 embedding=embedding,
                 response=response,
+                grounding_hash=self._get_grounding_hash(),
             )
             self._entries.append(entry)
 

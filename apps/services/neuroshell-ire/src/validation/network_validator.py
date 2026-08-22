@@ -1,10 +1,12 @@
 import ipaddress
 from typing import List, Optional, Tuple, Union
 
+from config.enforcement_policy import get_enforcement_policy
 from config.settings import get_settings
 from src.schemas.intent_schema import (
     IntentSchema, TargetType, NetworkValidationError
 )
+from src.validation.hallucination_taxonomy import HallucinationClass, ValidationFinding
 from src.utils.logging_config import get_logger
 
 
@@ -16,7 +18,7 @@ class NetworkArchitectureValidator:
     def __init__(self):
         self.logger = get_logger(__name__)
         self.settings = get_settings()
-        self._load_scope()
+        self.last_findings: List[ValidationFinding] = []
         self.logger.info(
             "network_validator_initialized",
             engagement_scope=self.settings.engagement_scope,
@@ -24,12 +26,10 @@ class NetworkArchitectureValidator:
             mode=self.settings.engagement_mode,
         )
 
-    # ---------------------------------------------------------
-    # Scope loading with safe fallback
-    # ---------------------------------------------------------
-    def _load_scope(self) -> None:
+    @property
+    def _scope_network(self) -> IPNetwork:
         try:
-            self._scope_network: IPNetwork = ipaddress.ip_network(
+            return ipaddress.ip_network(
                 self.settings.engagement_scope, strict=False
             )
         except ValueError as e:
@@ -38,12 +38,8 @@ class NetworkArchitectureValidator:
                 scope=self.settings.engagement_scope,
                 error=str(e),
             )
-            self._scope_network = ipaddress.ip_network("10.0.0.0/8")
+            return ipaddress.ip_network("10.0.0.0/8")
 
-    # ---------------------------------------------------------
-    # Parse a target value to IPAddress or IPNetwork.
-    # Only call for IP / SUBNET target types.
-    # ---------------------------------------------------------
     def _parse_target(self, value: str) -> Union[IPAddress, IPNetwork]:
         try:
             if "/" in value:
@@ -56,9 +52,6 @@ class NetworkArchitectureValidator:
                 validation_type="format",
             )
 
-    # ---------------------------------------------------------
-    # Scope containment check
-    # ---------------------------------------------------------
     def _is_in_scope(
         self, address_str: str, target_type: TargetType
     ) -> Tuple[bool, str]:
@@ -85,7 +78,15 @@ class NetworkArchitectureValidator:
 
             elif target_type == TargetType.SUBNET:
                 target_net = ipaddress.ip_network(address_str, strict=False)
-                if not target_net.subnet_of(self._scope_network):
+                scope_net = self._scope_network
+                if isinstance(target_net, ipaddress.IPv4Network) and isinstance(scope_net, ipaddress.IPv4Network):
+                    in_scope = target_net.subnet_of(scope_net)
+                elif isinstance(target_net, ipaddress.IPv6Network) and isinstance(scope_net, ipaddress.IPv6Network):
+                    in_scope = target_net.subnet_of(scope_net)
+                else:
+                    in_scope = False
+
+                if not in_scope:
                     return False, (
                         f"Target subnet {address_str} is not fully contained "
                         f"within engagement scope "
@@ -99,9 +100,6 @@ class NetworkArchitectureValidator:
 
         return True, ""
 
-    # ---------------------------------------------------------
-    # CIDR prefix sanity checks
-    # ---------------------------------------------------------
     def _check_cidr_sanity(
         self, address_str: str, target_type: TargetType
     ) -> Tuple[bool, str]:
@@ -112,7 +110,6 @@ class NetworkArchitectureValidator:
             net = ipaddress.ip_network(address_str, strict=False)
             prefix = net.prefixlen
 
-            # Prevent overly wide scans (small prefix = wide)
             if prefix < self.settings.max_cidr_prefix:
                 return False, (
                     f"CIDR prefix /{prefix} is wider than the maximum "
@@ -121,14 +118,12 @@ class NetworkArchitectureValidator:
                     f"{net.num_addresses:,} addresses."
                 )
 
-            # /32 is a single host — use IP type instead
             if isinstance(net, ipaddress.IPv4Network) and prefix == 32:
                 return False, (
                     f"CIDR /32 ({address_str}) is a single host address. "
                     f"Use target type IP instead of SUBNET for host targets."
                 )
 
-            # IPv6 subnet must be at least /64
             if isinstance(net, ipaddress.IPv6Network) and prefix < 64:
                 return False, (
                     f"IPv6 subnet /{prefix} is too large. "
@@ -140,9 +135,6 @@ class NetworkArchitectureValidator:
 
         return True, ""
 
-    # ---------------------------------------------------------
-    # Type consistency — detect IP/SUBNET mismatches
-    # ---------------------------------------------------------
     def _check_target_type_consistency(
         self, schema: IntentSchema
     ) -> Tuple[bool, str]:
@@ -168,60 +160,153 @@ class NetworkArchitectureValidator:
 
         return True, ""
 
-    # ---------------------------------------------------------
-    # Mode-aware violation handler
-    # ---------------------------------------------------------
-    def _handle(self, msg: str, vtype: str, warnings: List[str]) -> None:
-        if self.settings.engagement_mode == "strict":
-            raise NetworkValidationError(
-                msg, field="target.value", validation_type=vtype
-            )
-        warnings.append(f"ARCH_WARNING: {msg}")
-
-    # ---------------------------------------------------------
-    # Main validation entry point
-    # ---------------------------------------------------------
     def validate(
         self, schema: IntentSchema
     ) -> Tuple[IntentSchema, List[str]]:
+        self.last_findings = []
         if self.settings.engagement_mode == "disabled":
+            self.last_findings.append(
+                ValidationFinding(
+                    validator="network_validator",
+                    passed=True,
+                    hallucination_class=None,
+                    detail="Network architecture validation disabled by configuration",
+                    severity="warn",
+                )
+            )
             return schema, []
 
         warnings: List[str] = []
+        policy = get_enforcement_policy(self.settings)
+        if self.settings.engagement_mode == "warn":
+            type_mismatch_sev = "warn"
+            scope_sev = "warn"
+        else:
+            type_mismatch_sev = policy.get_severity(HallucinationClass.TARGET_TYPE_MISMATCH)
+            scope_sev = policy.get_severity(HallucinationClass.OUT_OF_SCOPE_TARGET)
 
-        # Step 1 — Type consistency (text-level)
+        # Step 1 — Type consistency
         consistent, msg = self._check_target_type_consistency(schema)
-        if not consistent:
-            self._handle(msg, "type_consistency", warnings)
+        if consistent:
+            self.last_findings.append(
+                ValidationFinding(
+                    validator="network_validator",
+                    passed=True,
+                    hallucination_class=None,
+                    detail=f"Target type '{schema.target.type.value}' is consistent with value '{schema.target.value}'",
+                    severity="block",
+                )
+            )
+        else:
+            self.last_findings.append(
+                ValidationFinding(
+                    validator="network_validator",
+                    passed=False,
+                    hallucination_class=HallucinationClass.TARGET_TYPE_MISMATCH,
+                    detail=msg,
+                    severity=type_mismatch_sev,
+                )
+            )
+            if type_mismatch_sev == "block":
+                err = NetworkValidationError(msg, field="target.value", validation_type="type_consistency")
+                err.findings = self.last_findings
+                raise err
+            warnings.append(f"ARCH_WARNING: {msg}")
 
-        # Steps 2-4 only apply to IP/SUBNET targets
+        # Steps 2-4 for IP/SUBNET targets
         if schema.target.type in (TargetType.IP, TargetType.SUBNET):
-
-            # Step 2 — Parse target to validate format
+            # Step 2 — Parse target format
+            format_valid = True
+            format_msg = ""
             try:
-                parsed = self._parse_target(schema.target.value)
+                self._parse_target(schema.target.value)
             except NetworkValidationError as e:
-                self._handle(str(e), "format", warnings)
+                format_valid = False
+                format_msg = str(e)
+
+            if format_valid:
+                self.last_findings.append(
+                    ValidationFinding(
+                        validator="network_validator",
+                        passed=True,
+                        hallucination_class=None,
+                        detail=f"Target address '{schema.target.value}' parsed valid format",
+                        severity="block",
+                    )
+                )
+            else:
+                self.last_findings.append(
+                    ValidationFinding(
+                        validator="network_validator",
+                        passed=False,
+                        hallucination_class=HallucinationClass.TARGET_TYPE_MISMATCH,
+                        detail=format_msg,
+                        severity=type_mismatch_sev,
+                    )
+                )
+                if type_mismatch_sev == "block":
+                    err = NetworkValidationError(format_msg, field="target.value", validation_type="format")
+                    err.findings = self.last_findings
+                    raise err
+                warnings.append(f"ARCH_WARNING: {format_msg}")
                 return schema, warnings
 
             # Step 3 — Scope check
-            in_scope, msg = self._is_in_scope(
-                schema.target.value, schema.target.type
-            )
-            if not in_scope:
-                if self.settings.engagement_mode == "strict":
-                    raise NetworkValidationError(
-                        msg, field="target.value", validation_type="scope"
+            in_scope, msg = self._is_in_scope(schema.target.value, schema.target.type)
+            if in_scope:
+                self.last_findings.append(
+                    ValidationFinding(
+                        validator="network_validator",
+                        passed=True,
+                        hallucination_class=None,
+                        detail=f"Target '{schema.target.value}' is within engagement scope '{self.settings.engagement_scope}'",
+                        severity=scope_sev,
                     )
+                )
+            else:
+                self.last_findings.append(
+                    ValidationFinding(
+                        validator="network_validator",
+                        passed=False,
+                        hallucination_class=HallucinationClass.OUT_OF_SCOPE_TARGET,
+                        detail=msg,
+                        severity=scope_sev,
+                    )
+                )
+                if scope_sev == "block":
+                    err = NetworkValidationError(msg, field="target.value", validation_type="scope")
+                    err.findings = self.last_findings
+                    raise err
                 warnings.append(f"SCOPE_VIOLATION: {msg}")
 
             # Step 4 — CIDR sanity (subnets only)
             if schema.target.type == TargetType.SUBNET:
-                sane, msg = self._check_cidr_sanity(
-                    schema.target.value, schema.target.type
-                )
-                if not sane:
-                    self._handle(msg, "cidr_sanity", warnings)
+                sane, msg = self._check_cidr_sanity(schema.target.value, schema.target.type)
+                if sane:
+                    self.last_findings.append(
+                        ValidationFinding(
+                            validator="network_validator",
+                            passed=True,
+                            hallucination_class=None,
+                            detail=f"Subnet '{schema.target.value}' satisfies CIDR prefix sanity checks",
+                            severity=scope_sev,
+                        )
+                    )
+                else:
+                    self.last_findings.append(
+                        ValidationFinding(
+                            validator="network_validator",
+                            passed=False,
+                            hallucination_class=HallucinationClass.OUT_OF_SCOPE_TARGET,
+                            detail=msg,
+                            severity=scope_sev,
+                        )
+                    )
+                    if scope_sev == "block":
+                        err = NetworkValidationError(msg, field="target.value", validation_type="cidr_sanity")
+                        err.findings = self.last_findings
+                        raise err
+                    warnings.append(f"ARCH_WARNING: {msg}")
 
         self.logger.info(
             "network_architecture_validated",

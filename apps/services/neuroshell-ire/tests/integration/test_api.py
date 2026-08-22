@@ -4,12 +4,27 @@ from src.api.main import app
 
 
 @pytest.fixture
-async def client():
+async def client(monkeypatch):
+    from unittest.mock import MagicMock
     from src.pipeline.ire_pipeline import IREPipeline
     import src.api.main as main_module
-    main_module.pipeline = IREPipeline()
+    p = IREPipeline()
+    import json
+    monkeypatch.setattr(
+        p.inference_engine,
+        "_call_ollama",
+        MagicMock(return_value=json.dumps({
+            "intent": "NETWORK_SCAN",
+            "target": {"type": "IP", "value": "192.168.1.1"},
+            "ports": [80],
+            "modifiers": [],
+            "cve_ids": [],
+            "confidence": 0.95,
+        }))
+    )
+    main_module.pipeline = p
     transport = httpx.ASGITransport(app=app)
-    async with httpx.AsyncClient(transport=transport, base_url="http://test") as c:
+    async with httpx.AsyncClient(transport=transport, base_url="http://test", headers={"X-API-Key": "test_api_key"}) as c:
         yield c
 
 

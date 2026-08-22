@@ -33,6 +33,9 @@ class _ToolName(str, Enum):
     NONE     = "none"
 
 
+from src.validation.hallucination_taxonomy import ValidationFinding
+
+
 class ContractBuilder:
     def __init__(self):
         self.logger = get_logger(__name__)
@@ -210,8 +213,18 @@ class ContractBuilder:
         schema: IntentSchema,
         session_id: Optional[str] = None,
         scope_warnings: Optional[List[str]] = None,
+        validation_findings: Optional[List[ValidationFinding]] = None,
     ) -> PlannerContract:
         scope_warnings = scope_warnings or []
+        validation_findings = validation_findings or []
+
+        blocking_findings = [
+            f for f in validation_findings
+            if not f.passed and f.severity == "block"
+        ]
+        if blocking_findings:
+            details = "; ".join(f"{f.validator}: {f.detail}" for f in blocking_findings)
+            raise ValueError(f"Contract construction refused due to blocking validation findings: {details}")
 
         tool = self._determine_tool(schema)
         if tool in (_ToolName.NONE, _ToolName.MANUAL):

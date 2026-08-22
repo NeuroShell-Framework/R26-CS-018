@@ -2,7 +2,7 @@
 # Pydantic models for intent validation
 
 from enum import Enum
-from typing import List, Optional
+from typing import Any, List, Optional, Union
 from pydantic import BaseModel, Field, field_validator, model_validator
 import re
 
@@ -32,7 +32,7 @@ class Target(BaseModel):
     model_config = {"extra": "forbid"}
 
     type: TargetType
-    value: str = Field(..., description="The target address, subnet, domain, or URL")
+    value: str = Field(description="The target address, subnet, domain, or URL")
 
 
 class IntentSchema(BaseModel):
@@ -45,7 +45,7 @@ class IntentSchema(BaseModel):
     cve_ids: List[str] = Field(default_factory=list)
     tool_hint: Optional[str] = None
     schedule: Optional[str] = None
-    confidence: float = Field(..., ge=0.0, le=1.0)
+    confidence: float = Field(ge=0.0, le=1.0)
     rejection_reason: Optional[str] = None
 
     @field_validator("ports")
@@ -78,7 +78,7 @@ class IREResponse(BaseModel):
     """Full API response wrapper — returned by POST /parse"""
     model_config = {"extra": "forbid"}
 
-    status: str = Field(..., description="'success' or 'error'")
+    status: str = Field(description="'success' or 'error'")
 
     intent: Optional[IntentType] = None
     target: Optional[Target] = None
@@ -140,17 +140,20 @@ class IREResponse(BaseModel):
 
 class ParseRequest(BaseModel):
     """Incoming request body for POST /parse"""
-    command: str = Field(..., description="Raw natural language command from the operator")
+    command: str = Field(description="Raw natural language command from the operator")
     session_id: Optional[str] = Field(default=None, description="Optional session identifier")
 
 
 class IREError(Exception):
     """Base exception for all IRE pipeline errors."""
-    def __init__(self, message: str, stage: str, field: str = None):
+    findings: List[Any]
+
+    def __init__(self, message: str, stage: str, field: Optional[str] = None, findings: Optional[List[Any]] = None):
         super().__init__(message)
         self.message = message
         self.stage = stage
         self.field = field
+        self.findings = findings if findings is not None else []
 
 
 class JSONParseError(IREError):
@@ -159,12 +162,12 @@ class JSONParseError(IREError):
 
 
 class SchemaValidationError(IREError):
-    def __init__(self, message: str, field: str = None):
+    def __init__(self, message: str, field: Optional[str] = None):
         super().__init__(message, stage="schema_validator", field=field)
 
 
 class RegexValidationError(IREError):
-    def __init__(self, message: str, field: str = None):
+    def __init__(self, message: str, field: Optional[str] = None):
         super().__init__(message, stage="regex_validator", field=field)
 
 
@@ -242,7 +245,7 @@ class SecondaryIntent(BaseModel):
     model_config = {"extra": "forbid"}
 
     intent: IntentType
-    confidence: float = Field(..., ge=0.0, le=1.0)
+    confidence: float = Field(ge=0.0, le=1.0)
     target: Optional[Target] = None
 
 
@@ -253,7 +256,7 @@ class XAIToken(BaseModel):
     model_config = {"extra": "forbid"}
 
     token: str
-    score: float = Field(..., ge=0.0, le=1.0)
+    score: float = Field(ge=0.0, le=1.0)
     entity: Optional[str] = None
 
 
@@ -266,6 +269,9 @@ class XAIBlock(BaseModel):
     method: str = "integrated_gradients"
     top_tokens: List[XAIToken] = Field(default_factory=list)
     decision_path: Optional[str] = None
+
+
+from src.validation.hallucination_taxonomy import HallucinationClass, ValidationFinding
 
 
 # --- SECTION 5: Extended IREResponse V2 ---
@@ -301,12 +307,16 @@ class IREResponseV2(BaseModel):
     sub_intent: Optional[SubIntentType] = None
     secondary_intents: List[SecondaryIntent] = Field(default_factory=list)
     clarification_request: Optional[str] = None
-    uncertainty_band: Optional[float] = Field(default=None, ge=0.0, le=1.0)
+    uncertainty_band: Optional[Union[str, float]] = None
+    raw_entropy: Optional[float] = None
+    tier_triggered: Optional[int] = None
+    resolution_method: Optional[str] = None
     calibration_method: Optional[str] = None
     cache_hit: Optional[str] = None        # "exact" | "semantic" | None
     rbac_role: Optional[str] = None        # role that was used
     session_turns: Optional[int] = None    # number of turns in session
     xai: Optional[XAIBlock] = None
+    validation_findings: List[ValidationFinding] = Field(default_factory=list)
     schema_version: int = 2
 
     @classmethod
@@ -325,6 +335,7 @@ class IREResponseV2(BaseModel):
         detail: str,
         latency_ms: int,
         field: Optional[str] = None,
+        validation_findings: Optional[List[ValidationFinding]] = None,
     ) -> "IREResponseV2":
         return cls(
             status="error",
@@ -333,6 +344,7 @@ class IREResponseV2(BaseModel):
             field=field,
             detail=detail,
             latency_ms=latency_ms,
+            validation_findings=validation_findings or [],
             schema_version=2,
         )
 
@@ -347,7 +359,6 @@ class ParseRequestV2(BaseModel):
     model_config = {"extra": "ignore"}
 
     command: str = Field(
-        ...,
         description="Raw natural language command from the operator"
     )
     session_id: Optional[str] = Field(
@@ -378,10 +389,10 @@ class RBACError(IREError):
 
 __all__ = [
     # Enums
-    "IntentType", "TargetType", "SubIntentType",
+    "IntentType", "TargetType", "SubIntentType", "HallucinationClass",
     # Models
     "Target", "IntentSchema", "SecondaryIntent",
-    "XAIToken", "XAIBlock",
+    "XAIToken", "XAIBlock", "ValidationFinding",
     # Requests
     "ParseRequest", "ParseRequestV2",
     # Responses

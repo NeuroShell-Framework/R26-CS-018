@@ -26,30 +26,42 @@ class TestRBACGuardPreInferenceCheck:
 
     def test_analyst_role_passes_pre_inference(self, guard):
         """analyst role passes pre-inference check without error."""
-        guard.pre_inference_check("analyst")
+        assert guard.flags.rbac is True
+        res = guard.pre_inference_check("analyst")
+        assert res is None
 
     def test_operator_role_passes_pre_inference(self, guard):
         """operator role passes pre-inference check without error."""
-        guard.pre_inference_check("operator")
+        assert guard.flags.rbac is True
+        res = guard.pre_inference_check("operator")
+        assert res is None
 
     def test_admin_role_passes_pre_inference(self, guard):
         """admin role passes pre-inference check without error."""
-        guard.pre_inference_check("admin")
+        assert guard.flags.rbac is True
+        res = guard.pre_inference_check("admin")
+        assert res is None
 
     def test_unknown_role_passes_pre_inference(self, guard):
         """unknown roles are not in RESTRICTED_ROLES and pass pre-inference."""
-        guard.pre_inference_check("some_random_role")
+        assert guard.flags.rbac is True
+        res = guard.pre_inference_check("some_random_role")
+        assert res is None
 
     def test_pre_inference_disabled_is_noop(self, guard_disabled):
         """pre-inference check is a no-op when RBAC feature flag is disabled."""
-        guard_disabled.pre_inference_check("viewer")
+        assert guard_disabled.flags.rbac is False
+        res = guard_disabled.pre_inference_check("viewer")
+        assert res is None
 
 
 class TestRBACGuardPostInferenceCheck:
 
     def test_analyst_network_scan_passes(self, guard):
         """analyst role is permitted for NETWORK_SCAN intent."""
-        guard.post_inference_check("analyst", IntentType.NETWORK_SCAN)
+        assert guard.flags.rbac is True
+        res = guard.post_inference_check("analyst", IntentType.NETWORK_SCAN)
+        assert res is None
 
     def test_analyst_exploitation_raises_rbac_error(self, guard):
         """analyst role is NOT permitted for EXPLOITATION intent."""
@@ -60,16 +72,22 @@ class TestRBACGuardPostInferenceCheck:
 
     def test_operator_exploitation_passes(self, guard):
         """operator role is permitted for EXPLOITATION intent."""
-        guard.post_inference_check("operator", IntentType.EXPLOITATION)
+        assert guard.flags.rbac is True
+        res = guard.post_inference_check("operator", IntentType.EXPLOITATION)
+        assert res is None
 
     def test_operator_password_attack_passes(self, guard):
         """operator role is permitted for PASSWORD_ATTACK intent."""
-        guard.post_inference_check("operator", IntentType.PASSWORD_ATTACK)
+        assert guard.flags.rbac is True
+        res = guard.post_inference_check("operator", IntentType.PASSWORD_ATTACK)
+        assert res is None
 
     def test_admin_all_intents_pass(self, guard):
         """admin role is permitted for all intents including exploitation."""
+        assert guard.flags.rbac is True
         for intent in IntentType:
-            guard.post_inference_check("admin", intent)
+            res = guard.post_inference_check("admin", intent)
+            assert res is None
 
     def test_viewer_exploitation_raises_rbac_error(self, guard):
         """viewer role is NOT permitted for EXPLOITATION intent."""
@@ -79,7 +97,9 @@ class TestRBACGuardPostInferenceCheck:
 
     def test_analyst_passive_recon_passes(self, guard):
         """analyst role is permitted for PASSIVE_RECON intent."""
-        guard.post_inference_check("analyst", IntentType.PASSIVE_RECON)
+        assert guard.flags.rbac is True
+        res = guard.post_inference_check("analyst", IntentType.PASSIVE_RECON)
+        assert res is None
 
     def test_analyst_directory_bruteforce_raises(self, guard):
         """analyst role is NOT permitted for DIRECTORY_BRUTEFORCE intent."""
@@ -88,7 +108,9 @@ class TestRBACGuardPostInferenceCheck:
 
     def test_operator_directory_bruteforce_passes(self, guard):
         """operator role is permitted for DIRECTORY_BRUTEFORCE intent."""
-        guard.post_inference_check("operator", IntentType.DIRECTORY_BRUTEFORCE)
+        assert guard.flags.rbac is True
+        res = guard.post_inference_check("operator", IntentType.DIRECTORY_BRUTEFORCE)
+        assert res is None
 
     def test_unknown_role_rejected_passes(self, guard):
         """unknown roles get denied for REJECTED intent since they have no mapping."""

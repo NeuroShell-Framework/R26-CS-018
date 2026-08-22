@@ -108,9 +108,10 @@ class TestRegexValidator:
             validator.validate(s)
 
     def test_validate_domain_with_ip_format_raises(self, validator, make_schema):
-        """Non-domain-looking string raises RegexValidationError."""
-        s = make_schema(target_type="DOMAIN", target_value="not.a.valid.domain")
-        validator.validate(s)
+        """Invalid domain format raises RegexValidationError."""
+        s = make_schema(target_type="DOMAIN", target_value="domain..com")
+        with pytest.raises(RegexValidationError):
+            validator.validate(s)
 
     # === URL VALIDATION (3 tests) ===
 
@@ -148,14 +149,18 @@ class TestRegexValidator:
         validator.validate(s)
 
     def test_validate_invalid_cve_no_year_raises(self, validator, make_schema):
-        """CVE without year raises ValidationError at schema construction or RegexValidationError."""
-        with pytest.raises((ValidationError, RegexValidationError)):
-            make_schema(cve_ids=["CVE-44228"])
+        """CVE without year raises RegexValidationError when validated."""
+        s = make_schema(cve_ids=["CVE-2021-44228"])
+        object.__setattr__(s, "cve_ids", ["CVE-44228"])
+        with pytest.raises(RegexValidationError):
+            validator.validate(s)
 
     def test_validate_invalid_cve_wrong_format_raises(self, validator, make_schema):
-        """Malformed CVE string raises ValidationError at schema construction or RegexValidationError."""
-        with pytest.raises((ValidationError, RegexValidationError)):
-            make_schema(cve_ids=["CVE-XXXX-YYYY"])
+        """Malformed CVE string raises RegexValidationError when validated."""
+        s = make_schema(cve_ids=["CVE-2021-44228"])
+        object.__setattr__(s, "cve_ids", ["CVE-XXXX-YYYY"])
+        with pytest.raises(RegexValidationError):
+            validator.validate(s)
 
     # === PORT VALIDATION (4 tests) ===
 
@@ -170,14 +175,18 @@ class TestRegexValidator:
         validator.validate(s)
 
     def test_validate_port_0_raises(self, validator, make_schema):
-        """Port 0 raises ValidationError at schema construction."""
-        with pytest.raises((ValidationError, RegexValidationError)):
-            make_schema(ports=[0])
+        """Port 0 raises RegexValidationError when validated."""
+        s = make_schema(ports=[80])
+        object.__setattr__(s, "ports", [0])
+        with pytest.raises(RegexValidationError):
+            validator.validate(s)
 
     def test_validate_port_65536_raises(self, validator, make_schema):
-        """Port 65536 raises ValidationError at schema construction."""
-        with pytest.raises((ValidationError, RegexValidationError)):
-            make_schema(ports=[65536])
+        """Port 65536 raises RegexValidationError when validated."""
+        s = make_schema(ports=[80])
+        object.__setattr__(s, "ports", [65536])
+        with pytest.raises(RegexValidationError):
+            validator.validate(s)
 
     # === SHELL METACHARACTER (6 tests) ===
 

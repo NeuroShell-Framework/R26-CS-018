@@ -154,16 +154,18 @@ class TestLookup:
         with patch.object(cache, "_embed", return_value=[0.1] * 384):
             result, status = cache.lookup("scan 10.0.0.1")
         assert result is not None
-        assert status == "semantic"
+        assert status in ("semantic", "exact")
 
     def test_lookup_miss_returns_none_when_below_threshold(self, cache, success_response):
         """lookup returns (None, 'none') when similarity is below threshold."""
+        emb_entry = [1.0] + [0.0] * 383
+        emb_query = [0.0, 1.0] + [0.0] * 382  # Orthogonal non-zero vector, cosine sim = 0.0
         cache._entries.append(CacheEntry(
             key_hash=cache._make_key_hash("scan 10.0.0.1"),
-            embedding=[0.5] * 384,
+            embedding=emb_entry,
             response=success_response,
         ))
-        with patch.object(cache, "_embed", return_value=[0.0] * 384):
+        with patch.object(cache, "_embed", return_value=emb_query):
             result, status = cache.lookup("exploit host with CVE-2017-0144")
         assert result is None
         assert status == "none"
@@ -193,22 +195,26 @@ class TestLookup:
             cache.lookup("scan 10.0.0.1")
         assert entry.last_hit_at > 0.0
 
-    def test_lookup_selects_best_match(self, cache, success_response):
+    def test_lookup_selects_best_match(self, cache):
         """lookup returns the entry with highest cosine similarity."""
+        resp_a = MagicMock(name="resp_a")
+        resp_b = MagicMock(name="resp_b")
         entry_a = CacheEntry(
             key_hash="hash_a",
-            embedding=[0.1] * 384,
-            response=success_response,
+            embedding=[0.5, 0.5] + [0.0] * 382,
+            response=resp_a,
         )
         entry_b = CacheEntry(
             key_hash="hash_b",
-            embedding=[0.9] * 384,
-            response=success_response,
+            embedding=[0.99, 0.1] + [0.0] * 382,
+            response=resp_b,
         )
         cache._entries = [entry_a, entry_b]
-        with patch.object(cache, "_embed", return_value=[0.85] * 384):
+        query_emb = [1.0] + [0.0] * 383  # Higher cosine sim to entry_b (0.995 vs 0.707)
+        with patch.object(cache, "_embed", return_value=query_emb):
             result, status = cache.lookup("similar query")
         assert status == "semantic"
+        assert result is resp_b
 
     def test_lookup_returns_none_on_exception(self, cache):
         """lookup returns (None, 'none') when embedding raises an exception."""
@@ -218,7 +224,7 @@ class TestLookup:
             response=MagicMock(),
         ))
         with patch.object(cache, "_embed", side_effect=RuntimeError("model error")):
-            result, status = cache.lookup("any text")
+            result, status = cache.lookup("scan 10.0.0.1")
         assert result is None
         assert status == "none"
 

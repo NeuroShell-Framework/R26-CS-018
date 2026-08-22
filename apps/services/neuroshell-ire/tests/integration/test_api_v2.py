@@ -54,11 +54,14 @@ def mock_pipeline():
         mock.metrics.get_summary.return_value = {
             "total_requests": 42,
             "success_count": 40,
-            "error_count": 2,
+            "error_counts": {"inference": 2},
             "intent_distribution": {"NETWORK_SCAN": 30, "REJECTED": 12},
-            "latency_p50": 1200,
-            "latency_p95": 3500,
-            "latency_p99": 8000,
+            "latency_p50_ms": 1200,
+            "latency_p95_ms": 3500,
+            "latency_p99_ms": 8000,
+            "average_semantic_entropy": 0.1,
+            "max_semantic_entropy": 0.4,
+            "tier_counts": {1: 39, 2: 3},
             "uptime_seconds": 3600,
         }
         mock.session_context.get_session_info.return_value = {
@@ -83,6 +86,10 @@ def mock_pipeline():
 async def client(mock_pipeline):
     import src.api.main as main_module
     main_module.pipeline = mock_pipeline
+    from src.pipeline.contract_builder import ContractBuilder
+    from src.validation.contract_validator import ContractValidator
+    app.state.contract_builder = ContractBuilder()
+    app.state.contract_validator = ContractValidator()
     transport = httpx.ASGITransport(app=app)
     async with httpx.AsyncClient(transport=transport, base_url="http://test") as c:
         yield c
@@ -208,6 +215,78 @@ class TestParseValidation:
         assert r.status_code == 413
 
 
+class TestParsePlanV2:
+
+    @pytest.mark.asyncio
+    async def test_parse_plan_returns_contract(self, client):
+        """POST /parse/plan returns a valid PlannerContract for a successful parse."""
+        r = await client.post("/parse/plan", json={
+            "command": "stealth scan 192.168.1.1",
+            "role": "analyst",
+        })
+        assert r.status_code == 200
+        data = r.json()
+        assert data["intent"] == "NETWORK_SCAN"
+        assert data["target"]["value"] == "192.168.1.1"
+        assert data["confidence"] == 0.92
+        assert data["tool_hint"] == "nmap"
+
+    @pytest.mark.asyncio
+    async def test_parse_plan_error_returns_422(self, client, mock_pipeline):
+        """POST /parse/plan returns 422 CONTRACT_VALIDATION_FAILED on pipeline error."""
+        mock_pipeline.parse.return_value = IREResponseV2(
+            status="error",
+            error="SCOPE_VIOLATION",
+            stage="scope_guard",
+            detail="Target out of scope",
+            latency_ms=5,
+            schema_version=2,
+        )
+        r = await client.post("/parse/plan", json={
+            "command": "scan 192.168.1.1",
+            "role": "analyst",
+        })
+        assert r.status_code == 422
+        data = r.json()
+        assert data["error"] == "SCOPE_VIOLATION"
+        assert data["contract"] is None
+
+    @pytest.mark.asyncio
+    async def test_parse_plan_real_scope_rejection_returns_422(self, monkeypatch):
+        """POST /parse/plan with real un-mocked pipeline under strict scope_mode returns 422 on public IP."""
+        from unittest.mock import MagicMock
+        from config.settings import get_settings
+        from src.pipeline.ire_pipeline import IREPipeline
+        import src.api.main as main_module
+
+        settings = get_settings()
+        monkeypatch.setattr(settings, "scope_mode", "strict")
+
+        p = IREPipeline(settings=settings)
+        import json
+        monkeypatch.setattr(
+            p.inference_engine,
+            "_call_ollama",
+            MagicMock(return_value=json.dumps({
+                "intent": "NETWORK_SCAN",
+                "target": {"type": "IP", "value": "8.8.8.8"},
+                "ports": [],
+                "modifiers": [],
+                "cve_ids": [],
+                "confidence": 0.9,
+            }))
+        )
+        main_module.pipeline = p
+        transport = httpx.ASGITransport(app=app)
+        async with httpx.AsyncClient(transport=transport, base_url="http://test", headers={"X-API-Key": "test_api_key"}) as c:
+            r = await c.post("/parse/plan", json={"command": "scan 8.8.8.8", "role": "analyst"})
+        assert r.status_code == 422
+        data = r.json()
+        assert data["contract"] is None
+        assert data["error"] == "SCOPE_VIOLATION"
+        assert "detail" in data
+
+
 class TestMetricsV2:
 
     @pytest.mark.asyncio
@@ -219,12 +298,12 @@ class TestMetricsV2:
 
     @pytest.mark.asyncio
     async def test_metrics_returns_latency_percentiles(self, client):
-        """GET /metrics returns latency_p50, p95, p99."""
+        """GET /metrics returns latency_p50_ms, p95_ms, p99_ms."""
         r = await client.get("/metrics")
         data = r.json()
-        assert "latency_p50" in data
-        assert "latency_p95" in data
-        assert "latency_p99" in data
+        assert "latency_p50_ms" in data
+        assert "latency_p95_ms" in data
+        assert "latency_p99_ms" in data
 
     @pytest.mark.asyncio
     async def test_metrics_returns_intent_distribution(self, client):

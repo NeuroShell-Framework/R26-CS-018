@@ -104,10 +104,11 @@ class TestInputNormalizer:
         assert "\n" not in result
 
     def test_normalize_gemma_im_start_token_stripped(self, normalizer):
-        """Gemma special tokens are stripped from output."""
-        text = 'scan 10.0.0.1 special tokens removed'
+        """Gemma <|think|> token is stripped from output."""
+        text = '<|think|>scan 10.0.0.1'
         result = normalizer.normalize(text)
-        assert isinstance(result, str)
+        assert '<|think|>' not in result
+        assert 'scan 10.0.0.1' in result
 
     def test_normalize_gemma_think_token_stripped(self, normalizer):
         """Gemma <think>...</think> block is stripped."""

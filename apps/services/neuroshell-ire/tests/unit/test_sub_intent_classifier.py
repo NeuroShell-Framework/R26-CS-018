@@ -302,9 +302,10 @@ class TestEdgeCases:
         result = classifier.classify(s)
         assert result is None
 
-    def test_unknown_intent_returns_none(self, classifier, make_schema):
-        """Intent not in rules dict returns None."""
-        s = make_schema(intent=IntentType.AMBIGUOUS, confidence=0.4)
+    def test_unknown_intent_returns_none(self, classifier, make_schema, monkeypatch):
+        """Intent not present in _rules dict returns None."""
+        monkeypatch.setattr(classifier, "_rules", {})
+        s = make_schema(intent=IntentType.NETWORK_SCAN, confidence=0.9, modifiers=["stealth"])
         result = classifier.classify(s)
         assert result is None
 

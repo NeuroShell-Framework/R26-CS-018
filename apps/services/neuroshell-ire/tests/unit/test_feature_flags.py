@@ -11,11 +11,9 @@ def real_flags():
 
 
 @pytest.fixture
-def tmp_yaml():
-    path = os.path.join(tempfile.gettempdir(), "test_features.yaml")
+def tmp_yaml(tmp_path):
+    path = str(tmp_path / "test_features.yaml")
     yield path
-    if os.path.exists(path):
-        os.remove(path)
 
 
 @pytest.fixture

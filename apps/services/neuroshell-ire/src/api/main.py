@@ -1,19 +1,26 @@
-# NeuroShell IRE — FastAPI Application Entry Point
-# API gateway for the Intent Recognition Engine
+import sys
+from pathlib import Path
+
+# Ensure service root (neuroshell-ire) is in sys.path for resolution of config and src
+SERVICE_ROOT = Path(__file__).resolve().parent.parent.parent
+if str(SERVICE_ROOT) not in sys.path:
+    sys.path.insert(0, str(SERVICE_ROOT))
 
 import time
 from contextlib import asynccontextmanager
 from typing import Optional, Union
 
+from pydantic import BaseModel
 from fastapi import FastAPI, HTTPException, Request, Depends, Header
 from fastapi.responses import JSONResponse
 from fastapi.security import APIKeyHeader
-from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi import Limiter
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 
 from config.settings import get_settings
 from config.feature_flags import get_feature_flags
+from config.enforcement_policy import get_enforcement_policy
 from src.pipeline.ire_pipeline import IREPipeline
 from src.schemas.intent_schema import (
     ParseRequest, ParseRequestV2,
@@ -22,6 +29,9 @@ from src.schemas.intent_schema import (
 from src.pipeline.contract_builder import ContractBuilder
 from src.validation.contract_validator import ContractValidator
 from src.utils.logging_config import get_logger
+
+
+from src.audit import get_audit_logger
 
 
 settings = get_settings()
@@ -40,6 +50,7 @@ async def lifespan(app: FastAPI):
     pipeline = IREPipeline()
     app.state.contract_builder = ContractBuilder()
     app.state.contract_validator = ContractValidator()
+    app.state.audit_logger = get_audit_logger(settings=settings)
     logger.info(
         "ire_startup",
         status="ready",
@@ -72,8 +83,20 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+def rate_limit_handler(request: Request, exc: Exception) -> JSONResponse:
+    detail = getattr(exc, "detail", str(exc))
+    return JSONResponse(
+        status_code=429,
+        content={
+            "status": "error",
+            "error": "RATE_LIMIT_EXCEEDED",
+            "detail": f"Rate limit exceeded: {detail}",
+        }
+    )
+
+
 app.state.limiter = limiter
-app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+app.add_exception_handler(RateLimitExceeded, rate_limit_handler)
 
 
 async def verify_api_key(api_key: str = Depends(API_KEY_HEADER)) -> str:
@@ -198,6 +221,9 @@ async def parse_command(
     except (ValueError, TypeError):
         schema_ver = 2
 
+    if pipeline is None:
+        raise HTTPException(status_code=503, detail="Pipeline not initialized")
+
     v2_response = pipeline.parse(body)
     return build_parse_response(v2_response, schema_ver)
 
@@ -259,13 +285,14 @@ async def parse_for_planner(
             rejection_reason=v2_response.rejection_reason,
         )
 
-        contract = app.state.contract_builder.build(
-            schema=intent_schema,
-            session_id=body.session_id,
-            scope_warnings=v2_response.scope_warnings or [],
-        )
-
         try:
+            contract = app.state.contract_builder.build(
+                schema=intent_schema,
+                session_id=body.session_id,
+                scope_warnings=v2_response.scope_warnings or [],
+                validation_findings=v2_response.validation_findings or [],
+            )
+
             contract, contract_warnings = \
                 app.state.contract_validator.validate(contract)
         except ValueError as e:
@@ -283,6 +310,44 @@ async def parse_for_planner(
 
         if v2_response.sub_intent:
             contract.sub_intent = v2_response.sub_intent
+
+        # Check for ESCALATE enforcement action findings
+        import json
+        escalated_finding = None
+        for finding in (v2_response.validation_findings or []):
+            if finding.severity == "escalate":
+                escalated_finding = finding
+                break
+
+        if escalated_finding:
+            h_class = (
+                escalated_finding.hallucination_class.value
+                if hasattr(escalated_finding.hallucination_class, "value")
+                else str(escalated_finding.hallucination_class or "UNKNOWN")
+            )
+            audit_logger = getattr(app.state, "audit_logger", get_audit_logger())
+            intent_summary = f"{intent_schema.intent.value if hasattr(intent_schema.intent, 'value') else intent_schema.intent} on {intent_schema.target.value if intent_schema.target else 'NONE'}"
+            audit_id = audit_logger.record_finding(
+                raw_input=body.command,
+                intent_summary=intent_summary,
+                hallucination_class=h_class,
+                severity="escalate",
+                enforcement_action="ESCALATE",
+                session_id=body.session_id,
+                status="pending",
+                cached_contract_json=json.dumps(contract.model_dump()),
+            )
+            return JSONResponse(
+                status_code=202,
+                content={
+                    "status": "pending_review",
+                    "escalation_id": audit_id,
+                    "message": "Contract withheld pending human review",
+                    "hallucination_class": h_class,
+                    "detail": escalated_finding.detail,
+                    "contract": None,
+                },
+            )
 
         return contract.model_dump()
 
@@ -366,10 +431,105 @@ async def reload_features(
     _api_key: str = Depends(verify_api_key),
 ):
     flags.reload()
-    pipeline.flags = flags
+    if pipeline is not None:
+        pipeline.flags = flags
     return {
         "reloaded": True,
         "features": flags._flags,
+    }
+
+
+@app.get("/admin/enforcement-policy", tags=["Admin"])
+async def get_enforcement_policy_endpoint(
+    _api_key: str = Depends(verify_api_key),
+):
+    """
+    Returns the current effective enforcement policy and reasoning per HallucinationClass.
+    """
+    policy = get_enforcement_policy()
+    return policy.get_policy_summary()
+
+
+class EscalationResolveRequest(BaseModel):
+    approve: bool
+    note: str = ""
+    resolved_by: str = "admin"
+
+
+@app.get("/admin/escalations", tags=["Admin"])
+async def list_escalations(
+    status: str = "pending",
+    _api_key: str = Depends(verify_api_key),
+):
+    """
+    Returns items in the human-in-the-loop escalation queue.
+    """
+    audit_logger = getattr(app.state, "audit_logger", get_audit_logger())
+    if status == "pending":
+        records = audit_logger.get_pending_escalations()
+    else:
+        records = []
+    return {
+        "status": "success",
+        "count": len(records),
+        "escalations": records,
+    }
+
+
+@app.post("/admin/escalations/{audit_id}/resolve", tags=["Admin"])
+async def resolve_escalation(
+    audit_id: int,
+    body: EscalationResolveRequest,
+    _api_key: str = Depends(verify_api_key),
+):
+    """
+    Resolves a pending escalation. If approved, releases and returns the contract.
+    """
+    import json
+    audit_logger = getattr(app.state, "audit_logger", get_audit_logger())
+    record = audit_logger.get_escalation_by_id(audit_id)
+    if not record:
+        raise HTTPException(status_code=404, detail=f"Escalation {audit_id} not found")
+
+    updated = audit_logger.resolve_escalation(
+        audit_id=audit_id,
+        approve=body.approve,
+        note=body.note,
+        resolved_by=body.resolved_by or "admin",
+    )
+
+    contract_dict = None
+    if body.approve and updated and updated.get("cached_contract_json"):
+        try:
+            contract_dict = json.loads(updated["cached_contract_json"])
+        except Exception:
+            contract_dict = None
+
+    res_status = "approved" if body.approve else "rejected"
+    return {
+        "status": res_status,
+        "escalation_id": audit_id,
+        "contract": contract_dict,
+        "resolved_by": updated["resolved_by"] if updated else "admin",
+        "resolved_at": updated["resolved_at"] if updated else None,
+        "resolution_note": updated["resolution_note"] if updated else body.note,
+    }
+
+
+@app.get("/admin/audit/summary", tags=["Admin"])
+async def get_audit_summary_endpoint(
+    start_time: Optional[str] = None,
+    end_time: Optional[str] = None,
+    _api_key: str = Depends(verify_api_key),
+):
+    """
+    Returns aggregate finding count summary grouped by hallucination_class and enforcement_action.
+    """
+    audit_logger = getattr(app.state, "audit_logger", get_audit_logger())
+    summary = audit_logger.get_audit_summary(start_time=start_time, end_time=end_time)
+    return {
+        "status": "success",
+        "summary": summary,
     }
 
 

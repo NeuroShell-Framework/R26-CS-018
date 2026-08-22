@@ -1,0 +1,9 @@
+{
+  "configuration": "Raw Gemma Baseline (No Validation)",
+  "total_examples": 190,
+  "accuracy": 74.0,
+  "hallucination_catch_rate": 31.43,
+  "false_positive_rate": 26.0,
+  "p50_latency_ms": 50076.3,
+  "p95_latency_ms": 66047.9
+}

@@ -23,9 +23,13 @@ from src.utils.metrics_collector import MetricsCollector
 from config.feature_flags import get_feature_flags
 
 
+from config.settings import get_settings, Settings
+
+
 class IREPipeline:
-    def __init__(self):
+    def __init__(self, settings: Optional[Settings] = None):
         self.logger = get_logger(__name__)
+        self.settings = settings or get_settings()
         self.normalizer = InputNormalizer()
         self.resolver = AliasResolver()
         self.inference_engine = OllamaInferenceEngine()
@@ -33,7 +37,9 @@ class IREPipeline:
         self.schema_validator = SchemaValidator()
         self.regex_validator = RegexValidator()
         self.scope_guard = ScopeGuard()
+        self.scope_guard.settings = self.settings
         self.network_validator = NetworkArchitectureValidator()
+        self.network_validator.settings = self.settings
         self.metrics = MetricsCollector()
 
         self.flags = get_feature_flags()
@@ -42,6 +48,31 @@ class IREPipeline:
         self.adversarial = AdversarialDetector()
         self.semantic_cache = SemanticCache()
         self.sub_intent_clf = SubIntentClassifier()
+        from src.audit import get_audit_logger
+        self.audit_logger = get_audit_logger(settings=self.settings)
+
+    def _log_audit_findings(self, request: ParseRequestV2, response: IREResponseV2) -> None:
+        try:
+            intent_val = response.intent.value if hasattr(response.intent, "value") else str(response.intent or "UNKNOWN")
+            target_val = response.target.value if response.target and hasattr(response.target, "value") else "NONE"
+            intent_summary = f"{intent_val} on {target_val}"
+
+            for finding in (response.validation_findings or []):
+                h_class = finding.hallucination_class.value if hasattr(finding.hallucination_class, "value") else str(finding.hallucination_class or "UNKNOWN")
+                sev = finding.severity
+                enf_action = "BLOCK" if sev == "block" else ("ESCALATE" if sev == "escalate" else "WARN")
+                st = "pending" if enf_action == "ESCALATE" else "recorded"
+                self.audit_logger.record_finding(
+                    raw_input=request.command,
+                    intent_summary=intent_summary,
+                    hallucination_class=h_class,
+                    severity=sev,
+                    enforcement_action=enf_action,
+                    session_id=request.session_id,
+                    status=st,
+                )
+        except Exception as e:
+            self.logger.error("audit_logging_error", error=str(e))
 
         self.logger.info(
             "pipeline_initialized",
@@ -114,7 +145,8 @@ class IREPipeline:
         # M4 — Semantic cache lookup
         try:
             cached_response, cache_type = self.semantic_cache.lookup(command_with_context)
-            if cached_response and cache_type == "semantic":
+            self.metrics.record_cache_result(cache_type)
+            if cached_response and cache_type in ("exact", "semantic"):
                 v2_cached = IREResponseV2.from_v1(
                     cached_response,
                     cache_hit=cache_type,
@@ -158,6 +190,13 @@ class IREPipeline:
         # Stage 3 — Inference
         try:
             raw_llm_output = self.inference_engine.generate(enriched)
+            inf_meta = getattr(self.inference_engine, "last_metadata", {})
+            if inf_meta and "raw_entropy" in inf_meta:
+                self.metrics.record_entropy(
+                    raw_entropy=inf_meta.get("raw_entropy", 0.0),
+                    uncertainty_band=inf_meta.get("uncertainty_band", "low"),
+                    tier_triggered=inf_meta.get("tier_triggered", 1),
+                )
         except InferenceError as e:
             self.metrics.record_error("inference")
             return IREResponseV2.error_response(
@@ -180,8 +219,10 @@ class IREPipeline:
             )
 
         # Stage 5 — Schema validation
+        validation_findings = []
         try:
             intent_schema = self.schema_validator.validate(parsed_dict)
+            validation_findings.extend(self.schema_validator.last_findings)
         except SchemaValidationError as e:
             self.metrics.record_error("schema_validator")
             return IREResponseV2.error_response(
@@ -189,12 +230,14 @@ class IREPipeline:
                 stage=e.stage,
                 detail=e.message,
                 field=e.field,
-                latency_ms=elapsed()
+                latency_ms=elapsed(),
+                validation_findings=validation_findings + getattr(e, "findings", []),
             )
 
         # Stage 6 — Regex validation
         try:
             intent_schema = self.regex_validator.validate(intent_schema)
+            validation_findings.extend(self.regex_validator.last_findings)
         except RegexValidationError as e:
             self.metrics.record_error("regex_validator")
             return IREResponseV2.error_response(
@@ -202,7 +245,8 @@ class IREPipeline:
                 stage=e.stage,
                 detail=e.message,
                 field=e.field,
-                latency_ms=elapsed()
+                latency_ms=elapsed(),
+                validation_findings=validation_findings + getattr(e, "findings", []),
             )
 
         # Stage 6B — Network Architecture Validation
@@ -210,6 +254,7 @@ class IREPipeline:
         try:
             intent_schema, arch_warnings = \
                 self.network_validator.validate(intent_schema)
+            validation_findings.extend(self.network_validator.last_findings)
         except NetworkValidationError as e:
             self.metrics.record_error("network_validator")
             return IREResponseV2.error_response(
@@ -217,7 +262,8 @@ class IREPipeline:
                 stage=e.stage,
                 detail=e.message,
                 field=e.field,
-                latency_ms=elapsed()
+                latency_ms=elapsed(),
+                validation_findings=validation_findings + getattr(e, "findings", []),
             )
         except Exception as e:
             self.logger.error("network_validator_error", error=str(e))
@@ -228,13 +274,15 @@ class IREPipeline:
             intent_schema, scope_warnings = self.scope_guard.check(
                 intent_schema, request.command
             )
+            validation_findings.extend(self.scope_guard.last_findings)
         except ScopeError as e:
             self.metrics.record_error("scope_guard")
             return IREResponseV2.error_response(
                 error="SCOPE_VIOLATION",
                 stage=e.stage,
                 detail=e.message,
-                latency_ms=elapsed()
+                latency_ms=elapsed(),
+                validation_findings=validation_findings + getattr(e, "findings", []),
             )
 
         # M5 — RBAC post-inference check
@@ -246,7 +294,8 @@ class IREPipeline:
                 error="INTENT_ACCESS_DENIED",
                 stage="rbac_guard",
                 detail=e.message,
-                latency_ms=elapsed()
+                latency_ms=elapsed(),
+                validation_findings=validation_findings,
             )
         except Exception as e:
             self.logger.error("rbac_post_middleware_error", error=str(e))
@@ -265,9 +314,15 @@ class IREPipeline:
             self.logger.error("semantic_cache_store_error", error=str(e))
 
         # M8 — Build v2 response
+        inf_meta = getattr(self.inference_engine, "last_metadata", {})
         v2_response = IREResponseV2.from_v1(
             v1_response,
             rbac_role=request.role,
+            validation_findings=validation_findings,
+            uncertainty_band=inf_meta.get("uncertainty_band", "low"),
+            raw_entropy=inf_meta.get("raw_entropy", 0.0),
+            tier_triggered=inf_meta.get("tier_triggered", 1),
+            resolution_method=inf_meta.get("resolution_method", "single_sample"),
             schema_version=2
         )
 
@@ -314,6 +369,7 @@ class IREPipeline:
             status="success"
         )
 
+        self._log_audit_findings(request, v2_response)
         return v2_response
 
     def health_check(self) -> dict:

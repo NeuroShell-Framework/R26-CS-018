@@ -1,5 +1,5 @@
 import re
-from typing import Optional, List, Dict, Tuple
+from typing import Optional, List, Dict, Tuple, Callable
 
 from config.feature_flags import get_feature_flags
 from src.schemas.intent_schema import (
@@ -7,7 +7,7 @@ from src.schemas.intent_schema import (
 )
 from src.utils.logging_config import get_logger
 
-Rule = Tuple[SubIntentType, callable]
+Rule = Tuple[SubIntentType, Callable[[IntentSchema], bool]]
 
 
 class SubIntentClassifier:

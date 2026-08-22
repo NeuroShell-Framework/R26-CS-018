@@ -47,13 +47,13 @@ class TestJSONParser:
 
     def test_parse_strips_think_block_before_json(self, parser):
         """Think block before JSON is removed."""
-        raw = 'I need to figure this out\n{"intent":"NETWORK_SCAN","target":{"type":"IP","value":"10.0.0.1"},"confidence":0.9}'
+        raw = '<think>I need to figure this out</think>\n{"intent":"NETWORK_SCAN","target":{"type":"IP","value":"10.0.0.1"},"confidence":0.9}'
         result = parser.parse(raw)
         assert result["intent"] == "NETWORK_SCAN"
 
     def test_parse_strips_think_block_with_newlines(self, parser):
         """Multi-line think block with newlines is removed."""
-        raw = 'Let me think\n\nabout this carefully\n\n{"intent":"VULNERABILITY_AUDIT","target":{"type":"IP","value":"10.0.0.1"},"confidence":0.9}'
+        raw = '<think>Let me think\n\nabout this carefully</think>\n\n{"intent":"VULNERABILITY_AUDIT","target":{"type":"IP","value":"10.0.0.1"},"confidence":0.9}'
         result = parser.parse(raw)
         assert result["intent"] == "VULNERABILITY_AUDIT"
 

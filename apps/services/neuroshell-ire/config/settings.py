@@ -29,8 +29,30 @@ class Settings(BaseSettings):
     inference_temperature: float = Field(default=0.1)
     inference_max_tokens: int = Field(default=2048)
 
+    # Self-Consistency & Semantic Entropy
+    self_consistency_trigger_threshold: float = Field(
+        default=0.7,
+        description="Tier 1 confidence threshold below which Tier 2 self-consistency triggers"
+    )
+    self_consistency_samples: int = Field(
+        default=5,
+        description="Number N of candidate samples to draw in Tier 2"
+    )
+    self_consistency_temperature: float = Field(
+        default=0.7,
+        description="Sampling temperature for Tier 2 disagreement resampling"
+    )
+    entropy_low_threshold: float = Field(
+        default=0.3,
+        description="Semantic entropy upper bound for low uncertainty band (H < 0.3)"
+    )
+    entropy_high_threshold: float = Field(
+        default=0.8,
+        description="Semantic entropy lower bound for high uncertainty band (H > 0.8)"
+    )
+
     # Scope & Safety
-    scope_mode: Literal["research", "production"] = Field(default="research")
+    scope_mode: Literal["research", "strict", "production"] = Field(default="research")
 
     # Engagement scope — network architecture validation
     engagement_scope: str = Field(
@@ -67,6 +89,14 @@ class Settings(BaseSettings):
     features_config_path: str = Field(
         default="config/features.yaml",
         description="Path to feature flags YAML configuration"
+    )
+    cve_grounding_path: str = Field(
+        default="data/cve_grounding.json",
+        description="Path to offline local CVE grounding reference dataset"
+    )
+    audit_db_path: str = Field(
+        default="data/audit_log.db",
+        description="Path to SQLite database for durable audit logging and escalation queue"
     )
 
     # Cache
