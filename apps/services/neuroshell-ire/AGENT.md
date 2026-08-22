@@ -403,3 +403,83 @@ Built a lightweight evaluation harness in `eval/` to benchmark model accuracy, s
 #### E. Outstanding Decisions
 1. Fix critical test robustness issues (wrong-reason tests + isolation hazards)? — **awaiting user confirmation**
 2. Implement benchmark script for model comparison? — **awaiting user confirmation**
+
+---
+
+### 15. Research Paper Data Collection (`eval/Data Collection/`)
+
+Built an 8-experiment data collection harness for an S-tier research paper on the neuroshell-ire NLU pipeline.
+
+#### A. Golden Dataset (`eval/golden_dataset.jsonl`)
+- 200 records, 9 categories, 9 intent types. All targets in-scope (192.168.0.0/16).
+- Models: `gemma4:latest` (9.6GB), `qwen2.5-coder:7b` (4.7GB).
+
+#### B. Experiment Status
+
+| # | Experiment | Script | Status | Commit |
+|---|---|---|---|---|
+| 1 | Raw LLM vs Pipeline (4 configs) | `exp1_raw_vs_pipeline.py` + `exp1_full_pipeline_qwen.py` | **DONE** | `bcd3253`, `3a125e4` |
+| 2 | Model Head-to-Head (Gemma vs Qwen) | `exp2_model_head_to_head.py` | **DONE** | `3a125e4` |
+| 3 | Component Ablation Study (8 configs) | `exp3_ablation_study.py` | **PARTIAL** — 3.5/8 configs done | — |
+| 4-8 | Remaining experiments | Per `IRE-Doc/Data_Collection_Plan.md` | Not started | — |
+
+**Exp3 current progress:**
+- Config 1: Full Pipeline (Baseline) — 200/200 DONE
+- Config 2: No Scope Guard — 200/200 DONE
+- Config 3: No RBAC Guard — 200/200 DONE
+- Config 4: No Network Validator — 50/200 (25%)
+- Configs 5-8: Not started
+
+#### C. Key Empirical Findings (Corrected)
+- Pipeline adds +16-18pp intent accuracy over raw LLM (68-69% → 85-86%).
+- Hallucination catch: 0% raw → 50-52% through pipeline.
+- FP rate: 31-32% raw → 14-15% through pipeline.
+- Model-agnostic: Gemma and Qwen achieve near-identical accuracy (86% vs 85%) through pipeline.
+- **Latency: Both models comparable through pipeline** — Gemma p50=27.7s, Qwen p50=32.8s. Previous "82x faster" claim was a cache contamination artifact (fixed in `3a125e4`).
+- Neither model meets sub-2s real-time threshold through full pipeline.
+
+#### D. Resuming Exp3 Ablation Study
+
+Exp3 uses per-config checkpoints + per-config LLM response caches for fail-safe resume. To resume:
+
+```bash
+# From the neuroshell-ire directory:
+py "eval/Data Collection/exp3_ablation_study.py" --model qwen2.5-coder:7b
+```
+
+**Important:** Do NOT pass `--clear-checkpoints` — that deletes all saved progress. The script automatically:
+1. Loads existing checkpoint for each config on start
+2. Skips already-completed records (`completed_indices`)
+3. Resumes from the last 5-record checkpoint boundary
+4. Reuses cached LLM responses (no re-querying Ollama for completed records)
+
+**Checkpoint files** (in `eval/Data Collection/results/`):
+- `checkpoint_ablation_full_pipeline_baseline.json`
+- `checkpoint_ablation_no_scope_guard.json`
+- `checkpoint_ablation_no_rbac_guard.json`
+- `checkpoint_ablation_no_network_validator.json`
+- `checkpoint_ablation_no_hallucination_validator.json`
+- `checkpoint_ablation_validation_stack_disabled.json`
+- `checkpoint_ablation_self_consistency_disabled.json`
+- `checkpoint_ablation_semantic_cache_disabled.json`
+
+**LLM cache files** (in `eval/Data Collection/cache/`):
+- `ablation_cache_full_pipeline_baseline.json`
+- `ablation_cache_no_scope_guard.json`
+- `ablation_cache_no_rbac_guard.json`
+- `ablation_cache_no_network_validator.json`
+- (and so on for each config)
+
+**Estimated time:** ~30-40 min per config (200 records × ~10-12s/record with Qwen through pipeline). Remaining 4.5 configs ≈ 2-3 hours.
+
+**Logs:**
+- Stdout: `C:\Users\thari\AppData\Local\Temp\exp3_output.log`
+- Stderr (tqdm): `C:\Users\thari\AppData\Local\Temp\exp3_error.log`
+
+**To start fresh (delete all progress):**
+```bash
+py "eval/Data Collection/exp3_ablation_study.py" --model qwen2.5-coder:7b --clear-checkpoints
+```
+
+#### E. Exp1 Cache Contamination (Fixed)
+Exp1 Config 4 (Pipeline + Qwen) originally reported p50=678ms because all 200 responses were served from LLM cache, not live inference. Fresh run showed real p50=32,755ms. All results files and analysis in `exp1_summary.json`, `exp1_comparison.md`, `exp2_summary.json`, `exp2_comparison.md` were corrected and committed in `3a125e4`.
