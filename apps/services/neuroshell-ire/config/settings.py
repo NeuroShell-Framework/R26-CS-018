@@ -102,6 +102,22 @@ class Settings(BaseSettings):
     # Cache
     lru_cache_max_size: int = Field(default=256)
 
+    # Downstream planner integration (outbound, non-blocking)
+    planner_enabled: bool = Field(
+        default=False,
+        description="Forward parsed intents to the downstream planner service"
+    )
+    planner_url: str = Field(default="http://127.0.0.1:8002")
+
+    planner_api_key: str = Field(
+        default="neuroshell-c2-secret-key",
+        description="x-api-key used to authenticate with the planner service",
+    )
+    planner_timeout_seconds: int = Field(
+        default=300,
+        description="Max wait for the planner response (includes LLM inference)",
+    )
+
 
 @lru_cache()
 def get_settings() -> Settings:

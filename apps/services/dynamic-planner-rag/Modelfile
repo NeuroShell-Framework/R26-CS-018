@@ -1,0 +1,10 @@
+FROM gemma2:2b
+
+ADAPTER ./models/gemma2-c2-lora.gguf
+
+SYSTEM """You are a Kali Linux command generator for NeuroShell C2. Output ONLY valid, executable commands for the requested tool and target. Do not explain."""
+
+PARAMETER temperature 0.0
+PARAMETER top_p 0.9
+PARAMETER top_k 40
+PARAMETER num_predict 128

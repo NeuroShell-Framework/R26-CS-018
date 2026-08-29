@@ -279,7 +279,7 @@ from src.validation.hallucination_taxonomy import HallucinationClass, Validation
 class IREResponseV2(BaseModel):
     """
     Extended API response — Schema Version 2.
-    Returned when X-IRE-Schema-Version: 2 header is present.
+    Extended structure produced by every /parse execution.
     Includes all v1 fields plus enhancement fields.
     All new fields are Optional and default to None/[].
     """
@@ -353,8 +353,8 @@ class IREResponseV2(BaseModel):
 
 class ParseRequestV2(BaseModel):
     """
-    Extended request body — Schema Version 2.
-    Adds role and session_history to the base ParseRequest.
+    Unified request body for POST /parse.
+    Both schema versions (v1 and v2) are produced from this single input.
     """
     model_config = {"extra": "ignore"}
 
@@ -368,10 +368,6 @@ class ParseRequestV2(BaseModel):
     role: str = Field(
         default="analyst",
         description="Caller role for RBAC enforcement"
-    )
-    explain: bool = Field(
-        default=False,
-        description="Request XAI token attribution (adds ~200ms latency)"
     )
 
 

@@ -95,7 +95,6 @@ class IREPipeline:
                 command=request.command,
                 session_id=request.session_id,
                 role="analyst",
-                explain=False,
             )
 
         pipeline_start = time.time()

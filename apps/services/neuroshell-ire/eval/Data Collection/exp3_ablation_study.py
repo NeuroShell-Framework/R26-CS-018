@@ -5,6 +5,8 @@ measures how much each component contributes to intent accuracy,
 hallucination catch rate, false-positive rate, and latency.
 
 FAIL-SAFE: per-config checkpoints + LLM response cache. Resume on re-run.
+
+Metrics computed via eval/category_metrics.py (NormalizedRow → compute_metrics).
 """
 
 import sys
@@ -23,6 +25,12 @@ from unittest.mock import patch
 
 import numpy as np
 from tqdm import tqdm
+
+# Import the robust metrics engine
+from eval.category_metrics import (
+    NormalizedRow, adapt_row, classify_decision, extract_error_type,
+    extract_violation_codes, compute_metrics as compute_category_metrics,
+)
 
 DATASET_PATH = os.path.join(os.path.dirname(__file__), "..", "golden_dataset.jsonl")
 RESULTS_DIR = os.path.join(os.path.dirname(__file__), "results")
@@ -312,24 +320,6 @@ def load_dataset(path: str) -> List[Dict[str, Any]]:
 
 # -- Record evaluation --
 
-def classify_decision(resp, predicted_intent: Optional[str], error: Optional[str]) -> str:
-    if error:
-        return "ERROR"
-    findings = list(getattr(resp, "validation_findings", []) or [])
-    has_block = any(
-        (not f.passed) and f.severity == "block" for f in findings
-    )
-    has_warn_or_escalate = any(
-        (not f.passed) and f.severity in ("warn", "escalate") for f in findings
-    )
-    rejected = predicted_intent == "REJECTED"
-    if getattr(resp, "status", "error") != "success" or has_block or rejected:
-        return "BLOCKED"
-    if has_warn_or_escalate:
-        return "WARNED"
-    return "ALLOWED"
-
-
 def evaluate_record(pipeline, record: Dict[str, Any], idx: int, config_name: str) -> Dict[str, Any]:
     from src.schemas.intent_schema import ParseRequestV2
 
@@ -342,83 +332,73 @@ def evaluate_record(pipeline, record: Dict[str, Any], idx: int, config_name: str
     error = None
     resp = None
     predicted_intent = None
+    predicted_target = None
     try:
         resp = pipeline.parse(req)
         intent_obj = getattr(resp, "intent", None)
         predicted_intent = intent_obj.value if intent_obj else None
+        target_obj = getattr(resp, "target", None)
+        if target_obj:
+            predicted_target = getattr(target_obj, "value", None)
     except Exception as e:
         error = str(e)
     elapsed_ms = (time.time() - start) * 1000.0
 
     decision = classify_decision(resp, predicted_intent, error)
+    cache_hit = getattr(resp, "cache_hit", None)
+    error_type = extract_error_type(resp, error)
+    violation_codes = extract_violation_codes(resp)
+
     return {
         "idx": idx,
-        "input": record["input"][:80],
+        "input": record["input"][:200],
         "category": record["category"],
         "expected_intent": record.get("expected_intent"),
+        "expected_target": record.get("expected_target"),
         "predicted_intent": predicted_intent,
+        "predicted_target": predicted_target,
         "decision": decision,
+        "cache_hit": cache_hit,
+        "error_type": error_type,
+        "violation_codes": violation_codes,
         "latency_ms": round(elapsed_ms, 1),
     }
 
 
-# -- Metrics --
+# -- Metrics (delegates to category_metrics.py) --
+
+def rows_to_normalized(row_details: List[dict]) -> List[NormalizedRow]:
+    """Convert evaluate_record output dicts to NormalizedRow for category_metrics.
+    Handles old-format checkpoints that lack newer fields gracefully."""
+    return [
+        adapt_row(
+            idx=r["idx"],
+            record={"input": r.get("input", ""), "category": r["category"],
+                    "expected_intent": r.get("expected_intent"),
+                    "expected_target": r.get("expected_target", "")},
+            predicted_intent=r.get("predicted_intent"),
+            predicted_target=r.get("predicted_target"),
+            decision=r["decision"],
+            cache_hit=r.get("cache_hit"),
+            error_type=r.get("error_type"),
+            violation_codes=r.get("violation_codes", []),
+            latency_ms=r.get("latency_ms", 0.0),
+        )
+        for r in row_details
+    ]
+
 
 def compute_metrics(row_details: List[dict], dataset: List[Dict[str, Any]]) -> Dict[str, Any]:
-    n_wf_expected = sum(1 for r in dataset if r["category"] == "well_formed")
-    n_flawed_expected = len(dataset) - n_wf_expected
-
-    wf = [r for r in row_details if r["category"] == "well_formed"]
-    flawed = [r for r in row_details if r["category"] != "well_formed"]
-
-    wf_correct = sum(
-        1 for r in wf if r["predicted_intent"] == r["expected_intent"]
-    )
-    wf_false_positives = sum(1 for r in wf if r["decision"] != "ALLOWED")
-    flaws_caught = sum(
-        1 for r in flawed if r["decision"] in ("BLOCKED", "WARNED")
-    )
-    errors = sum(1 for r in row_details if r["decision"] == "ERROR")
-
-    latencies = np.array([r["latency_ms"] for r in row_details], dtype=float) \
-        if row_details else np.array([0.0])
-
-    accuracy = (wf_correct / n_wf_expected * 100.0) if n_wf_expected else 0.0
-    catch_rate = (flaws_caught / n_flawed_expected * 100.0) if n_flawed_expected else 0.0
-    fp_rate = (wf_false_positives / n_wf_expected * 100.0) if n_wf_expected else 0.0
-
-    return {
-        "intent_accuracy_pct": round(accuracy, 2),
-        "hallucination_catch_rate_pct": round(catch_rate, 2),
-        "false_positive_rate_pct": round(fp_rate, 2),
-        "p50_latency_ms": round(float(np.percentile(latencies, 50)), 1),
-        "p95_latency_ms": round(float(np.percentile(latencies, 95)), 1),
-        "mean_latency_ms": round(float(np.mean(latencies)), 1),
-        "counts": {
-            "well_formed_total": n_wf_expected,
-            "well_formed_correct": wf_correct,
-            "well_formed_false_positives": wf_false_positives,
-            "flawed_total": n_flawed_expected,
-            "flaws_caught": flaws_caught,
-            "errors": errors,
-        },
-    }
+    """Compute metrics via category_metrics engine."""
+    norm_rows = rows_to_normalized(row_details)
+    return compute_category_metrics(norm_rows)
 
 
 def compute_per_category(row_details: List[dict]) -> dict:
-    agg = defaultdict(lambda: {"total": 0, "correct": 0})
-    for r in row_details:
-        agg[r["category"]]["total"] += 1
-        if r.get("correct"):
-            agg[r["category"]]["correct"] += 1
-    return {
-        cat: {
-            "total": v["total"],
-            "correct": v["correct"],
-            "accuracy_pct": round(v["correct"] / v["total"] * 100, 2) if v["total"] else 0.0,
-        }
-        for cat, v in sorted(agg.items())
-    }
+    """Per-category breakdown via category_metrics engine."""
+    norm_rows = rows_to_normalized(row_details)
+    cat_metrics = compute_category_metrics(norm_rows)
+    return cat_metrics.get("per_category_decision", {})
 
 
 # -- Single config runner --
@@ -506,6 +486,13 @@ def run_config(pipeline, dataset: List[Dict[str, Any]], cfg: Dict[str, Any]) -> 
             pbar.close()
 
     row_details.sort(key=lambda r: r["idx"])
+
+    # Emit full_pipeline_debug.jsonl for this config
+    debug_path = os.path.join(RESULTS_DIR, f"debug_{config_name_safe(name)}.jsonl")
+    with open(debug_path, "w", encoding="utf-8") as f:
+        for r in row_details:
+            f.write(json.dumps(r, ensure_ascii=False) + "\n")
+
     metrics = compute_metrics(row_details, dataset)
     per_category = compute_per_category(row_details)
 
@@ -523,11 +510,14 @@ def run_config(pipeline, dataset: List[Dict[str, Any]], cfg: Dict[str, Any]) -> 
 
     m = metrics
     print(f"\n  --- {name} ---")
-    print(f"  Intent Accuracy : {m['intent_accuracy_pct']:.2f}%")
-    print(f"  Catch Rate      : {m['hallucination_catch_rate_pct']:.2f}%")
-    print(f"  False Positive  : {m['false_positive_rate_pct']:.2f}%")
-    print(f"  Latency p50/p95 : {m['p50_latency_ms']:.0f}ms / {m['p95_latency_ms']:.0f}ms")
-    print(f"  Mean Latency    : {m['mean_latency_ms']:.0f}ms")
+    print(f"  Decision Accuracy    : {m['decision_accuracy_pct']:.2f}%")
+    print(f"  Flawed Catch Rate    : {m['flawed_catch_rate_pct']:.2f}%")
+    print(f"  WF False Positive    : {m['well_formed']['false_positive_pct']:.2f}%")
+    cfa = m.get("contract_field_accuracy", {})
+    if cfa.get("eligible_total", 0) > 0:
+        print(f"  Contract Field Acc   : {cfa['accuracy_pct']:.2f}% ({cfa['correct']}/{cfa['eligible_total']})")
+    print(f"  Latency p50/p95      : {m['latency']['p50_ms']:.0f}ms / {m['latency']['p95_ms']:.0f}ms")
+    print(f"  Mean Latency         : {m['latency']['mean_ms']:.0f}ms")
 
     return result
 
@@ -535,27 +525,40 @@ def run_config(pipeline, dataset: List[Dict[str, Any]], cfg: Dict[str, Any]) -> 
 # -- Waterfall analysis --
 
 WATERFALL_METRICS = [
-    "intent_accuracy_pct",
-    "hallucination_catch_rate_pct",
+    "decision_accuracy_pct",
+    "flawed_catch_rate_pct",
     "false_positive_rate_pct",
     "p50_latency_ms",
     "mean_latency_ms",
 ]
 
 
+def _flatten_metrics(m: Dict[str, Any]) -> Dict[str, float]:
+    """Flatten the nested category_metrics output into flat metric dict for waterfall."""
+    wf = m.get("well_formed", {})
+    lat = m.get("latency", {})
+    return {
+        "decision_accuracy_pct": m.get("decision_accuracy_pct", 0.0),
+        "flawed_catch_rate_pct": m.get("flawed_catch_rate_pct", 0.0),
+        "false_positive_rate_pct": wf.get("false_positive_pct", 0.0),
+        "p50_latency_ms": lat.get("p50_ms", 0.0),
+        "mean_latency_ms": lat.get("mean_ms", 0.0),
+    }
+
+
 def compute_waterfall(results: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     """Each config shows DELTA vs previous config + cumulative vs baseline."""
     waterfall = []
-    baseline = results[0]["metrics"]
-    prev_metrics = None
+    baseline = _flatten_metrics(results[0]["metrics"])
+    prev_flat = None
     for i, res in enumerate(results):
-        m = res["metrics"]
+        flat = _flatten_metrics(res["metrics"])
         if i == 0:
             step = {k: 0.0 for k in WATERFALL_METRICS}
             cumulative = {k: 0.0 for k in WATERFALL_METRICS}
         else:
-            step = {k: round(m[k] - prev_metrics[k], 2) for k in WATERFALL_METRICS}
-            cumulative = {k: round(m[k] - baseline[k], 2) for k in WATERFALL_METRICS}
+            step = {k: round(flat[k] - prev_flat[k], 2) for k in WATERFALL_METRICS}
+            cumulative = {k: round(flat[k] - baseline[k], 2) for k in WATERFALL_METRICS}
         waterfall.append({
             "step": i,
             "config": res["config"],
@@ -563,25 +566,25 @@ def compute_waterfall(results: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
             "step_delta_vs_previous": step,
             "cumulative_delta_vs_baseline": cumulative,
         })
-        prev_metrics = m
+        prev_flat = flat
     return waterfall
 
 
 def compute_contributions(results: List[Dict[str, Any]]) -> Dict[str, Any]:
     """Component contribution = how much removing it degrades vs baseline."""
-    baseline = results[0]["metrics"]
+    baseline = _flatten_metrics(results[0]["metrics"])
     contributions = []
     for res in results[1:]:
-        m = res["metrics"]
+        flat = _flatten_metrics(res["metrics"])
         contributions.append({
             "component_removed": res["removed_component"],
             "config": res["config"],
-            "accuracy_drop_pp": round(baseline["intent_accuracy_pct"] - m["intent_accuracy_pct"], 2),
+            "accuracy_drop_pp": round(baseline["decision_accuracy_pct"] - flat["decision_accuracy_pct"], 2),
             "catch_rate_drop_pp": round(
-                baseline["hallucination_catch_rate_pct"] - m["hallucination_catch_rate_pct"], 2),
-            "fpr_change_pp": round(m["false_positive_rate_pct"] - baseline["false_positive_rate_pct"], 2),
+                baseline["flawed_catch_rate_pct"] - flat["flawed_catch_rate_pct"], 2),
+            "fpr_change_pp": round(flat["false_positive_rate_pct"] - baseline["false_positive_rate_pct"], 2),
             "mean_latency_change_ms": round(
-                m["mean_latency_ms"] - baseline["mean_latency_ms"], 1),
+                flat["mean_latency_ms"] - baseline["mean_latency_ms"], 1),
         })
 
     by_accuracy = sorted(contributions, key=lambda c: c["accuracy_drop_pp"], reverse=True)
@@ -602,29 +605,38 @@ def fmt_delta(value: float, unit: str = "") -> str:
 def build_comparison_md(results: List[Dict[str, Any]],
                         waterfall: List[Dict[str, Any]],
                         contributions: Dict[str, Any]) -> str:
+
+    def _fm(res):
+        return _flatten_metrics(res["metrics"])
+
     lines = [
         "# Experiment 3: Component Contribution (Ablation Study)",
         "",
         "## Purpose",
         "Quantify each pipeline component's contribution by disabling one layer at a time "
-        "and measuring the impact on intent accuracy, hallucination catch rate, "
-        "false-positive rate, and latency across all 200 golden records.",
+        "and measuring the impact on decision accuracy, flawed-input catch rate, "
+        "false-positive rate, contract field accuracy, and latency across all 200 golden records.",
         "",
         "---",
         "",
         "## Results Summary",
         "",
-        "| # | Configuration | Component Removed | Accuracy (%) | Catch Rate (%) | FP Rate (%) | p50 (ms) | p95 (ms) | Mean (ms) |",
-        "| :--- | :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: |",
+        "| # | Configuration | Component Removed | Decision Acc (%) | Catch Rate (%) | FP Rate (%) | Contract Acc (%) | p50 (ms) | p95 (ms) | Mean (ms) |",
+        "| :--- | :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |",
     ]
 
     for i, res in enumerate(results):
-        m = res["metrics"]
+        fm = _fm(res)
+        cfa = res["metrics"].get("contract_field_accuracy", {})
+        cfa_pct = cfa.get("accuracy_pct", 0.0)
+        cfa_elig = cfa.get("eligible_total", 0)
+        cfa_str = f"{cfa_pct:.1f} ({cfa['correct']}/{cfa_elig})" if cfa_elig > 0 else "N/A"
         lines.append(
             f"| {i+1} | {res['config']} | {res['removed_component']} "
-            f"| {m['intent_accuracy_pct']:.2f} | {m['hallucination_catch_rate_pct']:.2f} "
-            f"| {m['false_positive_rate_pct']:.2f} | {m['p50_latency_ms']:.0f} "
-            f"| {m['p95_latency_ms']:.0f} | {m['mean_latency_ms']:.0f} |"
+            f"| {fm['decision_accuracy_pct']:.2f} | {fm['flawed_catch_rate_pct']:.2f} "
+            f"| {fm['false_positive_rate_pct']:.2f} | {cfa_str} "
+            f"| {fm['p50_latency_ms']:.0f} "
+            f"| {res['metrics']['latency']['p95_ms']:.0f} | {fm['mean_latency_ms']:.0f} |"
         )
 
     lines += [
@@ -636,7 +648,7 @@ def build_comparison_md(results: List[Dict[str, Any]],
         "Each row shows what changed when that component was removed, relative to the "
         "**previous** configuration, plus the cumulative change versus the full-pipeline baseline.",
         "",
-        "| Step | Configuration | Removed | Accuracy Delta (prev) | Accuracy Delta (baseline) | Catch Delta (prev) | Catch Delta (baseline) | FP Delta (prev) | Mean Latency Delta (prev, ms) |",
+        "| Step | Configuration | Removed | Acc Delta (prev) | Acc Delta (baseline) | Catch Delta (prev) | Catch Delta (baseline) | FP Delta (prev) | Mean Latency Delta (prev, ms) |",
         "| :--- | :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: |",
     ]
 
@@ -645,10 +657,10 @@ def build_comparison_md(results: List[Dict[str, Any]],
         cd = w["cumulative_delta_vs_baseline"]
         lines.append(
             f"| {w['step']} | {w['config']} | {w['removed']} "
-            f"| {fmt_delta(sd['intent_accuracy_pct'], 'pp')} "
-            f"| {fmt_delta(cd['intent_accuracy_pct'], 'pp')} "
-            f"| {fmt_delta(sd['hallucination_catch_rate_pct'], 'pp')} "
-            f"| {fmt_delta(cd['hallucination_catch_rate_pct'], 'pp')} "
+            f"| {fmt_delta(sd['decision_accuracy_pct'], 'pp')} "
+            f"| {fmt_delta(cd['decision_accuracy_pct'], 'pp')} "
+            f"| {fmt_delta(sd['flawed_catch_rate_pct'], 'pp')} "
+            f"| {fmt_delta(cd['flawed_catch_rate_pct'], 'pp')} "
             f"| {fmt_delta(sd['false_positive_rate_pct'], 'pp')} "
             f"| {fmt_delta(sd['mean_latency_ms'])} |"
         )
@@ -684,7 +696,8 @@ def build_comparison_md(results: List[Dict[str, Any]],
         )
 
     # --- Key findings (auto-generated from numbers) ---
-    baseline_m = results[0]["metrics"]
+    baseline_m = _flatten_metrics(results[0]["metrics"])
+    baseline_full = results[0]["metrics"]
     stack_cfg = next(r for r in results if r["config"] == "Validation Stack Disabled")
     sc_cfg = next(r for r in results if "Self-Consistency" in r["config"])
     cache_cfg = next(r for r in results if "Semantic Cache" in r["config"])
@@ -692,12 +705,16 @@ def build_comparison_md(results: List[Dict[str, Any]],
     top_safety = contributions["ranked_by_catch_rate_impact"][0]
     top_accuracy = contributions["ranked_by_accuracy_impact"][0]
 
-    stack_catch_loss = baseline_m["hallucination_catch_rate_pct"] \
-        - stack_cfg["metrics"]["hallucination_catch_rate_pct"]
-    stack_fp_gain = stack_cfg["metrics"]["false_positive_rate_pct"] \
+    stack_flat = _flatten_metrics(stack_cfg["metrics"])
+    sc_flat = _flatten_metrics(sc_cfg["metrics"])
+    cache_flat = _flatten_metrics(cache_cfg["metrics"])
+
+    stack_catch_loss = baseline_m["flawed_catch_rate_pct"] \
+        - stack_flat["flawed_catch_rate_pct"]
+    stack_fp_gain = stack_flat["false_positive_rate_pct"] \
         - baseline_m["false_positive_rate_pct"]
-    sc_latency = sc_cfg["metrics"]["p50_latency_ms"] - baseline_m["p50_latency_ms"]
-    cache_latency = cache_cfg["metrics"]["mean_latency_ms"] - baseline_m["mean_latency_ms"]
+    sc_latency = sc_flat["p50_latency_ms"] - baseline_m["p50_latency_ms"]
+    cache_latency = cache_flat["mean_latency_ms"] - baseline_m["mean_latency_ms"]
 
     lines += [
         "",
@@ -705,11 +722,11 @@ def build_comparison_md(results: List[Dict[str, Any]],
         "",
         "## Key Findings",
         "",
-        f"1. **Baseline**: Full pipeline achieves {baseline_m['intent_accuracy_pct']:.1f}% intent accuracy "
-        f"with {baseline_m['hallucination_catch_rate_pct']:.1f}% hallucination catch rate at "
+        f"1. **Baseline**: Full pipeline achieves {baseline_m['decision_accuracy_pct']:.1f}% decision accuracy "
+        f"with {baseline_m['flawed_catch_rate_pct']:.1f}% flawed-input catch rate at "
         f"{baseline_m['false_positive_rate_pct']:.1f}% false positives.",
         f"2. **Validation stack is safety-critical**: fully disabling it costs "
-        f"{stack_catch_loss:+.1f}pp hallucination catch rate while false positives move "
+        f"{stack_catch_loss:+.1f}pp flawed-input catch rate while false positives move "
         f"{stack_fp_gain:+.1f}pp — the stack trades minimal throughput for large safety gains.",
         f"3. **Most safety-critical single component**: {top_safety['component_removed']} "
         f"(catch-rate drop {top_safety['catch_rate_drop_pp']:+.2f}pp when removed).",
@@ -809,24 +826,29 @@ def main():
     print(f"[SAVED] {OUTPUT_MD}")
 
     # Print results table to stdout
-    print(f"\n{'='*100}")
+    print(f"\n{'='*110}")
     print("  Experiment 3 — Component Contribution (Ablation Study)")
-    print(f"{'='*100}")
-    header = (f"  {'Configuration':30s} {'Acc%':>7s} {'Catch%':>8s} {'FP%':>7s} "
-              f"{'p50(ms)':>9s} {'p95(ms)':>9s} {'Mean(ms)':>9s}")
+    print(f"{'='*110}")
+    header = (f"  {'Configuration':30s} {'DAcc%':>7s} {'Catch%':>8s} {'FP%':>7s} "
+              f"{'CFAcc%':>7s} {'p50(ms)':>9s} {'p95(ms)':>9s} {'Mean(ms)':>9s}")
     print(header)
     print("  " + "-" * (len(header) - 2))
     for res in results:
-        m = res["metrics"]
-        print(f"  {res['config']:30s} {m['intent_accuracy_pct']:7.2f} "
-              f"{m['hallucination_catch_rate_pct']:8.2f} {m['false_positive_rate_pct']:7.2f} "
-              f"{m['p50_latency_ms']:9.0f} {m['p95_latency_ms']:9.0f} "
-              f"{m['mean_latency_ms']:9.0f}")
-    print(f"{'='*100}")
+        fm = _flatten_metrics(res["metrics"])
+        cfa = res["metrics"].get("contract_field_accuracy", {})
+        cfa_elig = cfa.get("eligible_total", 0)
+        cfa_pct = cfa.get("accuracy_pct", 0.0) if cfa_elig > 0 else 0.0
+        cfa_str = f"{cfa_pct:6.1f}" if cfa_elig > 0 else "   N/A"
+        print(f"  {res['config']:30s} {fm['decision_accuracy_pct']:7.2f} "
+              f"{fm['flawed_catch_rate_pct']:8.2f} {fm['false_positive_rate_pct']:7.2f} "
+              f"{cfa_str} "
+              f"{fm['p50_latency_ms']:9.0f} {res['metrics']['latency']['p95_ms']:9.0f} "
+              f"{fm['mean_latency_ms']:9.0f}")
+    print(f"{'='*110}")
 
-    b = results[0]["metrics"]
-    print(f"\n  Baseline (Full Pipeline): acc={b['intent_accuracy_pct']}% "
-          f"catch={b['hallucination_catch_rate_pct']}% fpr={b['false_positive_rate_pct']}% "
+    b = _flatten_metrics(results[0]["metrics"])
+    print(f"\n  Baseline (Full Pipeline): dacc={b['decision_accuracy_pct']}% "
+          f"catch={b['flawed_catch_rate_pct']}% fpr={b['false_positive_rate_pct']}% "
           f"p50={b['p50_latency_ms']:.0f}ms")
 
     top_safety = contributions["ranked_by_catch_rate_impact"][0]

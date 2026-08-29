@@ -1,0 +1,25 @@
+# ── Secrets ────────────────────────────────────────────────────────────
+.env
+.env.*
+!.env.example
+
+# ── Virtual environments ──────────────────────────────────────────────
+.venv/
+venv/
+c2venv/
+__pycache__/
+*.pyc
+
+# ── Node ──────────────────────────────────────────────────────────────
+node_modules/
+dist/
+
+# ── Build artifacts ───────────────────────────────────────────────────
+*.tsbuildinfo
+
+# ── Logs & runtime state ──────────────────────────────────────────────
+*.pid
+*.log
+*.err
+logs/
+.ollama_inference_cache*

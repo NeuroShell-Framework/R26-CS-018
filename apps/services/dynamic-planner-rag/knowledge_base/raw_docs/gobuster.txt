@@ -1,0 +1,91 @@
+TOOL: gobuster
+VERSION: 3.6
+CATEGORY: Directory Brute Forcer
+
+DESCRIPTION:
+Gobuster is a tool used to brute-force URIs including directories and files,
+DNS subdomains, virtual host names, Amazon S3 buckets, Google Cloud buckets
+and TFTP servers. It is written in Go and is very fast due to its concurrent
+nature. It requires a wordlist to operate.
+
+BASIC SYNTAX:
+gobuster <mode> -u <url> -w <wordlist> [options]
+
+MODES:
+dir     Directory and file brute forcing mode
+dns     DNS subdomain brute forcing mode
+vhost   Virtual host brute forcing mode
+s3      Amazon S3 bucket enumeration mode
+gcs     Google Cloud Storage bucket enumeration
+fuzz    Fuzzing mode - replaces FUZZ keyword
+tftp    TFTP server enumeration mode
+
+DIR MODE OPTIONS:
+-u <url>              Target URL including protocol
+-w <wordlist>         Path to wordlist file
+-x <extensions>       File extensions to search for
+                      Example: -x php,html,txt,asp,aspx
+-t <threads>          Number of concurrent threads (default 10)
+-k                    Skip TLS certificate verification
+-b <codes>            Blacklist status codes (default 404)
+-s <codes>            Whitelist status codes
+-o <file>             Output results to file
+-r                    Follow HTTP redirects
+--timeout             HTTP timeout duration
+-a <agent>            Set custom User-Agent string
+-H <header>           Specify HTTP header
+-c <cookie>           Use cookie for requests
+-U <username>         HTTP authentication username
+-P <password>         HTTP authentication password
+--wildcard            Force continue if wildcard detected
+-e                    Print full URLs in output
+-q                    Quiet mode - no banner
+-z                    No progress display
+--delay               Delay between requests
+
+DNS MODE OPTIONS:
+-d <domain>           Target domain name
+-w <wordlist>         Path to wordlist file
+-t <threads>          Number of concurrent threads
+-i                    Show IP addresses for results
+-r <resolver>         Use custom DNS resolver IP
+--wildcard            Force continue on wildcard DNS
+
+VHOST MODE OPTIONS:
+-u <url>              Target URL
+-w <wordlist>         Path to wordlist file
+--append-domain       Append base domain to each word
+--exclude-length      Exclude results by response length
+
+STATUS CODES:
+200   Found - file or directory exists
+301   Moved permanently - redirect
+302   Found - temporary redirect
+401   Unauthorized - requires authentication
+403   Forbidden - exists but no permission
+500   Internal server error
+
+COMMON WORDLISTS:
+/usr/share/wordlists/dirb/common.txt
+/usr/share/wordlists/dirb/big.txt
+/usr/share/wordlists/dirbuster/directory-list-2.3-medium.txt
+/usr/share/wordlists/dirbuster/directory-list-2.3-small.txt
+/usr/share/seclists/Discovery/Web-Content/common.txt
+/usr/share/seclists/Discovery/Web-Content/big.txt
+/usr/share/seclists/Discovery/DNS/subdomains-top1million-5000.txt
+
+COMMON EXAMPLES:
+gobuster dir -u http://192.168.1.1 -w /usr/share/wordlists/dirb/common.txt
+gobuster dir -u http://192.168.1.1 -w common.txt -x php,html,txt -t 50
+gobuster dir -u https://192.168.1.1 -w common.txt -k
+gobuster dir -u http://192.168.1.1 -w common.txt -o results.txt
+gobuster dir -u http://192.168.1.1 -w common.txt -b 404,403
+gobuster dir -u http://192.168.1.1 -w common.txt -s 200,301
+gobuster dir -u http://192.168.1.1 -w common.txt -x php -t 100
+gobuster dir -u http://192.168.1.1 -w common.txt -U admin -P password
+gobuster dir -u http://192.168.1.1 -w common.txt -e
+gobuster dns -d example.com -w subdomains.txt
+gobuster dns -d example.com -w subdomains.txt -i
+gobuster vhost -u http://192.168.1.1 -w vhosts.txt --append-domain
+gobuster fuzz -u http://192.168.1.1/FUZZ -w common.txt
+gobuster dir -u http://192.168.1.1 -w common.txt -t 50 -o results.txt -x php,html

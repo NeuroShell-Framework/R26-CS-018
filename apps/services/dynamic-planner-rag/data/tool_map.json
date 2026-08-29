@@ -1,0 +1,9 @@
+{
+  "NETWORK_SCAN": ["nmap"],
+  "SERVICE_ENUMERATION": ["nmap"],
+  "VULNERABILITY_AUDIT": ["nikto"],
+  "DIRECTORY_BRUTEFORCE": ["gobuster"],
+  "EXPLOITATION": [],
+  "PASSWORD_ATTACK": [],
+  "PASSIVE_RECON": []
+}

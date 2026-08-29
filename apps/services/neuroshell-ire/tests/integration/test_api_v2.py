@@ -132,48 +132,50 @@ class TestHealthV2:
 class TestParseV2Schema:
 
     @pytest.mark.asyncio
-    async def test_parse_returns_v2_fields(self, client):
-        """POST /parse returns v2 fields: sub_intent, schema_version, cache_hit."""
+    async def test_parse_triggers_both_schema_versions(self, client):
+        """POST /parse triggers BOTH version1 and version2 structures."""
         r = await client.post("/parse", json={
             "command": "stealth scan 192.168.1.1",
             "session_id": "v2-test-1",
             "role": "analyst",
         })
         data = r.json()
-        assert data["status"] == "success"
-        assert "sub_intent" in data
-        assert data["schema_version"] == 2
-        assert "cache_hit" in data
+        contract = data["version1"]["intent_contract"]
+        assert contract["intent"] == "NETWORK_SCAN"
+        assert data["version1"]["session_id"] == "v2-test-1"
+        assert data["version2"]["status"] == "success"
+        assert "sub_intent" in data["version2"]
+        assert data["version2"]["schema_version"] == 2
+        assert "cache_hit" in data["version2"]
 
     @pytest.mark.asyncio
-    async def test_parse_v1_header_strips_v2_fields(self, client):
-        """POST /parse with X-IRE-Schema-Version: 1 strips v2 fields."""
+    async def test_version1_omits_v2_fields(self, client):
+        """version1 structure contains only the official v1 fields."""
+        r = await client.post("/parse", json={
+            "command": "scan 192.168.1.1",
+            "role": "analyst"})
+        data = r.json()
+        v1 = data["version1"]
+        contract = v1["intent_contract"]
+        assert "sub_intent" not in contract
+        assert "schema_version" not in v1
+        assert "cache_hit" not in contract
+        assert "intent" in contract
+        assert "confidence" in contract
+        assert set(v1.keys()) == {"intent_contract", "session_id"}
+
+    @pytest.mark.asyncio
+    async def test_version2_is_extended_version_of_v1(self, client):
+        """version2 contains all intent_contract fields plus extended fields."""
         r = await client.post("/parse",
-            headers={"X-IRE-Schema-Version": "1"},
             json={"command": "scan 192.168.1.1", "role": "analyst"})
         data = r.json()
-        assert "sub_intent" not in data
-        assert "schema_version" not in data
-        assert "intent" in data
-
-    @pytest.mark.asyncio
-    async def test_parse_v2_header_returns_all_fields(self, client):
-        """POST /parse with X-IRE-Schema-Version: 2 returns all fields."""
-        r = await client.post("/parse",
-            headers={"X-IRE-Schema-Version": "2"},
-            json={"command": "scan 192.168.1.1", "role": "analyst"})
-        data = r.json()
-        assert "sub_intent" in data
-        assert data["schema_version"] == 2
-
-    @pytest.mark.asyncio
-    async def test_parse_invalid_schema_version_defaults_to_v2(self, client):
-        """POST /parse with invalid schema version defaults to v2."""
-        r = await client.post("/parse",
-            headers={"X-IRE-Schema-Version": "99"},
-            json={"command": "scan 192.168.1.1"})
-        data = r.json()
-        assert data["schema_version"] == 2
+        contract = data["version1"]["intent_contract"]
+        v2 = data["version2"]
+        for field in contract.keys():
+            assert field in v2
+        assert "sub_intent" in v2
+        assert v2["schema_version"] == 2
 
     @pytest.mark.asyncio
     async def test_parse_response_headers_present(self, client):
@@ -194,7 +196,7 @@ class TestParseV2Schema:
             "command": "scan 192.168.1.1",
             "session_id": "hdr-val-test",
         })
-        assert r.headers["x-ire-schema-version"] == "2"
+        assert r.headers["x-ire-schema-version"] == "1,2"
         assert r.headers["x-ire-latency-ms"] == "1500"
         assert r.headers["x-ire-intent"] == "NETWORK_SCAN"
         assert r.headers["x-ire-cache-hit"] == "none"
@@ -430,3 +432,65 @@ class TestDocs:
         """GET /redoc returns 200."""
         r = await client.get("/redoc")
         assert r.status_code == 200
+
+
+class TestExecuteFlow:
+
+    @pytest.mark.asyncio
+    async def test_execute_returns_step_chain(self, client):
+        """POST /execute returns user input + C1 + C2 in one response."""
+        r = await client.post("/execute", json={
+            "command": "scan host 192.168.1.1 for open ports 80 and 443 using nmap",
+            "session_id": "web-01",
+            "role": "admin",
+        })
+        assert r.status_code == 200
+        data = r.json()
+        assert data["status"] == "ok"
+        flow = data["flow"]
+        assert flow["step_1_user_input"]["command"].startswith("scan")
+        assert flow["step_1_user_input"]["session_id"] == "web-01"
+
+        c1 = flow["step_2_component_1"]
+        assert c1["status"] == "success"
+        assert c1["output"]["version1"]["intent_contract"]["intent"] == "NETWORK_SCAN"
+        assert c1["output"]["version1"]["session_id"] == "web-01"
+        assert c1["output"]["version2"]["status"] == "success"
+        assert c1["output"]["version2"]["latency_ms"] == 1500
+
+        c2 = flow["step_3_component_2"]
+        assert c2["status"] == "skipped"
+
+    @pytest.mark.asyncio
+    async def test_execute_with_planner_shows_c2_output(self, client):
+        """POST /execute forwards version1 to C2 and surfaces its output."""
+        from unittest.mock import AsyncMock
+        import src.api.main as main_module
+
+        planner = MagicMock()
+        planner.push = AsyncMock(return_value={
+            "status": "success",
+            "command": "nmap -sS -p 80,443 192.168.1.1",
+            "tool": "nmap",
+            "push_latency_ms": 42,
+        })
+        main_module.app.state.planner = planner
+        try:
+            r = await client.post("/execute", json={
+                "command": "scan host 192.168.1.1 for open ports 80 and 443 using nmap",
+                "session_id": "web-01",
+            })
+        finally:
+            del main_module.app.state.planner
+
+        assert r.status_code == 200
+        flow = r.json()["flow"]
+        c2 = flow["step_3_component_2"]
+        assert c2["status"] == "success"
+        assert c2["latency_ms"] == 42
+        assert c2["output"]["command"] == "nmap -sS -p 80,443 192.168.1.1"
+        assert c2["output"]["tool"] == "nmap"
+
+        called = planner.push.await_args[0][0]
+        assert called["session_id"] == "web-01"
+        assert called["intent_contract"]["intent"] == "NETWORK_SCAN"

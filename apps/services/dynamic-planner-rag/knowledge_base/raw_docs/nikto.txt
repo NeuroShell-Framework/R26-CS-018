@@ -1,0 +1,98 @@
+TOOL: nikto
+VERSION: 2.1.6
+CATEGORY: Web Vulnerability Scanner
+
+DESCRIPTION:
+Nikto is an open source web server scanner that performs comprehensive tests
+against web servers for multiple items including dangerous files, outdated
+server software versions, and version specific problems. It also checks for
+server configuration items such as the presence of multiple index files and
+HTTP server options.
+
+BASIC SYNTAX:
+nikto -h <target> [options]
+
+TARGET OPTIONS:
+-h <host>       Target host or IP address
+-p <port>       Target port (default 80)
+-ssl            Force SSL mode on port
+-nossl          Disable SSL
+-vhost <name>   Virtual host to test
+
+SCAN OPTIONS:
+-Tuning <x>     Tune scan by test type number:
+  0  File Upload
+  1  Interesting File / Seen in logs
+  2  Misconfiguration / Default File
+  3  Information Disclosure
+  4  Injection (XSS/Script/HTML)
+  5  Remote File Retrieval (Inside Web Root)
+  6  Denial of Service
+  7  Remote File Retrieval (Server Wide)
+  8  Command Execution / Remote Shell
+  9  SQL Injection
+  a  Authentication Bypass
+  b  Software Identification
+  c  Remote Source Inclusion
+  x  Reverse Tuning (exclude listed tests)
+
+-Plugins <name>    Run specific plugin
+-list-plugins      List all available plugins
+-update            Update plugins and databases
+-maxtime <sec>     Maximum scan time in seconds
+-timeout <sec>     Timeout for requests
+
+OUTPUT OPTIONS:
+-o <file>          Save output to file
+-Format <fmt>      Output format:
+  csv   Comma separated values
+  htm   HTML format
+  txt   Plain text
+  xml   XML format
+  json  JSON format
+-o report.html -Format htm
+-o report.xml -Format xml
+
+AUTHENTICATION:
+-id <user:pass>    HTTP Basic authentication
+-id admin:password
+
+PROXY OPTIONS:
+-useproxy          Use proxy settings
+-proxy <host:port> Set proxy host and port
+
+EVASION TECHNIQUES:
+-evasion <x>    Encode requests to evade IDS:
+  1  Random URI encoding (non-UTF8)
+  2  Directory self-reference (/./)
+  3  Premature URL ending
+  4  Prepend long random string
+  5  Fake parameter
+  6  TAB as request spacer
+  7  Change the case of the URL
+  8  Use Windows path separator backslash
+
+DISPLAY OPTIONS:
+-Display <x>    Control output display:
+  1  Show redirects
+  2  Show cookies received
+  3  Show all 200 OK responses
+  4  Show URLs which require authentication
+  D  Debug output
+  V  Verbose output
+
+COMMON EXAMPLES:
+nikto -h 192.168.1.1
+nikto -h 192.168.1.1 -p 443 -ssl
+nikto -h 192.168.1.1 -Tuning 4
+nikto -h 192.168.1.1 -Tuning 9
+nikto -h 192.168.1.1 -o report.html -Format htm
+nikto -h 192.168.1.1 -o report.xml -Format xml
+nikto -h 192.168.1.1 -id admin:password
+nikto -h 192.168.1.1 -evasion 1
+nikto -h 192.168.1.1 -evasion 7
+nikto -h 192.168.1.1 -maxtime 300
+nikto -h 192.168.1.1 -Display V
+nikto -h 192.168.1.1 -Tuning 1234
+nikto -h 192.168.1.1 -p 8080
+nikto -h 192.168.1.1 -useproxy -proxy 127.0.0.1:8080

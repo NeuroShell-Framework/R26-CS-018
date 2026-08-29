@@ -137,7 +137,7 @@ The validation stack acts as a zero-trust multi-layered safety barrier:
 
 ### 4. REST API Surface (`src/api/main.py`)
 
-- `POST /parse`: Primary parse endpoint. Accepts `ParseRequestV2`, returning `IREResponseV2` (or V1 schema depending on `X-IRE-Schema-Version`). Rate-limited to 30 req/min.
+- `POST /parse`: Primary parse endpoint. Accepts `ParseRequestV2` (`command`, `session_id`, `role`), returning both `version1` (official v1 structure, forwarded downstream) and `version2` (extended form). Rate-limited to 30 req/min.
 - `POST /parse/plan`: Hand-off endpoint producing a validated `PlannerContract` for Component 02.
 - `GET /health`: Diagnostic status of Ollama, pipeline, and cache memory.
 - `GET /metrics`: Latency metrics (p50/p95/p99) and request distribution.
@@ -438,24 +438,29 @@ Built an 8-experiment data collection harness for an S-tier research paper on th
 - **Latency: Both models comparable through pipeline** — Gemma p50=27.7s, Qwen p50=32.8s. Previous "82x faster" claim was a cache contamination artifact (fixed in `3a125e4`).
 - Neither model meets sub-2s real-time threshold through full pipeline.
 
-#### C1. Exp3 Ablation Study Results (All 8 configs complete)
+#### C1. Exp3 Ablation Study Results (All 8 configs complete — CANONICAL, second full run)
 
-| Config | Accuracy | Catch Rate | FP Rate | p50 (ms) | Mean (ms) |
-|--------|----------|------------|---------|----------|-----------|
-| Full Pipeline (Baseline) | 54% | 90% | 51% | 16,791 | 29,469 |
-| No Scope Guard | 54% | 84% | 52% | 17,766 | 33,779 |
-| No RBAC Guard | 80% | 83% | 25% | 17,279 | 29,721 |
-| No Network Validator | 53% | 87% | 45% | 16,762 | 28,194 |
-| No Hallucination Validator | 56% | 82% | 50% | 15,771 | 25,942 |
-| Validation Stack Disabled | 84% | 42% | 12% | 16,941 | 32,350 |
-| Self-Consistency Disabled | 54% | 90% | 52% | 14,594 | 12,883 |
-| Semantic Cache Disabled | 55% | 91% | 52% | 15,714 | 27,409 |
+> NOTE: Exp3 was executed twice. The FIRST run's numbers (acc 54%, catch 90%, FP 51%) are SUPERSEDED.
+> The table below is the authoritative second run (1600/1600 runs, 0 errors), matching
+> `eval/Data Collection/results/exp3_comparison.md` + `exp3_summary.json`.
 
-**Key findings:**
-- Validation stack = safety backbone: disabling drops catch rate 90%→42% (48pp).
-- RBAC = biggest accuracy driver: removing jumps accuracy 54%→80% but catch rate drops 7pp.
-- Self-consistency = latency optimization: disabling saves ~19.5s mean with 0 catch cost.
-- Semantic cache = ~2s mean latency savings with minimal accuracy impact.
+| Config | Decision Acc % | Catch Rate % | FP Rate % | Contract Acc % | p50 (ms) | Mean (ms) |
+|--------|----------------|--------------|-----------|----------------|----------|-----------|
+| Full Pipeline (Baseline) | 68.5 | 79.0 | 42.0 | 84.5 | 16,498 | 28,805 |
+| No Scope Guard | 64.0 | 72.0 | 44.0 | 83.9 | 17,355 | 31,404 |
+| No RBAC Guard | 74.5 | 64.0 | 15.0 | 88.2 | 16,788 | 28,260 |
+| No Network Validator | 68.0 | 80.0 | 44.0 | 83.9 | 15,868 | 27,450 |
+| No Hallucination Validator | 59.0 | 62.0 | 44.0 | 82.1 | 15,915 | 26,722 |
+| Validation Stack Disabled | 64.0 | 41.0 | 13.0 | 87.4 | 14,291 | 25,198 |
+| Self-Consistency Disabled | 67.5 | 80.0 | 45.0 | 85.5 | 13,388 | 11,809 |
+| Semantic Cache Disabled | 66.0 | 79.0 | 47.0 | 86.8 | 14,372 | 22,949 |
+
+**Key findings (canonical run):**
+- Validation stack = safety backbone: disabling drops catch rate 79%→41% (-38pp).
+- Hallucination validators (Schema+Regex) most accuracy-critical: removal drops DAcc 68.5%→59.0% (-9.5pp).
+- RBAC paradox: removal improves accuracy +6pp but drops catch rate -15pp (over-blocks legitimate analyst commands).
+- Self-consistency = latency optimization: disabling cuts p95 70.9s→16.8s (-76%) for -1pp accuracy.
+- Semantic cache nearly free: 379x speedup on hits, no safety impact.
 - Defense in depth confirmed: individual components contribute redundantly.
 
 #### D. Exp3 Ablation Study — COMPLETE

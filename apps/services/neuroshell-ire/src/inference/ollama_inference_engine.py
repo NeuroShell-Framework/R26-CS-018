@@ -102,7 +102,11 @@ class OllamaInferenceEngine:
             pass
 
     def _get_cache_key(self, text: str) -> str:
-        return hashlib.sha256(text.encode()).hexdigest()
+        # Model is part of the key so cached outputs from one model are
+        # never served after a runtime switch to a different model.
+        return hashlib.sha256(
+            f"{self.settings.ollama_model}|{text}".encode()
+        ).hexdigest()
 
     def _cache_get(self, key: str) -> Optional[Tuple[str, Dict[str, Any]]]:
         if key in self._cache:
@@ -319,6 +323,46 @@ class OllamaInferenceEngine:
             total_samples=len(samples),
         )
         return plurality_raw_output
+
+    def list_models(self) -> List[str]:
+        try:
+            response = self.client.list()
+            models = []
+            if hasattr(response, "get"):
+                raw = response.get("models", []) or []
+            else:
+                raw = getattr(response, "models", []) or []
+            for m in raw:
+                if isinstance(m, dict):
+                    name = m.get("model") or m.get("name")
+                else:
+                    name = getattr(m, "model", None) or getattr(m, "name", None)
+                if name:
+                    models.append(name)
+            return sorted(models)
+        except Exception as e:
+            self.logger.error("ollama_list_models_error", error=str(e))
+            raise InferenceError(f"Failed to list Ollama models: {str(e)}")
+
+    def switch_model(self, model_name: str) -> str:
+        available = self.list_models()
+        if model_name not in available:
+            raise InferenceError(
+                f"Model '{model_name}' not available from Ollama. "
+                f"Available: {available or '(none)'}"
+            )
+        previous = self.settings.ollama_model
+        if previous == model_name:
+            return previous
+        self.settings.ollama_model = model_name
+        self._cache.clear()
+        self._save_disk_cache()
+        self.logger.info(
+            "inference_model_switched",
+            previous=previous,
+            model=self.settings.ollama_model,
+        )
+        return self.settings.ollama_model
 
     def health_check(self) -> bool:
         try:

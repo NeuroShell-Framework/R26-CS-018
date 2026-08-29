@@ -1,0 +1,101 @@
+TOOL: nmap
+VERSION: 7.94
+CATEGORY: Network Scanner
+
+DESCRIPTION:
+Nmap is a free and open source utility for network discovery and security
+auditing. It uses raw IP packets to determine hosts, services, OS, firewalls.
+It is designed to rapidly scan large networks but works fine against single hosts.
+
+BASIC SYNTAX:
+nmap [options] <target>
+
+TARGET FORMATS:
+- Single IP:       nmap 192.168.1.1
+- CIDR range:      nmap 192.168.1.0/24
+- Hostname:        nmap scanme.nmap.org
+- IP range:        nmap 192.168.1.1-254
+- From file:       nmap -iL targets.txt
+
+SCAN TYPES:
+-sS    SYN stealth scan (default, requires root)
+-sT    TCP connect scan (no root needed)
+-sU    UDP scan
+-sA    ACK scan (firewall detection)
+-sV    Version detection
+-sC    Default script scan
+-sn    Ping sweep (no port scan)
+-Pn    Skip host discovery (treat all hosts as up)
+-sI    Idle/zombie scan
+-sF    FIN scan
+-sX    Xmas scan
+-sN    Null scan
+
+PORT OPTIONS:
+-p 80           Single port
+-p 80,443       Multiple ports
+-p 1-1000       Port range
+-p-             All 65535 ports
+--top-ports 100 Top 100 common ports
+--exclude-ports Exclude specific ports
+
+TIMING TEMPLATES:
+-T0   Paranoid (IDS evasion, very slow)
+-T1   Sneaky (slow)
+-T2   Polite (slows down to use less bandwidth)
+-T3   Normal (default)
+-T4   Aggressive (faster, assumes fast network)
+-T5   Insane (fastest, may miss results)
+
+OUTPUT OPTIONS:
+-oN file.txt    Normal output to file
+-oX file.xml    XML output to file
+-oG file.gnmap  Grepable output to file
+-oA basename    All formats simultaneously
+-v              Increase verbosity
+-vv             Even more verbose
+--open          Only show open ports
+
+OS DETECTION:
+-O              Enable OS detection
+-A              Aggressive scan (OS + version + scripts + traceroute)
+--osscan-guess  Guess OS more aggressively
+
+VERSION DETECTION:
+-sV             Probe open ports to determine service/version info
+--version-intensity 0-9   Set version detection intensity
+--version-light           Limit to most likely probes
+--version-all             Try every single probe
+
+NSE SCRIPTS:
+-sC                     Run default scripts
+--script=<name>         Run specific script
+--script=vuln           Run vulnerability scripts
+--script=auth           Run authentication scripts
+--script=discovery      Run discovery scripts
+--script=exploit        Run exploit scripts
+
+FIREWALL EVASION:
+-f              Fragment packets
+--mtu           Set custom MTU
+-D RND:10       Decoy scan with 10 random IPs
+-S <IP>         Spoof source address
+--source-port   Use specific source port
+--data-length   Append random data to packets
+--randomize-hosts  Randomize target scan order
+
+COMMON EXAMPLES:
+nmap -sS -T4 192.168.1.1
+nmap -sV -sC -p 80,443 192.168.1.1
+nmap -A -T4 192.168.1.0/24
+nmap -sU -p 53,161 192.168.1.1
+nmap -Pn -sS -p- 192.168.1.1
+nmap -sn 192.168.1.0/24
+nmap -sS -T4 --top-ports 1000 192.168.1.1
+nmap -sV --version-intensity 5 192.168.1.1
+nmap -sS -D RND:10 192.168.1.1
+nmap -f -sS 192.168.1.1
+nmap -oA scan_results 192.168.1.1
+nmap --script=vuln 192.168.1.1
+nmap -sS -p- -T4 -oN full_scan.txt 192.168.1.1
+nmap -sV -sC -O -T4 192.168.1.1

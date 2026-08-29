@@ -11,7 +11,8 @@ from contextlib import asynccontextmanager
 from typing import Optional, Union
 
 from pydantic import BaseModel
-from fastapi import FastAPI, HTTPException, Request, Depends, Header
+from fastapi import FastAPI, HTTPException, Request, Depends, BackgroundTasks
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.security import APIKeyHeader
 from slowapi import Limiter
@@ -28,6 +29,7 @@ from src.schemas.intent_schema import (
 )
 from src.pipeline.contract_builder import ContractBuilder
 from src.validation.contract_validator import ContractValidator
+from src.integration.planner_client import PlannerClient
 from src.utils.logging_config import get_logger
 
 
@@ -51,6 +53,17 @@ async def lifespan(app: FastAPI):
     app.state.contract_builder = ContractBuilder()
     app.state.contract_validator = ContractValidator()
     app.state.audit_logger = get_audit_logger(settings=settings)
+    if settings.planner_enabled:
+        app.state.planner = PlannerClient(
+            url=settings.planner_url,
+            api_key=settings.planner_api_key,
+            timeout_seconds=settings.planner_timeout_seconds,
+        )
+        logger.info(
+            "planner_integration", status="enabled", url=settings.planner_url
+        )
+    else:
+        app.state.planner = None
     logger.info(
         "ire_startup",
         status="ready",
@@ -68,9 +81,12 @@ app = FastAPI(
         "penetration testing framework. Converts natural language offensive "
         "security commands into validated structured JSON contracts.\n\n"
         "## Schema Versions\n"
-        "- `X-IRE-Schema-Version: 1` — baseline response (9 fields)\n"
-        "- `X-IRE-Schema-Version: 2` — enhanced response with sub_intent, "
-        "session context, RBAC role, cache status (default)\n\n"
+        "- Every `POST /parse` triggers BOTH schema structures from one "
+        "execution:\n"
+        "- `version1` — official v1 structure (the one forwarded downstream "
+        "to Component 02 for planning)\n"
+        "- `version2` — extended v2 structure: v1 plus sub_intent, "
+        "session context, RBAC role, cache status\n\n"
         "## Roles\n"
         "- `viewer` — blocked from all operations\n"
         "- `analyst` — passive recon + network scan only\n"
@@ -98,6 +114,39 @@ def rate_limit_handler(request: Request, exc: Exception) -> JSONResponse:
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, rate_limit_handler)
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=False,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+async def _dispatch_to_planner(planner: PlannerClient, payload: dict) -> None:
+    contract = payload.get("intent_contract") or {}
+    try:
+        result = await planner.push(payload)
+    except Exception as e:
+        logger.warning(
+            "planner_push",
+            status="failed",
+            intent=contract.get("intent"),
+            error=f"{type(e).__name__}: {e}",
+        )
+        return
+    logger.info(
+        "planner_push",
+        status=result.get("status"),
+        intent=contract.get("intent"),
+        command=result.get("command"),
+        tool=result.get("tool"),
+        latency_ms=result.get("push_latency_ms"),
+        schema="X-IRE-Schema-Version: 1",
+        session_id=payload.get("session_id"),
+        push_fields=list(contract.keys()),
+    )
+
 
 async def verify_api_key(api_key: str = Depends(API_KEY_HEADER)) -> str:
     if settings.ire_api_key == "dev_insecure_key":
@@ -110,13 +159,16 @@ async def verify_api_key(api_key: str = Depends(API_KEY_HEADER)) -> str:
     return api_key
 
 
-def build_parse_response(
+def _v1_content(
     v2_response: IREResponseV2,
-    schema_version: int,
-) -> JSONResponse:
-    if schema_version == 1:
-        v1_data = {
-            "status": v2_response.status,
+    session_id: Optional[str] = None,
+) -> dict:
+    """Official v1 structure — the exact payload forwarded to Component 02.
+
+    Shape: {"intent_contract": {...}, "session_id": "..."}
+    """
+    return {
+        "intent_contract": {
             "intent": v2_response.intent.value
                 if v2_response.intent else None,
             "target": v2_response.target.model_dump()
@@ -125,29 +177,43 @@ def build_parse_response(
             "modifiers": v2_response.modifiers,
             "cve_ids": v2_response.cve_ids,
             "tool_hint": v2_response.tool_hint,
-            "schedule": v2_response.schedule,
             "confidence": v2_response.confidence,
             "rejection_reason": v2_response.rejection_reason,
             "scope_warnings": v2_response.scope_warnings,
-            "latency_ms": v2_response.latency_ms,
-            "error": v2_response.error,
-            "stage": v2_response.stage,
-            "field": v2_response.field,
-            "detail": v2_response.detail,
-        }
-        content = v1_data
-    else:
-        content = v2_response.model_dump()
+        },
+        "session_id": session_id,
+    }
 
-    headers = {
-        "X-IRE-Schema-Version": str(schema_version),
+
+def _response_headers(
+    v2_response: IREResponseV2,
+) -> dict:
+    return {
+        "X-IRE-Schema-Version": "1,2",
         "X-IRE-Latency-Ms": str(v2_response.latency_ms or 0),
         "X-IRE-Intent": (v2_response.intent.value
                          if v2_response.intent else "unknown"),
         "X-IRE-Cache-Hit": v2_response.cache_hit or "none",
     }
 
-    return JSONResponse(content=content, headers=headers)
+
+def build_parse_response(
+    v2_response: IREResponseV2,
+    session_id: Optional[str] = None,
+) -> JSONResponse:
+    """Both schema structures are triggered from a single execution.
+
+    version1 is the official v1 structure ({intent_contract, session_id}),
+    which is also the exact payload forwarded to Component 02;
+    version2 is its extended form (v1 + v2 enhancement fields).
+    """
+    return JSONResponse(
+        content={
+            "version1": _v1_content(v2_response, session_id),
+            "version2": v2_response.model_dump(),
+        },
+        headers=_response_headers(v2_response),
+    )
 
 
 @app.get("/", include_in_schema=False)
@@ -192,11 +258,7 @@ async def health_check():
 async def parse_command(
     request: Request,
     body: ParseRequestV2,
-    x_ire_schema_version: Optional[str] = Header(
-        default="2",
-        alias="X-IRE-Schema-Version",
-        description="Response schema version: 1 (baseline) or 2 (enhanced)"
-    ),
+    background_tasks: BackgroundTasks,
     _api_key: str = Depends(verify_api_key),
 ):
     if pipeline is None:
@@ -214,26 +276,152 @@ async def parse_command(
         raise HTTPException(status_code=400,
                             detail="Command cannot be empty")
 
-    try:
-        schema_ver = int(x_ire_schema_version or "2")
-        if schema_ver not in (1, 2):
-            schema_ver = 2
-    except (ValueError, TypeError):
-        schema_ver = 2
-
-    if pipeline is None:
-        raise HTTPException(status_code=503, detail="Pipeline not initialized")
-
     v2_response = pipeline.parse(body)
-    return build_parse_response(v2_response, schema_ver)
+
+    planner = getattr(app.state, "planner", None)
+    if (
+        planner is not None
+        and v2_response.status == "success"
+        and PlannerClient.should_push(
+            v2_response.intent.value if v2_response.intent else None,
+            v2_response.rejection_reason,
+        )
+    ):
+        push_payload = _v1_content(
+            v2_response,
+            session_id=body.session_id or "anonymous-flow",
+        )
+        background_tasks.add_task(
+            _dispatch_to_planner,
+            planner,
+            dict(push_payload),
+        )
+
+    return build_parse_response(v2_response, body.session_id)
+
+
+@app.post(
+    "/execute",
+    tags=["IRE"],
+    summary="Execute the full C1 -> C2 chain and show both outputs",
+    description=(
+        "Runs the command through Component 01 (/parse), then synchronously "
+        "forwards the resulting version1 contract as an HTTP POST to "
+        "Component 02 (/plan). Returns BOTH outputs in one response so the "
+        "backend chain reaction is visible from this UI."
+    ),
+    responses={
+        200: {"description": "Full chain result: C1 output + C2 output"},
+        400: {"description": "Empty command"},
+        401: {"description": "Invalid API key"},
+        403: {"description": "RBAC access denied"},
+        413: {"description": "Command too long"},
+        503: {"description": "Pipeline not ready"},
+    }
+)
+@limiter.limit("30/minute")
+async def execute_flow(
+    request: Request,
+    body: ParseRequestV2,
+    _api_key: str = Depends(verify_api_key),
+):
+    if pipeline is None:
+        raise HTTPException(status_code=503,
+                            detail="Pipeline not initialized")
+
+    if len(body.command) > 2000:
+        raise HTTPException(
+            status_code=413,
+            detail=f"Command length {len(body.command)} "
+                   f"exceeds maximum of 2000 characters"
+        )
+
+    if not body.command.strip():
+        raise HTTPException(status_code=400,
+                            detail="Command cannot be empty")
+
+    # ── Component 01: parse & validate ──────────────────────────────────
+    v2_response = pipeline.parse(body)
+
+    version1 = _v1_content(
+        v2_response,
+        session_id=body.session_id or "anonymous-flow",
+    )
+    version2 = v2_response.model_dump()
+
+    c1_output = {
+        "version1": version1,
+        "version2": version2,
+    }
+
+    component_1 = {
+        "status": v2_response.status,
+        "output": c1_output,
+    }
+
+    # ── Component 02: synchronous forward of version1 ───────────────────
+    planner = getattr(app.state, "planner", None)
+    component_2 = None
+    c2_called = bool(
+        planner is not None
+        and v2_response.status == "success"
+        and PlannerClient.should_push(
+            v2_response.intent.value if v2_response.intent else None,
+            v2_response.rejection_reason,
+        )
+    )
+
+    if c2_called:
+        protocol_started = time.perf_counter()
+        result = await planner.push(dict(version1))
+        try:
+            c2_elapsed_ms = result["push_latency_ms"]
+        except KeyError:
+            c2_elapsed_ms = int(
+                (time.perf_counter() - protocol_started) * 1000
+            )
+        c2_output = {
+            k: v for k, v in result.items()
+            if k not in ("push_latency_ms",)
+        }
+        component_2 = {
+            "status": result.get("status"),
+            "latency_ms": c2_elapsed_ms,
+            "output": c2_output,
+        }
+    else:
+        component_2 = {
+            "status": "skipped",
+            "reason": (
+                "C1 did not produce a forwardable contract "
+                "(error/rejected) or planner not configured"
+            ),
+            "output": None,
+        }
+
+    return JSONResponse(
+        content={
+            "status": "ok",
+            "flow": {
+                "step_1_user_input": {
+                    "command": body.command,
+                    "session_id": body.session_id,
+                    "role": body.role,
+                },
+                "step_2_component_1": component_1,
+                "step_3_component_2": component_2,
+            },
+        },
+        headers=_response_headers(v2_response),
+    )
 
 
 @app.post(
     "/parse/plan",
     tags=["IRE"],
-    summary="Parse command and return Component 02 planner contract",
+    summary="Parse command and return validated planner contract",
     responses={
-        200: {"description": "PlannerContract ready for Component 02"},
+        200: {"description": "PlannerContract ready for downstream planning"},
         400: {"description": "Empty command"},
         401: {"description": "Invalid API key"},
         413: {"description": "Command too long"},
@@ -436,6 +624,89 @@ async def reload_features(
     return {
         "reloaded": True,
         "features": flags._flags,
+    }
+
+
+class ModelSwitchRequest(BaseModel):
+    model: str
+
+
+def _persist_model_env(model: str) -> None:
+    """Persist OLLAMA_MODEL to the .env file so the switch survives restarts."""
+    env_path = Path(SERVICE_ROOT) / ".env"
+    try:
+        lines = env_path.read_text(encoding="utf-8").splitlines() if env_path.exists() else []
+        found = False
+        for i, line in enumerate(lines):
+            if line.strip().upper().startswith("OLLAMA_MODEL="):
+                lines[i] = f"OLLAMA_MODEL={model}"
+                found = True
+                break
+        if not found:
+            lines.append(f"OLLAMA_MODEL={model}")
+        env_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+        logger.info("model_env_persisted", model=model)
+    except Exception as e:
+        logger.error("model_env_persist_error", error=str(e))
+
+
+def _model_registry() -> list:
+    try:
+        names = pipeline.inference_engine.list_models()
+    except Exception as e:
+        raise HTTPException(
+            status_code=503,
+            detail=f"Could not query Ollama: {str(e)}",
+        )
+    active = settings.ollama_model
+    return [
+        {"name": name, "size": 0, "active": name == active}
+        for name in names
+    ]
+
+
+@app.get("/admin/models", tags=["Admin"])
+async def list_models(
+    _api_key: str = Depends(verify_api_key),
+):
+    if pipeline is None:
+        raise HTTPException(status_code=503,
+                            detail="Pipeline not initialized")
+    return {
+        "active": settings.ollama_model,
+        "models": _model_registry(),
+    }
+
+
+@app.post("/admin/models/switch", tags=["Admin"])
+async def switch_model(
+    body: ModelSwitchRequest,
+    _api_key: str = Depends(verify_api_key),
+):
+    if pipeline is None:
+        raise HTTPException(status_code=503,
+                            detail="Pipeline not initialized")
+    model = body.model.strip()
+    if not model:
+        raise HTTPException(status_code=422,
+                            detail="model must be a non-empty string")
+    previous = settings.ollama_model
+    try:
+        pipeline.inference_engine.switch_model(model)
+        _persist_model_env(model)
+    except Exception as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    logger.info(
+        "model_switch_requested",
+        previous=previous,
+        current=settings.ollama_model,
+    )
+    return {
+        "switched_to": settings.ollama_model,
+        "previous": previous,
+        "active": settings.ollama_model,
+        "models": _model_registry(),
+        "persisted": ".env",
     }
 
 
