@@ -1,0 +1,456 @@
+{
+  "per_class": {
+    "TOOL_NOT_INSTALLED": {
+      "tp": 10,
+      "fp": 0,
+      "fn": 0,
+      "total": 10
+    },
+    "PERMISSION_DENIED": {
+      "tp": 10,
+      "fp": 2,
+      "fn": 0,
+      "total": 10
+    },
+    "NETWORK_UNREACHABLE": {
+      "tp": 9,
+      "fp": 0,
+      "fn": 1,
+      "total": 10
+    },
+    "WRONG_SYNTAX": {
+      "tp": 8,
+      "fp": 0,
+      "fn": 2,
+      "total": 10
+    },
+    "RESOURCE_EXHAUSTION": {
+      "tp": 8,
+      "fp": 0,
+      "fn": 2,
+      "total": 10
+    },
+    "AUTH_FAILURE": {
+      "tp": 7,
+      "fp": 0,
+      "fn": 3,
+      "total": 10
+    },
+    "TIMEOUT": {
+      "tp": 9,
+      "fp": 0,
+      "fn": 1,
+      "total": 10
+    },
+    "VERSION_MISMATCH": {
+      "tp": 8,
+      "fp": 1,
+      "fn": 2,
+      "total": 10
+    }
+  },
+  "macro_f1": 0.9059050254870689,
+  "accuracy": 0.8625,
+  "records": [
+    {
+      "true": "TOOL_NOT_INSTALLED",
+      "pred": "TOOL_NOT_INSTALLED",
+      "stderr": "bash: gobuster: command not found"
+    },
+    {
+      "true": "TOOL_NOT_INSTALLED",
+      "pred": "TOOL_NOT_INSTALLED",
+      "stderr": "nmap: command not found"
+    },
+    {
+      "true": "TOOL_NOT_INSTALLED",
+      "pred": "TOOL_NOT_INSTALLED",
+      "stderr": "bash: nikto: command not found"
+    },
+    {
+      "true": "TOOL_NOT_INSTALLED",
+      "pred": "TOOL_NOT_INSTALLED",
+      "stderr": "sqlmap: command not found"
+    },
+    {
+      "true": "TOOL_NOT_INSTALLED",
+      "pred": "TOOL_NOT_INSTALLED",
+      "stderr": "No such file or directory: ffuf"
+    },
+    {
+      "true": "TOOL_NOT_INSTALLED",
+      "pred": "TOOL_NOT_INSTALLED",
+      "stderr": "hydra: command not found"
+    },
+    {
+      "true": "TOOL_NOT_INSTALLED",
+      "pred": "TOOL_NOT_INSTALLED",
+      "stderr": "bash: masscan: command not found"
+    },
+    {
+      "true": "TOOL_NOT_INSTALLED",
+      "pred": "TOOL_NOT_INSTALLED",
+      "stderr": "command not found: dirb"
+    },
+    {
+      "true": "TOOL_NOT_INSTALLED",
+      "pred": "TOOL_NOT_INSTALLED",
+      "stderr": "bash: whatweb: command not found"
+    },
+    {
+      "true": "TOOL_NOT_INSTALLED",
+      "pred": "TOOL_NOT_INSTALLED",
+      "stderr": "wfuzz: command not found"
+    },
+    {
+      "true": "PERMISSION_DENIED",
+      "pred": "PERMISSION_DENIED",
+      "stderr": "Permission denied: cannot open output file"
+    },
+    {
+      "true": "PERMISSION_DENIED",
+      "pred": "PERMISSION_DENIED",
+      "stderr": "Operation not permitted"
+    },
+    {
+      "true": "PERMISSION_DENIED",
+      "pred": "PERMISSION_DENIED",
+      "stderr": "nmap: Permission denied, are you root?"
+    },
+    {
+      "true": "PERMISSION_DENIED",
+      "pred": "PERMISSION_DENIED",
+      "stderr": "EACCES: permission denied"
+    },
+    {
+      "true": "PERMISSION_DENIED",
+      "pred": "PERMISSION_DENIED",
+      "stderr": "You must be root to run this scan"
+    },
+    {
+      "true": "PERMISSION_DENIED",
+      "pred": "PERMISSION_DENIED",
+      "stderr": "Permission denied writing to /var/log"
+    },
+    {
+      "true": "PERMISSION_DENIED",
+      "pred": "PERMISSION_DENIED",
+      "stderr": "bind: Operation not permitted"
+    },
+    {
+      "true": "PERMISSION_DENIED",
+      "pred": "PERMISSION_DENIED",
+      "stderr": "Cannot open /dev/bpf0: Permission denied"
+    },
+    {
+      "true": "PERMISSION_DENIED",
+      "pred": "PERMISSION_DENIED",
+      "stderr": "Permission denied cannot create raw socket"
+    },
+    {
+      "true": "PERMISSION_DENIED",
+      "pred": "PERMISSION_DENIED",
+      "stderr": "access denied: must be root"
+    },
+    {
+      "true": "NETWORK_UNREACHABLE",
+      "pred": "NETWORK_UNREACHABLE",
+      "stderr": "No route to host"
+    },
+    {
+      "true": "NETWORK_UNREACHABLE",
+      "pred": "NETWORK_UNREACHABLE",
+      "stderr": "Connection refused"
+    },
+    {
+      "true": "NETWORK_UNREACHABLE",
+      "pred": null,
+      "stderr": "Network is unreachable"
+    },
+    {
+      "true": "NETWORK_UNREACHABLE",
+      "pred": "NETWORK_UNREACHABLE",
+      "stderr": "EHOSTUNREACH: host unreachable"
+    },
+    {
+      "true": "NETWORK_UNREACHABLE",
+      "pred": "NETWORK_UNREACHABLE",
+      "stderr": "Host is down"
+    },
+    {
+      "true": "NETWORK_UNREACHABLE",
+      "pred": "NETWORK_UNREACHABLE",
+      "stderr": "connect to 10.0.0.5 failed: No route to host"
+    },
+    {
+      "true": "NETWORK_UNREACHABLE",
+      "pred": "NETWORK_UNREACHABLE",
+      "stderr": "Connection refused by remote host"
+    },
+    {
+      "true": "NETWORK_UNREACHABLE",
+      "pred": "NETWORK_UNREACHABLE",
+      "stderr": "Failed to connect: Network unreachable"
+    },
+    {
+      "true": "NETWORK_UNREACHABLE",
+      "pred": "NETWORK_UNREACHABLE",
+      "stderr": "nmap: no route to host 10.1.1.1"
+    },
+    {
+      "true": "NETWORK_UNREACHABLE",
+      "pred": "NETWORK_UNREACHABLE",
+      "stderr": "curl: (7) Failed to connect: Connection refused"
+    },
+    {
+      "true": "WRONG_SYNTAX",
+      "pred": "WRONG_SYNTAX",
+      "stderr": "Invalid option -- z"
+    },
+    {
+      "true": "WRONG_SYNTAX",
+      "pred": "WRONG_SYNTAX",
+      "stderr": "unrecognized argument: --foo"
+    },
+    {
+      "true": "WRONG_SYNTAX",
+      "pred": "WRONG_SYNTAX",
+      "stderr": "usage: nmap [Scan Type]"
+    },
+    {
+      "true": "WRONG_SYNTAX",
+      "pred": "WRONG_SYNTAX",
+      "stderr": "invalid flag provided"
+    },
+    {
+      "true": "WRONG_SYNTAX",
+      "pred": "WRONG_SYNTAX",
+      "stderr": "unknown flag: --bad"
+    },
+    {
+      "true": "WRONG_SYNTAX",
+      "pred": "WRONG_SYNTAX",
+      "stderr": "Invalid option: --script-args"
+    },
+    {
+      "true": "WRONG_SYNTAX",
+      "pred": null,
+      "stderr": "Error: unknown shorthand flag q"
+    },
+    {
+      "true": "WRONG_SYNTAX",
+      "pred": "VERSION_MISMATCH",
+      "stderr": "nmap: unrecognized option --xyz"
+    },
+    {
+      "true": "WRONG_SYNTAX",
+      "pred": "WRONG_SYNTAX",
+      "stderr": "gobuster: unknown flag --totally-invalid"
+    },
+    {
+      "true": "WRONG_SYNTAX",
+      "pred": "WRONG_SYNTAX",
+      "stderr": "usage: hydra [options] target"
+    },
+    {
+      "true": "RESOURCE_EXHAUSTION",
+      "pred": "RESOURCE_EXHAUSTION",
+      "stderr": "Cannot allocate memory"
+    },
+    {
+      "true": "RESOURCE_EXHAUSTION",
+      "pred": "RESOURCE_EXHAUSTION",
+      "stderr": "Too many open files"
+    },
+    {
+      "true": "RESOURCE_EXHAUSTION",
+      "pred": "RESOURCE_EXHAUSTION",
+      "stderr": "out of memory"
+    },
+    {
+      "true": "RESOURCE_EXHAUSTION",
+      "pred": "RESOURCE_EXHAUSTION",
+      "stderr": "ENOMEM: not enough memory"
+    },
+    {
+      "true": "RESOURCE_EXHAUSTION",
+      "pred": "RESOURCE_EXHAUSTION",
+      "stderr": "fork: Cannot allocate memory"
+    },
+    {
+      "true": "RESOURCE_EXHAUSTION",
+      "pred": "RESOURCE_EXHAUSTION",
+      "stderr": "Killed (out of memory)"
+    },
+    {
+      "true": "RESOURCE_EXHAUSTION",
+      "pred": "RESOURCE_EXHAUSTION",
+      "stderr": "socket: Too many open files"
+    },
+    {
+      "true": "RESOURCE_EXHAUSTION",
+      "pred": "RESOURCE_EXHAUSTION",
+      "stderr": "Out of memory: Kill process 1234"
+    },
+    {
+      "true": "RESOURCE_EXHAUSTION",
+      "pred": null,
+      "stderr": "cannot fork: Resource temporarily unavailable"
+    },
+    {
+      "true": "RESOURCE_EXHAUSTION",
+      "pred": null,
+      "stderr": "memory allocation of 8388608 bytes failed"
+    },
+    {
+      "true": "AUTH_FAILURE",
+      "pred": "AUTH_FAILURE",
+      "stderr": "Authentication failed"
+    },
+    {
+      "true": "AUTH_FAILURE",
+      "pred": "PERMISSION_DENIED",
+      "stderr": "Permission denied (publickey)"
+    },
+    {
+      "true": "AUTH_FAILURE",
+      "pred": "AUTH_FAILURE",
+      "stderr": "Invalid credentials"
+    },
+    {
+      "true": "AUTH_FAILURE",
+      "pred": "AUTH_FAILURE",
+      "stderr": "Access denied for user"
+    },
+    {
+      "true": "AUTH_FAILURE",
+      "pred": null,
+      "stderr": "Login incorrect"
+    },
+    {
+      "true": "AUTH_FAILURE",
+      "pred": "AUTH_FAILURE",
+      "stderr": "Authentication failure for admin"
+    },
+    {
+      "true": "AUTH_FAILURE",
+      "pred": "PERMISSION_DENIED",
+      "stderr": "Permission denied (publickey,password)"
+    },
+    {
+      "true": "AUTH_FAILURE",
+      "pred": "AUTH_FAILURE",
+      "stderr": "ssh: authentication failed"
+    },
+    {
+      "true": "AUTH_FAILURE",
+      "pred": "AUTH_FAILURE",
+      "stderr": "hydra: invalid credentials supplied"
+    },
+    {
+      "true": "AUTH_FAILURE",
+      "pred": "AUTH_FAILURE",
+      "stderr": "530 Login authentication failed"
+    },
+    {
+      "true": "TIMEOUT",
+      "pred": "TIMEOUT",
+      "stderr": "Operation timed out"
+    },
+    {
+      "true": "TIMEOUT",
+      "pred": "TIMEOUT",
+      "stderr": "ETIMEDOUT: connection timed out"
+    },
+    {
+      "true": "TIMEOUT",
+      "pred": "TIMEOUT",
+      "stderr": "Read timeout exceeded"
+    },
+    {
+      "true": "TIMEOUT",
+      "pred": "TIMEOUT",
+      "stderr": "timed out after 30 seconds"
+    },
+    {
+      "true": "TIMEOUT",
+      "pred": "TIMEOUT",
+      "stderr": "connection timeout"
+    },
+    {
+      "true": "TIMEOUT",
+      "pred": null,
+      "stderr": "nmap: host timeout reached"
+    },
+    {
+      "true": "TIMEOUT",
+      "pred": "TIMEOUT",
+      "stderr": "curl: (28) Operation timed out"
+    },
+    {
+      "true": "TIMEOUT",
+      "pred": "TIMEOUT",
+      "stderr": "request timed out"
+    },
+    {
+      "true": "TIMEOUT",
+      "pred": "TIMEOUT",
+      "stderr": "Timeout occurred during the request"
+    },
+    {
+      "true": "TIMEOUT",
+      "pred": "TIMEOUT",
+      "stderr": "connect: Connection timed out"
+    },
+    {
+      "true": "VERSION_MISMATCH",
+      "pred": "VERSION_MISMATCH",
+      "stderr": "Unrecognized option in this version"
+    },
+    {
+      "true": "VERSION_MISMATCH",
+      "pred": "VERSION_MISMATCH",
+      "stderr": "deprecated flag removed in version 3"
+    },
+    {
+      "true": "VERSION_MISMATCH",
+      "pred": null,
+      "stderr": "requires gobuster version 3.6 or higher"
+    },
+    {
+      "true": "VERSION_MISMATCH",
+      "pred": "VERSION_MISMATCH",
+      "stderr": "unknown option --v2"
+    },
+    {
+      "true": "VERSION_MISMATCH",
+      "pred": "VERSION_MISMATCH",
+      "stderr": "this option is deprecated"
+    },
+    {
+      "true": "VERSION_MISMATCH",
+      "pred": "VERSION_MISMATCH",
+      "stderr": "feature requires version 2.0+"
+    },
+    {
+      "true": "VERSION_MISMATCH",
+      "pred": "VERSION_MISMATCH",
+      "stderr": "--old-flag: deprecated use --new-flag"
+    },
+    {
+      "true": "VERSION_MISMATCH",
+      "pred": "VERSION_MISMATCH",
+      "stderr": "Unrecognized option --legacy"
+    },
+    {
+      "true": "VERSION_MISMATCH",
+      "pred": "VERSION_MISMATCH",
+      "stderr": "nmap: --datadir deprecated in this build"
+    },
+    {
+      "true": "VERSION_MISMATCH",
+      "pred": null,
+      "stderr": "requires newer version of the tool"
+    }
+  ]
+}

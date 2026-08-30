@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: neuroshell-redis
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  aeere:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: neuroshell-aeere
+    ports:
+      - "8003:8003"
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - KALI_IMAGE=neuroshell-kali
+      - OLLAMA_URL=http://host.docker.internal:11434
+      - OLLAMA_MODEL=qwen2.5-coder:latest
+      - AUDIT_DB_PATH=/app/data/audit.db
+      - PORT=8003
+      - SCOPE_MODE=research
+      - CONTAINER_MEM_LIMIT=512m
+      - CONTAINER_CPU_QUOTA=50000
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - aeere-data:/app/data
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  aeere-data:

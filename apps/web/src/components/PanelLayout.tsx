@@ -28,6 +28,8 @@ export default function PanelLayout({ profile, onSignOut }: Props) {
   const [busy, setBusy] = useState(false)
   const [c1Ok, setC1Ok] = useState(false)
   const [c2Ok, setC2Ok] = useState(false)
+  const [c3Ok, setC3Ok] = useState(false)
+  const [c4Ok, setC4Ok] = useState(false)
   const inputRef = useRef<HTMLTextAreaElement>(null)
 
   const active = sessions.find((s) => s.id === activeId) ?? null
@@ -35,13 +37,17 @@ export default function PanelLayout({ profile, onSignOut }: Props) {
   useEffect(() => {
     let cancelled = false
     async function tick() {
-      const [a, b] = await Promise.all([
+      const [a, b, c, d] = await Promise.all([
         checkHealth(config.c1Url, 'C1'),
         checkHealth(config.c2Url, 'C2'),
+        checkHealth(config.c3Url, 'C3'),
+        checkHealth(config.c4Url, 'C4'),
       ])
       if (cancelled) return
       setC1Ok(a.ok)
       setC2Ok(b.ok)
+      setC3Ok(c.ok)
+      setC4Ok(d.ok)
     }
     tick()
     const t = setInterval(tick, 10000)
@@ -129,6 +135,8 @@ export default function PanelLayout({ profile, onSignOut }: Props) {
           profile={profile}
           c1Ok={c1Ok}
           c2Ok={c2Ok}
+          c3Ok={c3Ok}
+          c4Ok={c4Ok}
           onNew={handleNew}
           onSelect={handleSelect}
           onDelete={handleDelete}

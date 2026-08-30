@@ -1,0 +1,1 @@
+﻿{"command":"nikto --invalid-option-xyz -h 192.168.1.10","session_id":"stress-nikto-002-retest","tool":"nikto","estimated_duration":"short","intent_ref":"VULNERABILITY_AUDIT"}

@@ -22,6 +22,7 @@ class RegexValidator:
         self.CIDR_RE = re.compile(r"^((25[0-5]|2[0-4]\d|[01]?\d\d?)\.){3}(25[0-5]|2[0-4]\d|[01]?\d\d?)/([0-9]|[1-2][0-9]|3[0-2])$")
         self.IPV6_RE = re.compile(r"^([0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}$")
         self.DOMAIN_RE = re.compile(r"^(?:[a-zA-Z0-9](?:[a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$")
+        self.HOST_SINGLE_RE = re.compile(r"^[a-zA-Z0-9](?:[a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?$")
         self.CVE_RE = re.compile(r"^CVE-\d{4}-\d{4,7}$")
         self.URL_RE = re.compile(r"^https?://[^\s/$.?#].[^\s]*$")
         self.SHELL_META_RE = re.compile(r"[;&|$\\`!><]")
@@ -56,7 +57,10 @@ class RegexValidator:
                 target_valid = False
                 target_msg = f"'{schema.target.value}' is not a valid CIDR notation subnet"
         elif schema.target.type in (TargetType.DOMAIN, TargetType.HOSTNAME):
-            if not self.DOMAIN_RE.match(schema.target.value):
+            if not (
+                self.DOMAIN_RE.match(schema.target.value)
+                or self.HOST_SINGLE_RE.match(schema.target.value)
+            ):
                 target_valid = False
                 target_msg = f"'{schema.target.value}' is not a valid domain or hostname"
         elif schema.target.type == TargetType.URL:

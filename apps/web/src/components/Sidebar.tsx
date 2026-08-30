@@ -9,6 +9,8 @@ interface Props {
   profile: UserProfile
   c1Ok: boolean
   c2Ok: boolean
+  c3Ok: boolean
+  c4Ok: boolean
   onNew: () => void
   onSelect: (id: string) => void
   onDelete: (id: string) => void
@@ -41,6 +43,8 @@ export default function Sidebar({
   profile,
   c1Ok,
   c2Ok,
+  c3Ok,
+  c4Ok,
   onNew,
   onSelect,
   onDelete,
@@ -120,7 +124,7 @@ export default function Sidebar({
 
       <div className="border-t border-surface-800 p-3">
         <div className="flex items-center justify-between rounded-lg border border-surface-700 bg-surface-850 px-3 py-2">
-          <div className="flex gap-3 text-[11px]">
+          <div className="flex flex-wrap gap-x-3 gap-y-1.5 text-[11px]">
             <span className="flex items-center gap-1.5">
               <span
                 className={`h-2 w-2 rounded-full ${c1Ok ? 'bg-accent-500' : 'bg-red-500'}`}
@@ -133,8 +137,20 @@ export default function Sidebar({
               />
               <span className="text-gray-400">C2</span>
             </span>
+            <span className="flex items-center gap-1.5">
+              <span
+                className={`h-2 w-2 rounded-full ${c3Ok ? 'bg-accent-500' : 'bg-red-500'}`}
+              />
+              <span className="text-gray-400">C3</span>
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span
+                className={`h-2 w-2 rounded-full ${c4Ok ? 'bg-accent-500' : 'bg-red-500'}`}
+              />
+              <span className="text-gray-400">C4</span>
+            </span>
           </div>
-          <span className="font-mono text-[10px] text-gray-600">8001/8002</span>
+          <span className="font-mono text-[10px] text-gray-600">8001-8004</span>
         </div>
         <div className="mt-3 flex items-center gap-2.5">
           <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-accent-600 text-sm font-bold text-gray-950">

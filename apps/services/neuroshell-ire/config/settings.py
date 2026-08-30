@@ -118,6 +118,28 @@ class Settings(BaseSettings):
         description="Max wait for the planner response (includes LLM inference)",
     )
 
+    # Downstream executor (Component 03 — AEERE, adaptive execution)
+    component3_enabled: bool = Field(
+        default=False,
+        description="Forward planned commands to the AEERE executor service"
+    )
+    component3_url: str = Field(default="http://127.0.0.1:8003")
+    component3_timeout_seconds: int = Field(
+        default=300,
+        description="Max wait for AEERE execution + recovery (includes Docker + LLM)",
+    )
+
+    # Downstream vulnerability analysis (Component 04 — AVAE)
+    component4_enabled: bool = Field(
+        default=False,
+        description="Forward AEERE execution results to the vulnerability analysis service"
+    )
+    component4_url: str = Field(default="http://127.0.0.1:8004")
+    component4_timeout_seconds: int = Field(
+        default=300,
+        description="Max wait for AVAE analysis (includes threat intel + ML inference)",
+    )
+
 
 @lru_cache()
 def get_settings() -> Settings:

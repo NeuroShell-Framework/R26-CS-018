@@ -1,0 +1,248 @@
+[
+  {
+    "expected": "TOOL_NOT_INSTALLED",
+    "predicted": "TOOL_NOT_INSTALLED",
+    "status": "failed",
+    "latency_ms": 679,
+    "command": "nmapp -sV 192.168.1.1",
+    "full_response": {
+      "session_id": "pilot-1",
+      "status": "failed",
+      "command_executed": "nmapp -sV 192.168.1.1",
+      "stdout": "",
+      "stderr": "bash: line 1: nmapp: command not found\n",
+      "exit_code": 127,
+      "recovery_log": [],
+      "correction_history": [],
+      "failure_report": {
+        "attempts": 1,
+        "final_error_class": "TOOL_NOT_INSTALLED",
+        "strategies_tried": [
+          "INSTALL_TOOL"
+        ],
+        "recommendation": "Auto-install failed. Manually install the tool or use a pre-built image.",
+        "audit_trail_count": 1
+      },
+      "tool_substituted": false,
+      "latency_ms": 679
+    }
+  },
+  {
+    "expected": "WRONG_SYNTAX",
+    "predicted": "WRONG_SYNTAX",
+    "status": "recovered",
+    "latency_ms": 8495,
+    "command": "nmap --totally-invalid-flag-xyz 192.168.1.1",
+    "full_response": {
+      "session_id": "pilot-2",
+      "status": "recovered",
+      "command_executed": "nmap -sV 192.168.1.1",
+      "stdout": "Starting Nmap 7.99 ( https://nmap.org ) at 2026-08-28 16:07 +0000\nNmap scan report for 192.168.1.1\nHost is up (0.0025s latency).\nAll 1000 scanned ports on 192.168.1.1 are in ignored states.\nNot shown: 1000 filtered tcp ports (no-response)\n\nService detection performed. Please report any incorrect results at https://nmap.org/submit/ .\nNmap done: 1 IP address (1 host up) scanned in 5.72 seconds\n",
+      "stderr": "",
+      "exit_code": 0,
+      "recovery_log": [
+        {
+          "attempt": 1,
+          "error_class": "WRONG_SYNTAX",
+          "strategy": "FIX_SYNTAX",
+          "clf_method": "regex",
+          "confidence": 0.65,
+          "original_command": "nmap --totally-invalid-flag-xyz 192.168.1.1",
+          "corrected_command": "nmap -sV 192.168.1.1"
+        }
+      ],
+      "correction_history": [
+        {
+          "attempt": 1,
+          "original_command": "nmap --totally-invalid-flag-xyz 192.168.1.1",
+          "corrected_command": "nmap -sV 192.168.1.1",
+          "error_class": "WRONG_SYNTAX",
+          "strategy": "FIX_SYNTAX",
+          "approved": true,
+          "correction_source": "dataset"
+        }
+      ],
+      "failure_report": null,
+      "tool_substituted": false,
+      "latency_ms": 8495
+    }
+  },
+  {
+    "expected": "PERMISSION_DENIED",
+    "predicted": "NONE",
+    "status": "success",
+    "latency_ms": 6010,
+    "command": "nmap -sV 192.168.1.1 -oN /root/../etc/shadow_x",
+    "full_response": {
+      "session_id": "pilot-3",
+      "status": "success",
+      "command_executed": "nmap -sV 192.168.1.1 -oN /root/../etc/shadow_x",
+      "stdout": "Starting Nmap 7.99 ( https://nmap.org ) at 2026-08-28 16:08 +0000\nNmap scan report for 192.168.1.1\nHost is up (0.0017s latency).\nAll 1000 scanned ports on 192.168.1.1 are in ignored states.\nNot shown: 1000 filtered tcp ports (no-response)\n\nService detection performed. Please report any incorrect results at https://nmap.org/submit/ .\nNmap done: 1 IP address (1 host up) scanned in 5.25 seconds\n",
+      "stderr": "",
+      "exit_code": 0,
+      "recovery_log": [],
+      "correction_history": [],
+      "failure_report": null,
+      "tool_substituted": false,
+      "latency_ms": 6010
+    }
+  },
+  {
+    "expected": "NETWORK_UNREACHABLE",
+    "predicted": "NONE",
+    "status": "success",
+    "latency_ms": 6754,
+    "command": "nmap -sV -Pn --host-timeout 5s 10.255.255.1",
+    "full_response": {
+      "session_id": "pilot-4",
+      "status": "success",
+      "command_executed": "nmap -sV -Pn --host-timeout 5s 10.255.255.1",
+      "stdout": "Starting Nmap 7.99 ( https://nmap.org ) at 2026-08-28 16:08 +0000\nNmap scan report for 10.255.255.1\nHost is up.\nSkipping host 10.255.255.1 due to host timeout\nService detection performed. Please report any incorrect results at https://nmap.org/submit/ .\nNmap done: 1 IP address (1 host up) scanned in 6.08 seconds\n",
+      "stderr": "",
+      "exit_code": 0,
+      "recovery_log": [],
+      "correction_history": [],
+      "failure_report": null,
+      "tool_substituted": false,
+      "latency_ms": 6754
+    }
+  },
+  {
+    "expected": "TIMEOUT",
+    "predicted": "TOOL_NOT_INSTALLED",
+    "status": "failed",
+    "latency_ms": 75653,
+    "command": "curl --max-time 2 http://10.255.255.1",
+    "full_response": {
+      "session_id": "pilot-5",
+      "status": "failed",
+      "command_executed": "curl --max-time 2 http://10.255.255.1",
+      "stdout": "",
+      "stderr": "bash: line 1: curl: command not found\n",
+      "exit_code": 127,
+      "recovery_log": [
+        {
+          "attempt": 1,
+          "error_class": "TOOL_NOT_INSTALLED",
+          "strategy": "INSTALL_TOOL",
+          "clf_method": "regex",
+          "confidence": 0.99,
+          "original_command": "curl --max-time 2 http://10.255.255.1",
+          "corrected_command": "apt-get update -qq --fix-missing && apt-get install -y --fix-missing curl && curl --max-time 2 http://10.255.255.1"
+        },
+        {
+          "attempt": 2,
+          "error_class": "TIMEOUT",
+          "strategy": "ADJUST_TIMEOUT",
+          "clf_method": "regex",
+          "confidence": 0.6699999999999999,
+          "original_command": "apt-get update -qq --fix-missing && apt-get install -y --fix-missing curl && curl --max-time 2 http://10.255.255.1",
+          "corrected_command": "curl --max-time 2 http://10.255.255.1"
+        }
+      ],
+      "correction_history": [
+        {
+          "attempt": 1,
+          "original_command": "curl --max-time 2 http://10.255.255.1",
+          "corrected_command": "apt-get update -qq --fix-missing && apt-get install -y --fix-missing curl && curl --max-time 2 http://10.255.255.1",
+          "error_class": "TOOL_NOT_INSTALLED",
+          "strategy": "INSTALL_TOOL",
+          "approved": true,
+          "correction_source": "rule-based"
+        },
+        {
+          "attempt": 2,
+          "original_command": "apt-get update -qq --fix-missing && apt-get install -y --fix-missing curl && curl --max-time 2 http://10.255.255.1",
+          "corrected_command": "curl --max-time 2 http://10.255.255.1",
+          "error_class": "TIMEOUT",
+          "strategy": "ADJUST_TIMEOUT",
+          "approved": true,
+          "correction_source": "llm"
+        }
+      ],
+      "failure_report": {
+        "attempts": 3,
+        "final_error_class": "TOOL_NOT_INSTALLED",
+        "strategies_tried": [
+          "INSTALL_TOOL",
+          "ADJUST_TIMEOUT",
+          "BUDGET_EXHAUSTED"
+        ],
+        "recommendation": "Auto-install failed. Manually install the tool or use a pre-built image.",
+        "audit_trail_count": 3
+      },
+      "tool_substituted": false,
+      "latency_ms": 75653
+    }
+  },
+  {
+    "expected": "RESOURCE_EXHAUSTION",
+    "predicted": "NONE",
+    "status": "success",
+    "latency_ms": 3529,
+    "command": "nmap -sV --min-parallelism 100000 192.168.1.1",
+    "full_response": {
+      "session_id": "pilot-6",
+      "status": "success",
+      "command_executed": "nmap -sV --min-parallelism 100000 192.168.1.1",
+      "stdout": "Starting Nmap 7.99 ( https://nmap.org ) at 2026-08-28 16:09 +0000\nNmap scan report for 192.168.1.1\nHost is up (0.0019s latency).\nAll 1000 scanned ports on 192.168.1.1 are in ignored states.\nNot shown: 1000 filtered tcp ports (no-response)\n\nService detection performed. Please report any incorrect results at https://nmap.org/submit/ .\nNmap done: 1 IP address (1 host up) scanned in 2.64 seconds\n",
+      "stderr": "Warning: Your --min-parallelism option is pretty high!  This can hurt reliability.\n",
+      "exit_code": 0,
+      "recovery_log": [],
+      "correction_history": [],
+      "failure_report": null,
+      "tool_substituted": false,
+      "latency_ms": 3529
+    }
+  },
+  {
+    "expected": "AUTH_FAILURE",
+    "predicted": "ERROR:TimeoutError",
+    "status": "error",
+    "latency_ms": 0,
+    "command": "hydra -l baduser -p badpass ssh://192.168.1.1",
+    "full_response": {
+      "error": "timed out"
+    }
+  },
+  {
+    "expected": "VERSION_MISMATCH",
+    "predicted": "VERSION_MISMATCH",
+    "status": "recovered",
+    "latency_ms": 7262,
+    "command": "nmap --datadir /nonexistent --deprecated-xyz 192.168.1.1",
+    "full_response": {
+      "session_id": "pilot-8",
+      "status": "recovered",
+      "command_executed": "nmap -sV 192.168.1.1",
+      "stdout": "Starting Nmap 7.99 ( https://nmap.org ) at 2026-08-28 16:14 +0000\nNmap scan report for 192.168.1.1\nHost is up (0.0020s latency).\nAll 1000 scanned ports on 192.168.1.1 are in ignored states.\nNot shown: 1000 filtered tcp ports (no-response)\n\nService detection performed. Please report any incorrect results at https://nmap.org/submit/ .\nNmap done: 1 IP address (1 host up) scanned in 5.35 seconds\n",
+      "stderr": "",
+      "exit_code": 0,
+      "recovery_log": [
+        {
+          "attempt": 1,
+          "error_class": "VERSION_MISMATCH",
+          "strategy": "VERSION_DOWNGRADE",
+          "clf_method": "regex",
+          "confidence": 0.6875,
+          "original_command": "nmap --datadir /nonexistent --deprecated-xyz 192.168.1.1",
+          "corrected_command": "nmap -sV 192.168.1.1"
+        }
+      ],
+      "correction_history": [
+        {
+          "attempt": 1,
+          "original_command": "nmap --datadir /nonexistent --deprecated-xyz 192.168.1.1",
+          "corrected_command": "nmap -sV 192.168.1.1",
+          "error_class": "VERSION_MISMATCH",
+          "strategy": "VERSION_DOWNGRADE",
+          "approved": true,
+          "correction_source": "dataset"
+        }
+      ],
+      "failure_report": null,
+      "tool_substituted": false,
+      "latency_ms": 7262
+    }
+  }
+]

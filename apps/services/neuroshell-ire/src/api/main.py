@@ -30,7 +30,9 @@ from src.schemas.intent_schema import (
 from src.pipeline.contract_builder import ContractBuilder
 from src.validation.contract_validator import ContractValidator
 from src.integration.planner_client import PlannerClient
+from src.integration.executor_client import ExecutorClient, VulnerabilityClient
 from src.utils.logging_config import get_logger
+from src.utils.chain_cache import ChainCache
 
 
 from src.audit import get_audit_logger
@@ -53,6 +55,7 @@ async def lifespan(app: FastAPI):
     app.state.contract_builder = ContractBuilder()
     app.state.contract_validator = ContractValidator()
     app.state.audit_logger = get_audit_logger(settings=settings)
+    app.state.chain_cache = ChainCache()
     if settings.planner_enabled:
         app.state.planner = PlannerClient(
             url=settings.planner_url,
@@ -64,6 +67,31 @@ async def lifespan(app: FastAPI):
         )
     else:
         app.state.planner = None
+
+    if settings.component3_enabled:
+        app.state.executor = ExecutorClient(
+            url=settings.component3_url,
+            timeout_seconds=settings.component3_timeout_seconds,
+        )
+        logger.info(
+            "executor_integration", status="enabled", url=settings.component3_url
+        )
+    else:
+        app.state.executor = None
+
+    if settings.component4_enabled:
+        app.state.vuln_analyzer = VulnerabilityClient(
+            url=settings.component4_url,
+            timeout_seconds=settings.component4_timeout_seconds,
+        )
+        logger.info(
+            "vuln_analysis_integration",
+            status="enabled",
+            url=settings.component4_url,
+        )
+    else:
+        app.state.vuln_analyzer = None
+
     logger.info(
         "ire_startup",
         status="ready",
@@ -340,6 +368,30 @@ async def execute_flow(
         raise HTTPException(status_code=400,
                             detail="Command cannot be empty")
 
+    # ── Persistent chain cache: identical input short-circuits the chain ──
+    chain_cache: Optional[ChainCache] = getattr(app.state, "chain_cache", None)
+    if chain_cache is not None:
+        cached = chain_cache.lookup(body.command)
+        if cached:
+            content = cached.get("flow") or {}
+            step_1 = content.get("flow", {}).get("step_1_user_input")
+            if isinstance(step_1, dict):
+                step_1["command"] = body.command
+                step_1["session_id"] = body.session_id
+                step_1["role"] = body.role
+            headers = {
+                "X-IRE-Schema-Version": "1,2",
+                "X-IRE-Cache-Hit": "chain",
+                "X-Chain-Cache-Hit": "true",
+            }
+            logger.info(
+                "chain_cache_hit",
+                key=cached.get("key"),
+                session_id=body.session_id,
+                hit_count=cached.get("hit_count", 0),
+            )
+            return JSONResponse(content=content, headers=headers)
+
     # ── Component 01: parse & validate ──────────────────────────────────
     v2_response = pipeline.parse(body)
 
@@ -399,21 +451,101 @@ async def execute_flow(
             "output": None,
         }
 
-    return JSONResponse(
-        content={
-            "status": "ok",
-            "flow": {
-                "step_1_user_input": {
-                    "command": body.command,
-                    "session_id": body.session_id,
-                    "role": body.role,
-                },
-                "step_2_component_1": component_1,
-                "step_3_component_2": component_2,
+    # ── Component 03: execute the planned command via AEERE ──────────────
+    executor = getattr(app.state, "executor", None)
+    component_3 = None
+    if (
+        executor is not None
+        and component_2 and component_2.get("status") == "success"
+    ):
+        c2_result = component_2.get("output") or {}
+        c3_payload = {
+            "command": c2_result.get("command"),
+            "tool": c2_result.get("tool"),
+            "session_id": c2_result.get("session_id"),
+            "intent_ref": c2_result.get("intent_ref"),
+        }
+        if c3_payload.get("command"):
+            c3_started = time.perf_counter()
+            c3_raw = await executor.push(dict(c3_payload))
+            c3_elapsed_ms = int(
+                (time.perf_counter() - c3_started) * 1000
+            )
+            c3_raw["integration_latency_ms"] = c3_elapsed_ms
+            component_3 = {
+                "status": c3_raw.get("status"),
+                "latency_ms": c3_elapsed_ms,
+                "output": c3_raw,
+            }
+
+    # ── Component 04: analyse the AEERE result via AVAE ─────────────────
+    vuln_analyzer = getattr(app.state, "vuln_analyzer", None)
+    component_4 = None
+    if (
+        vuln_analyzer is not None
+        and component_3 and component_3.get("output")
+    ):
+        c3_body = component_3.get("output") or {}
+        is_forwardable = bool(
+            c3_body.get("status") in ("success", "recovered", "failed")
+            and c3_body.get("session_id")
+            and c3_body.get("command_executed")
+        )
+        if is_forwardable:
+            c2_result = component_2.get("output") or {}
+            c4_payload = {
+                "session_id": c3_body.get("session_id"),
+                "status": c3_body.get("status"),
+                "command_executed": c3_body.get("command_executed"),
+                "stdout": c3_body.get("stdout", ""),
+                "stderr": c3_body.get("stderr", ""),
+                "exit_code": c3_body.get("exit_code", 1),
+                "tool": c2_result.get("tool"),
+                "intent_ref": c2_result.get("intent_ref"),
+                "latency_ms": c3_body.get("latency_ms", 0),
+            }
+            c4_started = time.perf_counter()
+            c4_raw = await vuln_analyzer.push(dict(c4_payload))
+            c4_elapsed_ms = int(
+                (time.perf_counter() - c4_started) * 1000
+            )
+            c4_raw["integration_latency_ms"] = c4_elapsed_ms
+            component_4 = {
+                "status": c4_raw.get("status"),
+                "latency_ms": c4_elapsed_ms,
+                "output": c4_raw,
+            }
+        else:
+            component_4 = {
+                "status": "skipped",
+                "reason": (
+                    "C3 did not produce a forwardable ExecutionResult "
+                    "(transport failure / timeout) - nothing to analyse"
+                ),
+                "output": None,
+            }
+
+    content = {
+        "status": "ok",
+        "flow": {
+            "step_1_user_input": {
+                "command": body.command,
+                "session_id": body.session_id,
+                "role": body.role,
             },
+            "step_2_component_1": component_1,
+            "step_3_component_2": component_2,
+            "step_4_component_3": component_3,
+            "step_5_component_4": component_4,
         },
-        headers=_response_headers(v2_response),
-    )
+    }
+
+    if chain_cache is not None and component_1.get("status") == "success":
+        chain_cache.store(body.command, content)
+
+    headers = _response_headers(v2_response)
+    headers["X-Chain-Cache-Hit"] = "false"
+    return JSONResponse(content=content, headers=headers)
 
 
 @app.post(
@@ -802,6 +934,29 @@ async def get_audit_summary_endpoint(
         "status": "success",
         "summary": summary,
     }
+
+
+@app.get("/admin/chain-cache", tags=["Admin"])
+async def get_chain_cache_stats(
+    _api_key: str = Depends(verify_api_key),
+):
+    """Returns stats for the persistent /execute chain cache."""
+    cc: Optional[ChainCache] = getattr(app.state, "chain_cache", None)
+    if cc is None:
+        raise HTTPException(status_code=503, detail="Chain cache not initialized")
+    return {"status": "success", **cc.stats()}
+
+
+@app.delete("/admin/chain-cache", tags=["Admin"])
+async def clear_chain_cache(
+    _api_key: str = Depends(verify_api_key),
+):
+    """Clears the persistent /execute chain cache."""
+    cc: Optional[ChainCache] = getattr(app.state, "chain_cache", None)
+    if cc is None:
+        raise HTTPException(status_code=503, detail="Chain cache not initialized")
+    cc.clear()
+    return {"status": "success", "cleared": True, **cc.stats()}
 
 
 @app.get("/engagement/scope", tags=["Engagement"])

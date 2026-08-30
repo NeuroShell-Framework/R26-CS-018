@@ -1,0 +1,4 @@
+FROM kalilinux/kali-rolling
+RUN apt-get update && apt-get install -y nmap nikto gobuster dirb wordlists nginx && gunzip -f /usr/share/wordlists/*.gz 2>/dev/null; mkdir -p /var/www/html; echo hello > /var/www/html/index.html; echo adminpage > /var/www/html/admin; echo loginpage > /var/www/html/login; echo testpage > /var/www/html/test
+RUN echo '#!/bin/bash' > /usr/local/bin/entrypoint.sh && echo 'service nginx start >/dev/null 2>&1' >> /usr/local/bin/entrypoint.sh && echo 'exec "$@"' >> /usr/local/bin/entrypoint.sh && chmod +x /usr/local/bin/entrypoint.sh
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
