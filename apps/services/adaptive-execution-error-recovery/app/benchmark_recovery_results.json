@@ -1,0 +1,625 @@
+{
+  "recovery_rate": 100.0,
+  "n_fixable": 15,
+  "n_recovered": 15,
+  "avg_latency_ms": 36734.933333333334,
+  "avg_recovered_latency_ms": 36734.933333333334,
+  "mean_attempts": 1.0,
+  "results": [
+    {
+      "cmd": "nmap --totally-invalid-flag-xyz 192.168.1.1",
+      "tool": "nmap",
+      "fixable": true,
+      "status": "recovered",
+      "latency_ms": 7747,
+      "attempts": 1,
+      "full": {
+        "session_id": "rec2-1",
+        "status": "recovered",
+        "command_executed": "nmap -sV 192.168.1.1",
+        "stdout": "Starting Nmap 7.99 ( https://nmap.org ) at 2026-08-28 19:49 +0000\nNmap scan report for 192.168.1.1\nHost is up (0.0018s latency).\nAll 1000 scanned ports on 192.168.1.1 are in ignored states.\nNot shown: 1000 filtered tcp ports (no-response)\n\nService detection performed. Please report any incorrect results at https://nmap.org/submit/ .\nNmap done: 1 IP address (1 host up) scanned in 5.22 seconds\n",
+        "stderr": "",
+        "exit_code": 0,
+        "recovery_log": [
+          {
+            "attempt": 1,
+            "error_class": "WRONG_SYNTAX",
+            "strategy": "FIX_SYNTAX",
+            "clf_method": "regex",
+            "confidence": 0.65,
+            "original_command": "nmap --totally-invalid-flag-xyz 192.168.1.1",
+            "corrected_command": "nmap -sV 192.168.1.1"
+          }
+        ],
+        "correction_history": [
+          {
+            "attempt": 1,
+            "original_command": "nmap --totally-invalid-flag-xyz 192.168.1.1",
+            "corrected_command": "nmap -sV 192.168.1.1",
+            "error_class": "WRONG_SYNTAX",
+            "strategy": "FIX_SYNTAX",
+            "approved": true,
+            "correction_source": "dataset"
+          }
+        ],
+        "failure_report": null,
+        "tool_substituted": false,
+        "latency_ms": 7747
+      }
+    },
+    {
+      "cmd": "nmap -sV --bad-opt 192.168.1.1",
+      "tool": "nmap",
+      "fixable": true,
+      "status": "recovered",
+      "latency_ms": 6729,
+      "attempts": 1,
+      "full": {
+        "session_id": "rec2-2",
+        "status": "recovered",
+        "command_executed": "nmap -sV 192.168.1.1",
+        "stdout": "Starting Nmap 7.99 ( https://nmap.org ) at 2026-08-28 19:50 +0000\nNmap scan report for 192.168.1.1\nHost is up (0.0017s latency).\nAll 1000 scanned ports on 192.168.1.1 are in ignored states.\nNot shown: 1000 filtered tcp ports (no-response)\n\nService detection performed. Please report any incorrect results at https://nmap.org/submit/ .\nNmap done: 1 IP address (1 host up) scanned in 5.19 seconds\n",
+        "stderr": "",
+        "exit_code": 0,
+        "recovery_log": [
+          {
+            "attempt": 1,
+            "error_class": "VERSION_MISMATCH",
+            "strategy": "VERSION_DOWNGRADE",
+            "clf_method": "regex",
+            "confidence": 0.6437499999999999,
+            "original_command": "nmap -sV --bad-opt 192.168.1.1",
+            "corrected_command": "nmap -sV 192.168.1.1"
+          }
+        ],
+        "correction_history": [
+          {
+            "attempt": 1,
+            "original_command": "nmap -sV --bad-opt 192.168.1.1",
+            "corrected_command": "nmap -sV 192.168.1.1",
+            "error_class": "VERSION_MISMATCH",
+            "strategy": "VERSION_DOWNGRADE",
+            "approved": true,
+            "correction_source": "dataset"
+          }
+        ],
+        "failure_report": null,
+        "tool_substituted": false,
+        "latency_ms": 6729
+      }
+    },
+    {
+      "cmd": "nmap --xyz-flag 192.168.99.99",
+      "tool": "nmap",
+      "fixable": true,
+      "status": "recovered",
+      "latency_ms": 6836,
+      "attempts": 1,
+      "full": {
+        "session_id": "rec2-3",
+        "status": "recovered",
+        "command_executed": "nmap -sV 192.168.99.99",
+        "stdout": "Starting Nmap 7.99 ( https://nmap.org ) at 2026-08-28 19:50 +0000\nNmap scan report for 192.168.99.99\nHost is up (0.0020s latency).\nAll 1000 scanned ports on 192.168.99.99 are in ignored states.\nNot shown: 1000 filtered tcp ports (no-response)\n\nService detection performed. Please report any incorrect results at https://nmap.org/submit/ .\nNmap done: 1 IP address (1 host up) scanned in 5.21 seconds\n",
+        "stderr": "",
+        "exit_code": 0,
+        "recovery_log": [
+          {
+            "attempt": 1,
+            "error_class": "VERSION_MISMATCH",
+            "strategy": "VERSION_DOWNGRADE",
+            "clf_method": "regex",
+            "confidence": 0.6437499999999999,
+            "original_command": "nmap --xyz-flag 192.168.99.99",
+            "corrected_command": "nmap -sV 192.168.99.99"
+          }
+        ],
+        "correction_history": [
+          {
+            "attempt": 1,
+            "original_command": "nmap --xyz-flag 192.168.99.99",
+            "corrected_command": "nmap -sV 192.168.99.99",
+            "error_class": "VERSION_MISMATCH",
+            "strategy": "VERSION_DOWNGRADE",
+            "approved": true,
+            "correction_source": "dataset"
+          }
+        ],
+        "failure_report": null,
+        "tool_substituted": false,
+        "latency_ms": 6836
+      }
+    },
+    {
+      "cmd": "nmap -zz 192.168.1.1",
+      "tool": "nmap",
+      "fixable": true,
+      "status": "recovered",
+      "latency_ms": 6863,
+      "attempts": 1,
+      "full": {
+        "session_id": "rec2-4",
+        "status": "recovered",
+        "command_executed": "nmap -sV 192.168.1.1",
+        "stdout": "Starting Nmap 7.99 ( https://nmap.org ) at 2026-08-28 19:50 +0000\nNmap scan report for 192.168.1.1\nHost is up (0.0017s latency).\nAll 1000 scanned ports on 192.168.1.1 are in ignored states.\nNot shown: 1000 filtered tcp ports (no-response)\n\nService detection performed. Please report any incorrect results at https://nmap.org/submit/ .\nNmap done: 1 IP address (1 host up) scanned in 5.19 seconds\n",
+        "stderr": "",
+        "exit_code": 0,
+        "recovery_log": [
+          {
+            "attempt": 1,
+            "error_class": "VERSION_MISMATCH",
+            "strategy": "VERSION_DOWNGRADE",
+            "clf_method": "regex",
+            "confidence": 0.6437499999999999,
+            "original_command": "nmap -zz 192.168.1.1",
+            "corrected_command": "nmap -sV 192.168.1.1"
+          }
+        ],
+        "correction_history": [
+          {
+            "attempt": 1,
+            "original_command": "nmap -zz 192.168.1.1",
+            "corrected_command": "nmap -sV 192.168.1.1",
+            "error_class": "VERSION_MISMATCH",
+            "strategy": "VERSION_DOWNGRADE",
+            "approved": true,
+            "correction_source": "dataset"
+          }
+        ],
+        "failure_report": null,
+        "tool_substituted": false,
+        "latency_ms": 6863
+      }
+    },
+    {
+      "cmd": "nmap --invalid 192.168.1.50",
+      "tool": "nmap",
+      "fixable": true,
+      "status": "recovered",
+      "latency_ms": 7697,
+      "attempts": 1,
+      "full": {
+        "session_id": "rec2-5",
+        "status": "recovered",
+        "command_executed": "nmap -sV 192.168.1.50",
+        "stdout": "Starting Nmap 7.99 ( https://nmap.org ) at 2026-08-28 19:50 +0000\nNmap scan report for 192.168.1.50\nHost is up (0.0021s latency).\nAll 1000 scanned ports on 192.168.1.50 are in ignored states.\nNot shown: 1000 filtered tcp ports (no-response)\n\nService detection performed. Please report any incorrect results at https://nmap.org/submit/ .\nNmap done: 1 IP address (1 host up) scanned in 5.12 seconds\n",
+        "stderr": "",
+        "exit_code": 0,
+        "recovery_log": [
+          {
+            "attempt": 1,
+            "error_class": "WRONG_SYNTAX",
+            "strategy": "FIX_SYNTAX",
+            "clf_method": "regex",
+            "confidence": 0.65,
+            "original_command": "nmap --invalid 192.168.1.50",
+            "corrected_command": "nmap -sV 192.168.1.50"
+          }
+        ],
+        "correction_history": [
+          {
+            "attempt": 1,
+            "original_command": "nmap --invalid 192.168.1.50",
+            "corrected_command": "nmap -sV 192.168.1.50",
+            "error_class": "WRONG_SYNTAX",
+            "strategy": "FIX_SYNTAX",
+            "approved": true,
+            "correction_source": "dataset"
+          }
+        ],
+        "failure_report": null,
+        "tool_substituted": false,
+        "latency_ms": 7697
+      }
+    },
+    {
+      "cmd": "nikto --invalid-option-xyz -h 192.168.1.10",
+      "tool": "nikto",
+      "fixable": true,
+      "status": "recovered",
+      "latency_ms": 80197,
+      "attempts": 1,
+      "full": {
+        "session_id": "rec2-6",
+        "status": "recovered",
+        "command_executed": "nikto -h 192.168.1.10",
+        "stdout": "- Nikto v2.6.1\n---------------------------------------------------------------------------\n+ [FAIL] Unable to connect to 192.168.1.10:80.\n",
+        "stderr": "Argument \"Unable to connect to 192.168.1.10:80\" isn't numeric in numeric ne (!=) at /var/lib/nikto/nikto.pl line 155.\n",
+        "exit_code": 0,
+        "recovery_log": [
+          {
+            "attempt": 1,
+            "error_class": "WRONG_SYNTAX",
+            "strategy": "FIX_SYNTAX",
+            "clf_method": "regex",
+            "confidence": 0.6749999999999999,
+            "original_command": "nikto --invalid-option-xyz -h 192.168.1.10",
+            "corrected_command": "nikto -h 192.168.1.10"
+          }
+        ],
+        "correction_history": [
+          {
+            "attempt": 1,
+            "original_command": "nikto --invalid-option-xyz -h 192.168.1.10",
+            "corrected_command": "nikto -h 192.168.1.10",
+            "error_class": "WRONG_SYNTAX",
+            "strategy": "FIX_SYNTAX",
+            "approved": true,
+            "correction_source": "llm"
+          }
+        ],
+        "failure_report": null,
+        "tool_substituted": false,
+        "latency_ms": 80197
+      }
+    },
+    {
+      "cmd": "nikto --bad-flag -h 192.168.1.10",
+      "tool": "nikto",
+      "fixable": true,
+      "status": "recovered",
+      "latency_ms": 55891,
+      "attempts": 1,
+      "full": {
+        "session_id": "rec2-7",
+        "status": "recovered",
+        "command_executed": "nikto -h 192.168.1.10",
+        "stdout": "- Nikto v2.6.1\n---------------------------------------------------------------------------\n+ [FAIL] Unable to connect to 192.168.1.10:80.\n",
+        "stderr": "Argument \"Unable to connect to 192.168.1.10:80\" isn't numeric in numeric ne (!=) at /var/lib/nikto/nikto.pl line 155.\n",
+        "exit_code": 0,
+        "recovery_log": [
+          {
+            "attempt": 1,
+            "error_class": "WRONG_SYNTAX",
+            "strategy": "FIX_SYNTAX",
+            "clf_method": "regex",
+            "confidence": 0.65,
+            "original_command": "nikto --bad-flag -h 192.168.1.10",
+            "corrected_command": "nikto -h 192.168.1.10"
+          }
+        ],
+        "correction_history": [
+          {
+            "attempt": 1,
+            "original_command": "nikto --bad-flag -h 192.168.1.10",
+            "corrected_command": "nikto -h 192.168.1.10",
+            "error_class": "WRONG_SYNTAX",
+            "strategy": "FIX_SYNTAX",
+            "approved": true,
+            "correction_source": "llm"
+          }
+        ],
+        "failure_report": null,
+        "tool_substituted": false,
+        "latency_ms": 55891
+      }
+    },
+    {
+      "cmd": "nikto -XYZ -h 192.168.1.10",
+      "tool": "nikto",
+      "fixable": true,
+      "status": "recovered",
+      "latency_ms": 55780,
+      "attempts": 1,
+      "full": {
+        "session_id": "rec2-8",
+        "status": "recovered",
+        "command_executed": "nikto -h 192.168.1.10",
+        "stdout": "- Nikto v2.6.1\n---------------------------------------------------------------------------\n+ [FAIL] Unable to connect to 192.168.1.10:80.\n",
+        "stderr": "Argument \"Unable to connect to 192.168.1.10:80\" isn't numeric in numeric ne (!=) at /var/lib/nikto/nikto.pl line 155.\n",
+        "exit_code": 0,
+        "recovery_log": [
+          {
+            "attempt": 1,
+            "error_class": "WRONG_SYNTAX",
+            "strategy": "FIX_SYNTAX",
+            "clf_method": "regex",
+            "confidence": 0.65,
+            "original_command": "nikto -XYZ -h 192.168.1.10",
+            "corrected_command": "nikto -h 192.168.1.10"
+          }
+        ],
+        "correction_history": [
+          {
+            "attempt": 1,
+            "original_command": "nikto -XYZ -h 192.168.1.10",
+            "corrected_command": "nikto -h 192.168.1.10",
+            "error_class": "WRONG_SYNTAX",
+            "strategy": "FIX_SYNTAX",
+            "approved": true,
+            "correction_source": "llm"
+          }
+        ],
+        "failure_report": null,
+        "tool_substituted": false,
+        "latency_ms": 55780
+      }
+    },
+    {
+      "cmd": "nikto --wrong -h 192.168.1.20",
+      "tool": "nikto",
+      "fixable": true,
+      "status": "recovered",
+      "latency_ms": 56220,
+      "attempts": 1,
+      "full": {
+        "session_id": "rec2-9",
+        "status": "recovered",
+        "command_executed": "nikto -h 192.168.1.20",
+        "stdout": "- Nikto v2.6.1\n---------------------------------------------------------------------------\n+ [FAIL] Unable to connect to 192.168.1.20:80.\n",
+        "stderr": "Argument \"Unable to connect to 192.168.1.20:80\" isn't numeric in numeric ne (!=) at /var/lib/nikto/nikto.pl line 155.\n",
+        "exit_code": 0,
+        "recovery_log": [
+          {
+            "attempt": 1,
+            "error_class": "WRONG_SYNTAX",
+            "strategy": "FIX_SYNTAX",
+            "clf_method": "regex",
+            "confidence": 0.65,
+            "original_command": "nikto --wrong -h 192.168.1.20",
+            "corrected_command": "nikto -h 192.168.1.20"
+          }
+        ],
+        "correction_history": [
+          {
+            "attempt": 1,
+            "original_command": "nikto --wrong -h 192.168.1.20",
+            "corrected_command": "nikto -h 192.168.1.20",
+            "error_class": "WRONG_SYNTAX",
+            "strategy": "FIX_SYNTAX",
+            "approved": true,
+            "correction_source": "llm"
+          }
+        ],
+        "failure_report": null,
+        "tool_substituted": false,
+        "latency_ms": 56220
+      }
+    },
+    {
+      "cmd": "nikto --nope -h 192.168.1.30",
+      "tool": "nikto",
+      "fixable": true,
+      "status": "recovered",
+      "latency_ms": 56173,
+      "attempts": 1,
+      "full": {
+        "session_id": "rec2-10",
+        "status": "recovered",
+        "command_executed": "nikto -h 192.168.1.30",
+        "stdout": "- Nikto v2.6.1\n---------------------------------------------------------------------------\n+ [FAIL] Unable to connect to 192.168.1.30:80.\n",
+        "stderr": "Argument \"Unable to connect to 192.168.1.30:80\" isn't numeric in numeric ne (!=) at /var/lib/nikto/nikto.pl line 155.\n",
+        "exit_code": 0,
+        "recovery_log": [
+          {
+            "attempt": 1,
+            "error_class": "WRONG_SYNTAX",
+            "strategy": "FIX_SYNTAX",
+            "clf_method": "regex",
+            "confidence": 0.65,
+            "original_command": "nikto --nope -h 192.168.1.30",
+            "corrected_command": "nikto -h 192.168.1.30"
+          }
+        ],
+        "correction_history": [
+          {
+            "attempt": 1,
+            "original_command": "nikto --nope -h 192.168.1.30",
+            "corrected_command": "nikto -h 192.168.1.30",
+            "error_class": "WRONG_SYNTAX",
+            "strategy": "FIX_SYNTAX",
+            "approved": true,
+            "correction_source": "llm"
+          }
+        ],
+        "failure_report": null,
+        "tool_substituted": false,
+        "latency_ms": 56173
+      }
+    },
+    {
+      "cmd": "gobuster --totally-invalid-flag-xyz dir -u http://127.0.0.1 -w /usr/share/wordlists/dirb/common.txt",
+      "tool": "gobuster",
+      "fixable": true,
+      "status": "recovered",
+      "latency_ms": 4651,
+      "attempts": 1,
+      "full": {
+        "session_id": "rec2-11",
+        "status": "recovered",
+        "command_executed": "gobuster dir -u http://127.0.0.1 -w /usr/share/wordlists/dirb/common.txt",
+        "stdout": "===============================================================\nGobuster v3.8.2\nby OJ Reeves (@TheColonial) & Christian Mehlmauer (@firefart)\n===============================================================\n[+] Url:                     http://127.0.0.1\n[+] Method:                  GET\n[+] Threads:                 10\n[+] Wordlist:                /usr/share/wordlists/dirb/common.txt\n[+] Negative Status codes:   404\n[+] User Agent:              gobuster/3.8.2\n[+] Timeout:                 10s\n===============================================================\nStarting gobuster in directory enumeration mode\n===============================================================\nadmin                (Status: 200) [Size: 10]\nindex.html           (Status: 200) [Size: 6]\nlogin                (Status: 200) [Size: 10]\ntest                 (Status: 200) [Size: 9]\n===============================================================\nFinished\n===============================================================\n",
+        "stderr": "",
+        "exit_code": 0,
+        "recovery_log": [
+          {
+            "attempt": 1,
+            "error_class": "WRONG_SYNTAX",
+            "strategy": "FIX_SYNTAX",
+            "clf_method": "regex",
+            "confidence": 0.625,
+            "original_command": "gobuster --totally-invalid-flag-xyz dir -u http://127.0.0.1 -w /usr/share/wordlists/dirb/common.txt",
+            "corrected_command": "gobuster dir -u http://127.0.0.1 -w /usr/share/wordlists/dirb/common.txt"
+          }
+        ],
+        "correction_history": [
+          {
+            "attempt": 1,
+            "original_command": "gobuster --totally-invalid-flag-xyz dir -u http://127.0.0.1 -w /usr/share/wordlists/dirb/common.txt",
+            "corrected_command": "gobuster dir -u http://127.0.0.1 -w /usr/share/wordlists/dirb/common.txt",
+            "error_class": "WRONG_SYNTAX",
+            "strategy": "FIX_SYNTAX",
+            "approved": true,
+            "correction_source": "dataset"
+          }
+        ],
+        "failure_report": null,
+        "tool_substituted": false,
+        "latency_ms": 4651
+      }
+    },
+    {
+      "cmd": "gobuster --bad dir -u http://127.0.0.1 -w /usr/share/wordlists/dirb/common.txt",
+      "tool": "gobuster",
+      "fixable": true,
+      "status": "recovered",
+      "latency_ms": 70941,
+      "attempts": 1,
+      "full": {
+        "session_id": "rec2-12",
+        "status": "recovered",
+        "command_executed": "gobuster dir -u http://127.0.0.1 -w /usr/share/wordlists/dirb/common.txt",
+        "stdout": "===============================================================\nGobuster v3.8.2\nby OJ Reeves (@TheColonial) & Christian Mehlmauer (@firefart)\n===============================================================\n[+] Url:                     http://127.0.0.1\n[+] Method:                  GET\n[+] Threads:                 10\n[+] Wordlist:                /usr/share/wordlists/dirb/common.txt\n[+] Negative Status codes:   404\n[+] User Agent:              gobuster/3.8.2\n[+] Timeout:                 10s\n===============================================================\nStarting gobuster in directory enumeration mode\n===============================================================\nadmin                (Status: 200) [Size: 10]\nindex.html           (Status: 200) [Size: 6]\nlogin                (Status: 200) [Size: 10]\ntest                 (Status: 200) [Size: 9]\n===============================================================\nFinished\n===============================================================\n",
+        "stderr": "",
+        "exit_code": 0,
+        "recovery_log": [
+          {
+            "attempt": 1,
+            "error_class": "WRONG_SYNTAX",
+            "strategy": "FIX_SYNTAX",
+            "clf_method": "llm",
+            "confidence": 1.0,
+            "original_command": "gobuster --bad dir -u http://127.0.0.1 -w /usr/share/wordlists/dirb/common.txt",
+            "corrected_command": "gobuster dir -u http://127.0.0.1 -w /usr/share/wordlists/dirb/common.txt"
+          }
+        ],
+        "correction_history": [
+          {
+            "attempt": 1,
+            "original_command": "gobuster --bad dir -u http://127.0.0.1 -w /usr/share/wordlists/dirb/common.txt",
+            "corrected_command": "gobuster dir -u http://127.0.0.1 -w /usr/share/wordlists/dirb/common.txt",
+            "error_class": "WRONG_SYNTAX",
+            "strategy": "FIX_SYNTAX",
+            "approved": true,
+            "correction_source": "llm"
+          }
+        ],
+        "failure_report": null,
+        "tool_substituted": false,
+        "latency_ms": 70941
+      }
+    },
+    {
+      "cmd": "gobuster -ZZ dir -u http://127.0.0.1 -w /usr/share/wordlists/dirb/common.txt",
+      "tool": "gobuster",
+      "fixable": true,
+      "status": "recovered",
+      "latency_ms": 46944,
+      "attempts": 1,
+      "full": {
+        "session_id": "rec2-13",
+        "status": "recovered",
+        "command_executed": "gobuster dir -u http://127.0.0.1 -w /usr/share/wordlists/dirb/common.txt",
+        "stdout": "===============================================================\nGobuster v3.8.2\nby OJ Reeves (@TheColonial) & Christian Mehlmauer (@firefart)\n===============================================================\n[+] Url:                     http://127.0.0.1\n[+] Method:                  GET\n[+] Threads:                 10\n[+] Wordlist:                /usr/share/wordlists/dirb/common.txt\n[+] Negative Status codes:   404\n[+] User Agent:              gobuster/3.8.2\n[+] Timeout:                 10s\n===============================================================\nStarting gobuster in directory enumeration mode\n===============================================================\nadmin                (Status: 200) [Size: 10]\nindex.html           (Status: 200) [Size: 6]\nlogin                (Status: 200) [Size: 10]\ntest                 (Status: 200) [Size: 9]\n===============================================================\nFinished\n===============================================================\n",
+        "stderr": "",
+        "exit_code": 0,
+        "recovery_log": [
+          {
+            "attempt": 1,
+            "error_class": "WRONG_SYNTAX",
+            "strategy": "FIX_SYNTAX",
+            "clf_method": "llm",
+            "confidence": 0.95,
+            "original_command": "gobuster -ZZ dir -u http://127.0.0.1 -w /usr/share/wordlists/dirb/common.txt",
+            "corrected_command": "gobuster dir -u http://127.0.0.1 -w /usr/share/wordlists/dirb/common.txt"
+          }
+        ],
+        "correction_history": [
+          {
+            "attempt": 1,
+            "original_command": "gobuster -ZZ dir -u http://127.0.0.1 -w /usr/share/wordlists/dirb/common.txt",
+            "corrected_command": "gobuster dir -u http://127.0.0.1 -w /usr/share/wordlists/dirb/common.txt",
+            "error_class": "WRONG_SYNTAX",
+            "strategy": "FIX_SYNTAX",
+            "approved": true,
+            "correction_source": "llm"
+          }
+        ],
+        "failure_report": null,
+        "tool_substituted": false,
+        "latency_ms": 46944
+      }
+    },
+    {
+      "cmd": "gobuster --xyz dir -u http://127.0.0.1 -w /usr/share/wordlists/dirb/common.txt",
+      "tool": "gobuster",
+      "fixable": true,
+      "status": "recovered",
+      "latency_ms": 44538,
+      "attempts": 1,
+      "full": {
+        "session_id": "rec2-14",
+        "status": "recovered",
+        "command_executed": "gobuster dir -u http://127.0.0.1 -w /usr/share/wordlists/dirb/common.txt",
+        "stdout": "===============================================================\nGobuster v3.8.2\nby OJ Reeves (@TheColonial) & Christian Mehlmauer (@firefart)\n===============================================================\n[+] Url:                     http://127.0.0.1\n[+] Method:                  GET\n[+] Threads:                 10\n[+] Wordlist:                /usr/share/wordlists/dirb/common.txt\n[+] Negative Status codes:   404\n[+] User Agent:              gobuster/3.8.2\n[+] Timeout:                 10s\n===============================================================\nStarting gobuster in directory enumeration mode\n===============================================================\nadmin                (Status: 200) [Size: 10]\nindex.html           (Status: 200) [Size: 6]\nlogin                (Status: 200) [Size: 10]\ntest                 (Status: 200) [Size: 9]\n===============================================================\nFinished\n===============================================================\n",
+        "stderr": "",
+        "exit_code": 0,
+        "recovery_log": [
+          {
+            "attempt": 1,
+            "error_class": "WRONG_SYNTAX",
+            "strategy": "FIX_SYNTAX",
+            "clf_method": "llm",
+            "confidence": 1.0,
+            "original_command": "gobuster --xyz dir -u http://127.0.0.1 -w /usr/share/wordlists/dirb/common.txt",
+            "corrected_command": "gobuster dir -u http://127.0.0.1 -w /usr/share/wordlists/dirb/common.txt"
+          }
+        ],
+        "correction_history": [
+          {
+            "attempt": 1,
+            "original_command": "gobuster --xyz dir -u http://127.0.0.1 -w /usr/share/wordlists/dirb/common.txt",
+            "corrected_command": "gobuster dir -u http://127.0.0.1 -w /usr/share/wordlists/dirb/common.txt",
+            "error_class": "WRONG_SYNTAX",
+            "strategy": "FIX_SYNTAX",
+            "approved": true,
+            "correction_source": "llm"
+          }
+        ],
+        "failure_report": null,
+        "tool_substituted": false,
+        "latency_ms": 44538
+      }
+    },
+    {
+      "cmd": "gobuster --nope dir -u http://127.0.0.1 -w /usr/share/wordlists/dirb/common.txt",
+      "tool": "gobuster",
+      "fixable": true,
+      "status": "recovered",
+      "latency_ms": 43817,
+      "attempts": 1,
+      "full": {
+        "session_id": "rec2-15",
+        "status": "recovered",
+        "command_executed": "gobuster dir -u http://127.0.0.1 -w /usr/share/wordlists/dirb/common.txt",
+        "stdout": "===============================================================\nGobuster v3.8.2\nby OJ Reeves (@TheColonial) & Christian Mehlmauer (@firefart)\n===============================================================\n[+] Url:                     http://127.0.0.1\n[+] Method:                  GET\n[+] Threads:                 10\n[+] Wordlist:                /usr/share/wordlists/dirb/common.txt\n[+] Negative Status codes:   404\n[+] User Agent:              gobuster/3.8.2\n[+] Timeout:                 10s\n===============================================================\nStarting gobuster in directory enumeration mode\n===============================================================\nadmin                (Status: 200) [Size: 10]\nindex.html           (Status: 200) [Size: 6]\nlogin                (Status: 200) [Size: 10]\ntest                 (Status: 200) [Size: 9]\n===============================================================\nFinished\n===============================================================\n",
+        "stderr": "",
+        "exit_code": 0,
+        "recovery_log": [
+          {
+            "attempt": 1,
+            "error_class": "WRONG_SYNTAX",
+            "strategy": "FIX_SYNTAX",
+            "clf_method": "llm",
+            "confidence": 1.0,
+            "original_command": "gobuster --nope dir -u http://127.0.0.1 -w /usr/share/wordlists/dirb/common.txt",
+            "corrected_command": "gobuster dir -u http://127.0.0.1 -w /usr/share/wordlists/dirb/common.txt"
+          }
+        ],
+        "correction_history": [
+          {
+            "attempt": 1,
+            "original_command": "gobuster --nope dir -u http://127.0.0.1 -w /usr/share/wordlists/dirb/common.txt",
+            "corrected_command": "gobuster dir -u http://127.0.0.1 -w /usr/share/wordlists/dirb/common.txt",
+            "error_class": "WRONG_SYNTAX",
+            "strategy": "FIX_SYNTAX",
+            "approved": true,
+            "correction_source": "llm"
+          }
+        ],
+        "failure_report": null,
+        "tool_substituted": false,
+        "latency_ms": 43817
+      }
+    }
+  ]
+}

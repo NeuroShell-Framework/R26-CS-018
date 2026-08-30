@@ -1,0 +1,115 @@
+{
+  "naive_rate": 33.33333333333333,
+  "rule_rate": 100.0,
+  "engine_rate": 100.0,
+  "naive_recovered": 5,
+  "rule_recovered": 15,
+  "n": 15,
+  "records": [
+    {
+      "cmd": "nmap --totally-invalid-flag-xyz 192.168.1.1",
+      "tool": "nmap",
+      "naive_recovered": false,
+      "rule_recovered": true,
+      "rule_fixed_cmd": "nmap 192.168.1.1"
+    },
+    {
+      "cmd": "nmap -sV --bad-opt 192.168.1.1",
+      "tool": "nmap",
+      "naive_recovered": false,
+      "rule_recovered": true,
+      "rule_fixed_cmd": "nmap -sV 192.168.1.1"
+    },
+    {
+      "cmd": "nmap --xyz-flag 192.168.99.99",
+      "tool": "nmap",
+      "naive_recovered": false,
+      "rule_recovered": true,
+      "rule_fixed_cmd": "nmap 192.168.99.99"
+    },
+    {
+      "cmd": "nmap -zz 192.168.1.1",
+      "tool": "nmap",
+      "naive_recovered": false,
+      "rule_recovered": true,
+      "rule_fixed_cmd": "nmap 192.168.1.1"
+    },
+    {
+      "cmd": "nmap --invalid 192.168.1.50",
+      "tool": "nmap",
+      "naive_recovered": false,
+      "rule_recovered": true,
+      "rule_fixed_cmd": "nmap 192.168.1.50"
+    },
+    {
+      "cmd": "nikto --invalid-option-xyz -h 192.168.1.10",
+      "tool": "nikto",
+      "naive_recovered": true,
+      "rule_recovered": true,
+      "rule_fixed_cmd": "nikto -h 192.168.1.10"
+    },
+    {
+      "cmd": "nikto --bad-flag -h 192.168.1.10",
+      "tool": "nikto",
+      "naive_recovered": true,
+      "rule_recovered": true,
+      "rule_fixed_cmd": "nikto -h 192.168.1.10"
+    },
+    {
+      "cmd": "nikto -XYZ -h 192.168.1.10",
+      "tool": "nikto",
+      "naive_recovered": true,
+      "rule_recovered": true,
+      "rule_fixed_cmd": "nikto -h 192.168.1.10"
+    },
+    {
+      "cmd": "nikto --wrong -h 192.168.1.20",
+      "tool": "nikto",
+      "naive_recovered": true,
+      "rule_recovered": true,
+      "rule_fixed_cmd": "nikto -h 192.168.1.20"
+    },
+    {
+      "cmd": "nikto --nope -h 192.168.1.30",
+      "tool": "nikto",
+      "naive_recovered": true,
+      "rule_recovered": true,
+      "rule_fixed_cmd": "nikto -h 192.168.1.30"
+    },
+    {
+      "cmd": "gobuster --totally-invalid-flag-xyz dir -u http://127.0.0.1 -w /usr/share/wordlists/dirb/common.txt",
+      "tool": "gobuster",
+      "naive_recovered": false,
+      "rule_recovered": true,
+      "rule_fixed_cmd": "gobuster dir -u http://127.0.0.1 -w /usr/share/wordlists/dirb/common.txt"
+    },
+    {
+      "cmd": "gobuster --bad dir -u http://127.0.0.1 -w /usr/share/wordlists/dirb/common.txt",
+      "tool": "gobuster",
+      "naive_recovered": false,
+      "rule_recovered": true,
+      "rule_fixed_cmd": "gobuster dir -u http://127.0.0.1 -w /usr/share/wordlists/dirb/common.txt"
+    },
+    {
+      "cmd": "gobuster -ZZ dir -u http://127.0.0.1 -w /usr/share/wordlists/dirb/common.txt",
+      "tool": "gobuster",
+      "naive_recovered": false,
+      "rule_recovered": true,
+      "rule_fixed_cmd": "gobuster dir -u http://127.0.0.1 -w /usr/share/wordlists/dirb/common.txt"
+    },
+    {
+      "cmd": "gobuster --xyz dir -u http://127.0.0.1 -w /usr/share/wordlists/dirb/common.txt",
+      "tool": "gobuster",
+      "naive_recovered": false,
+      "rule_recovered": true,
+      "rule_fixed_cmd": "gobuster dir -u http://127.0.0.1 -w /usr/share/wordlists/dirb/common.txt"
+    },
+    {
+      "cmd": "gobuster --nope dir -u http://127.0.0.1 -w /usr/share/wordlists/dirb/common.txt",
+      "tool": "gobuster",
+      "naive_recovered": false,
+      "rule_recovered": true,
+      "rule_fixed_cmd": "gobuster dir -u http://127.0.0.1 -w /usr/share/wordlists/dirb/common.txt"
+    }
+  ]
+}

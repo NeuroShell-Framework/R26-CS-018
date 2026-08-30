@@ -1,0 +1,9 @@
+{
+  "python.analysis.extraPaths": [
+    "apps/services/neuroshell-ire",
+    "apps/services/neuroshell-ire/.venv/Lib/site-packages",
+    "apps/services/dynamic-planner-rag",
+    "apps/services/adaptive-execution-error-recovery",
+    "apps/services/ai-vulnerability-analysis"
+  ]
+}

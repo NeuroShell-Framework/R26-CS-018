@@ -1,0 +1,60 @@
+{
+  "error_classes": {
+    "TOOL_NOT_INSTALLED": {
+      "patterns": ["command not found", "No such file or directory", "not installed", "exit code 127"],
+      "strategy": "INSTALL_TOOL",
+      "max_retries": 2,
+      "backoff": "fixed",
+      "backoff_seconds": 0
+    },
+    "PERMISSION_DENIED": {
+      "patterns": ["Permission denied", "Operation not permitted", "EACCES", "must be root"],
+      "strategy": "ADD_SUDO",
+      "max_retries": 2,
+      "backoff": "fixed",
+      "backoff_seconds": 1
+    },
+    "NETWORK_UNREACHABLE": {
+      "patterns": ["No route to host", "Connection refused", "EHOSTUNREACH", "Network unreachable", "Host is down"],
+      "strategy": "ADJUST_PARAMETERS",
+      "max_retries": 3,
+      "backoff": "exponential",
+      "backoff_seconds": 2
+    },
+    "WRONG_SYNTAX": {
+      "patterns": ["Invalid option", "unrecognized argument", "usage:", "invalid flag", "unknown flag"],
+      "strategy": "FIX_SYNTAX",
+      "max_retries": 2,
+      "backoff": "fixed",
+      "backoff_seconds": 1
+    },
+    "RESOURCE_EXHAUSTION": {
+      "patterns": ["Cannot allocate memory", "Too many open files", "ENOMEM", "out of memory", "killed"],
+      "strategy": "ADJUST_PARAMETERS",
+      "max_retries": 2,
+      "backoff": "fixed",
+      "backoff_seconds": 2
+    },
+    "AUTH_FAILURE": {
+      "patterns": ["Permission denied (publickey)", "Authentication failed", "Invalid credentials", "Access denied"],
+      "strategy": "FIX_AUTH",
+      "max_retries": 2,
+      "backoff": "fixed",
+      "backoff_seconds": 1
+    },
+    "TIMEOUT": {
+      "patterns": ["Read timeout", "ETIMEDOUT", "Operation timed out", "timed out", "connection timeout"],
+      "strategy": "ADJUST_TIMEOUT",
+      "max_retries": 3,
+      "backoff": "exponential",
+      "backoff_seconds": 3
+    },
+    "VERSION_MISMATCH": {
+      "patterns": ["Unrecognized option", "deprecated", "requires version", "unknown option"],
+      "strategy": "VERSION_DOWNGRADE",
+      "max_retries": 1,
+      "backoff": "fixed",
+      "backoff_seconds": 0
+    }
+  }
+}

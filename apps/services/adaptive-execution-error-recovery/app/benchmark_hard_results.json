@@ -1,0 +1,51 @@
+{
+  "rule_rate": 0.0,
+  "engine_rate": 66.66666666666666,
+  "n": 6,
+  "rule_recovered": 0,
+  "engine_recovered": 4,
+  "records": [
+    {
+      "cmd": "masscan -p80 192.168.1.1",
+      "tool": "masscan",
+      "type": "tool_not_installed",
+      "rule_recovered": false,
+      "engine_recovered": true
+    },
+    {
+      "cmd": "wpscan --url http://127.0.0.1",
+      "tool": "wpscan",
+      "type": "tool_not_installed",
+      "rule_recovered": false,
+      "engine_recovered": false
+    },
+    {
+      "cmd": "dirsearch -u http://127.0.0.1",
+      "tool": "dirsearch",
+      "type": "tool_not_installed",
+      "rule_recovered": false,
+      "engine_recovered": false
+    },
+    {
+      "cmd": "gobuster dir -u http://127.0.0.1 -w /wrong/nonexistent/path.txt",
+      "tool": "gobuster",
+      "type": "bad_wordlist_path",
+      "rule_recovered": false,
+      "engine_recovered": true
+    },
+    {
+      "cmd": "gobuster dir -u http://127.0.0.1 -w /also/missing/list.txt",
+      "tool": "gobuster",
+      "type": "bad_wordlist_path",
+      "rule_recovered": false,
+      "engine_recovered": true
+    },
+    {
+      "cmd": "gobuster dir -u http://127.0.0.1 -w /tmp/does-not-exist.txt",
+      "tool": "gobuster",
+      "type": "bad_wordlist_path",
+      "rule_recovered": false,
+      "engine_recovered": true
+    }
+  ]
+}
