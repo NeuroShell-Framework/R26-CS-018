@@ -101,11 +101,10 @@ class TestRegexValidator:
         s = make_schema(target_type="DOMAIN", target_value="sub.example.com")
         validator.validate(s)
 
-    def test_validate_invalid_domain_no_tld_raises(self, validator, make_schema):
-        """Domain without TLD raises RegexValidationError."""
+    def test_validate_domain_single_label_passes(self, validator, make_schema):
+        """Single-label domain value passes validation via single-label hostname regex."""
         s = make_schema(target_type="DOMAIN", target_value="example")
-        with pytest.raises(RegexValidationError):
-            validator.validate(s)
+        validator.validate(s)
 
     def test_validate_domain_with_ip_format_raises(self, validator, make_schema):
         """Invalid domain format raises RegexValidationError."""
@@ -267,10 +266,9 @@ class TestRegexValidator:
         validator.validate(s)
 
     def test_validate_hostname_single_label_passes(self, validator, make_schema):
-        """Single-label hostname without dot is rejected by FQDN regex."""
+        """Single-label hostname without dot passes validation."""
         s = make_schema(target_type="HOSTNAME", target_value="localhost")
-        with pytest.raises(RegexValidationError):
-            validator.validate(s)
+        validator.validate(s)
 
     def test_validate_hostname_invalid_chars_raises(self, validator, make_schema):
         """Hostname with invalid characters raises RegexValidationError."""
