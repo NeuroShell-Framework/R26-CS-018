@@ -16,7 +16,7 @@ services:
   aeere:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.api
     container_name: neuroshell-aeere
     ports:
       - "8003:8003"
