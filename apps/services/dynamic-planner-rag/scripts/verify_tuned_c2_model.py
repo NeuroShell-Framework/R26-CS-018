@@ -33,7 +33,7 @@ from src.validation.safety_filter import SafetyFilter
 
 load_dotenv()
 
-TARGET_MODEL = os.getenv("EVAL_OLLAMA_MODEL", "neuroshell-c2-gemma2:latest")
+TARGET_MODEL = os.getenv("EVAL_OLLAMA_MODEL", "neuroshell-c2-gemma2-final")
 
 
 def normalize_cmd(cmd: str) -> str:
