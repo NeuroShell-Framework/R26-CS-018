@@ -1,7 +1,6 @@
 import time
 import uuid
 from fastapi import FastAPI, HTTPException, Header
-from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 import os
 
@@ -28,14 +27,6 @@ app = FastAPI(
     title       ="NeuroShell Dynamic Planner",
     description ="C2 RAG-powered command synthesis engine",
     version     ="1.0.0"
-)
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=False,
-    allow_methods=["*"],
-    allow_headers=["*"],
 )
 
 # Initialize all modules
@@ -118,7 +109,20 @@ def plan(request: PlanRequest, x_api_key: str = Header(None)):
 
     try:
         # Step 1 - Interpret intent
-        params = interpreter.interpret(contract)
+        try:
+            params = interpreter.interpret(contract)
+        except ValueError as ve:
+            latency = metrics.record(session_id, contract.intent, "none", start_time, False, [str(ve)])
+            raise HTTPException(
+                status_code=400,
+                detail={
+                    "status": "error",
+                    "stage": "intent_interpreter",
+                    "error": "INVALID_INPUT_PARAMETER",
+                    "detail": str(ve),
+                    "latency_ms": latency,
+                }
+            )
 
         # Target Recovery: Recover target from session history if missing, empty, or UNKNOWN
         current_target = params.get("target_value")
@@ -147,13 +151,20 @@ def plan(request: PlanRequest, x_api_key: str = Header(None)):
         ) or "unknown"
 
         # Step 4 - Assemble prompt
-        #   Append target-reinforcement line (moved here from CommandSynthesizer)
-        prompt = assembler.assemble(docs, params)
-        prompt += (
-            f"\n\nIMPORTANT:\n"
-            f"Use this exact target in the command: {params['target_value']}\n"
-            f"Output ONLY one command.\n"
-        )
+        try:
+            prompt = assembler.assemble(docs, params)
+        except ValueError as ve:
+            latency = metrics.record(session_id, contract.intent, tool, start_time, False, [str(ve)])
+            raise HTTPException(
+                status_code=400,
+                detail={
+                    "status": "error",
+                    "stage": "context_assembler",
+                    "error": "INVALID_INPUT_PARAMETER",
+                    "detail": str(ve),
+                    "latency_ms": latency,
+                }
+            )
         params["_query_used"] = query   # carry query through for result logging
 
         # Step 5 - Synthesize command sequence
@@ -165,6 +176,8 @@ def plan(request: PlanRequest, x_api_key: str = Header(None)):
 
         # Step 6 & 7 - Multi-command Dual-Layer Validation
         target_value = params["target_value"]
+        target_type  = params.get("target_type") or contract.target_type or (contract.target.get("type") if isinstance(contract.target, dict) else "IP")
+        expected_ports = params.get("ports") or contract.ports or []
         all_safety_flags = []
 
         for cmd in command_seq:
@@ -174,7 +187,28 @@ def plan(request: PlanRequest, x_api_key: str = Header(None)):
                 raise HTTPException(status_code=400, detail=f"Safety check failed: {safety_flags}")
             all_safety_flags.extend(safety_flags)
 
-            valid, issues = validator.validate(cmd, tool)
+            valid, issues = validator.validate(
+                cmd,
+                tool,
+                target_value=target_value,
+                target_type=target_type,
+                expected_ports=expected_ports,
+                requested_modifiers=(
+                    params.get("modifiers", [])
+                    if (
+                        (
+                            contract.intent in ("NETWORK_SCAN", "DIRECTORY_BRUTEFORCE")
+                            and not params.get("multi_step")
+                        )
+                        or (
+                            contract.intent == "VULNERABILITY_AUDIT"
+                            and tool == "nikto"
+                        )
+                    )
+                    else []
+                ),
+                expected_wordlist=params.get("wordlist")
+            )
             if not valid:
                 latency = metrics.record(session_id, contract.intent, tool, start_time, False, issues)
                 raise HTTPException(

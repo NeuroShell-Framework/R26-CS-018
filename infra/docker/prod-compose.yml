@@ -129,7 +129,7 @@ services:
 
   intent-recognition:
     build:
-      context: ../../apps/services/intent-recognition
+      context: ../../apps/services/neuroshell-ire
       dockerfile: Dockerfile
     image: neuroshell-intent-recognition:latest
     container_name: neuroshell-intent-recognition

@@ -240,4 +240,4 @@ Canonical values only (Exp3 second run is authoritative — first run superseded
 .venv\Scripts\python.exe -m pytest tests/integration/test_integration_pipeline_full_stack.py -q
 ```
 
-*Report compiled from: pytest run 2026-08-30 (506 passed), coverage.py 7.10.7, ruff 0.16.5, `eval/Data Collection/results/exp3_summary.json`, and `IRE-Doc/Gaps & Future Works.md`.*
+*Report compiled from: pytest run 2026-08-27 (506 passed), coverage.py 7.10.7, ruff 0.16.5, `eval/Data Collection/results/exp3_summary.json`, and `IRE-Doc/Gaps & Future Works.md`.*

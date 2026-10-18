@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Golden Dataset Composition — NeuroShell IRE</title>
+<style>
+  :root {
+    --ink: #1a2333;
+    --muted: #5b6b82;
+    --line: #e4e9f2;
+    --bg: #f4f7fb;
+    --panel: #ffffff;
+    --brand: #1f5eff;
+    --brand-dark: #1342b5;
+    --accent: #0ea5a4;
+    --mono: "SF Mono", "Cascadia Code", Consolas, monospace;
+    --shadow: 0 1px 2px rgba(26,35,51,0.05), 0 8px 24px rgba(26,35,51,0.07);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
+    background:
+      linear-gradient(180deg, #ffffff 0%, var(--bg) 22rem);
+    color: var(--ink);
+    line-height: 1.6;
+    padding: 2.5rem 1.25rem 4rem;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 900px; margin: 0 auto; }
+
+  /* ── Header ─────────────────────────────────────────────── */
+  header.hero {
+    display: flex; align-items: flex-end; justify-content: space-between;
+    gap: 1.5rem; flex-wrap: wrap;
+    padding-bottom: 1.4rem; margin-bottom: 1.8rem;
+    border-bottom: 2px solid var(--line);
+  }
+  header.hero .title h1 {
+    font-size: 1.65rem; font-weight: 700; letter-spacing: -0.01em; color: var(--ink);
+  }
+  header.hero .title p {
+    color: var(--muted); font-size: 0.98rem; margin-top: 0.2rem;
+  }
+  .doc-chip {
+    font-family: var(--mono); font-size: 0.75rem; color: var(--brand);
+    background: #eef3ff; border: 1px solid #d3e0ff;
+    padding: 0.4rem 0.9rem; border-radius: 999px; white-space: nowrap;
+  }
+
+  /* ── KPI strip ──────────────────────────────────────────── */
+  .kpis {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 1rem; margin-bottom: 1.8rem;
+  }
+  .kpi {
+    background: var(--panel); border: 1px solid var(--line); border-radius: 12px;
+    padding: 0.95rem 1.15rem; box-shadow: var(--shadow);
+  }
+  .kpi .label {
+    font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--muted); font-weight: 600;
+  }
+  .kpi .value { font-size: 1.6rem; font-weight: 700; color: var(--ink); margin-top: 0.15rem; }
+  .kpi .value small { font-size: 0.9rem; color: var(--muted); font-weight: 500; }
+  .kpi .note { font-size: 0.8rem; color: var(--muted); }
+
+  /* ── Chart ──────────────────────────────────────────────── */
+  .chart-wrap {
+    background: var(--panel); border: 1px solid var(--line);
+    border-radius: 14px; padding: 1.4rem 1.5rem 1.2rem; box-shadow: var(--shadow);
+    margin-bottom: 1.8rem;
+  }
+  .chart-wrap h2 {
+    font-size: 1.05rem; font-weight: 700; margin-bottom: 1.1rem;
+  }
+  .bar { display: flex; align-items: center; gap: 0.7rem; margin-bottom: 0.62rem; }
+  .bar .b-label {
+    flex: 0 0 260px; font-family: var(--mono); font-size: 0.78rem;
+    color: var(--muted); text-align: right; white-space: nowrap;
+    overflow: hidden; text-overflow: ellipsis;
+  }
+  .bar .b-track {
+    flex: 1 1 auto; height: 16px; background: #edf1f8;
+    border-radius: 999px; overflow: hidden;
+  }
+  .bar .b-fill {
+    height: 100%; border-radius: 999px;
+    background: linear-gradient(90deg, var(--brand), #6a9bff);
+    min-width: 0;
+  }
+  .bar .b-pct {
+    flex: 0 0 52px; font-family: var(--mono); font-size: 0.82rem;
+    font-weight: 600; color: var(--ink);
+  }
+
+  /* ── Table ──────────────────────────────────────────────── */
+  .table-wrap {
+    background: var(--panel); border: 1px solid var(--line);
+    border-radius: 14px; box-shadow: var(--shadow); overflow: hidden;
+  }
+  .table-scroll { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.95rem; }
+  thead th {
+    background: #f8fafd; color: var(--muted); text-align: left;
+    font-size: 0.74rem; text-transform: uppercase; letter-spacing: 0.07em;
+    font-weight: 700; padding: 0.8rem 1.1rem; border-bottom: 1px solid var(--line);
+    white-space: nowrap;
+  }
+  thead th.num, tbody td.num { text-align: right; }
+  tbody td {
+    padding: 0.78rem 1.1rem; border-bottom: 1px solid var(--line);
+    vertical-align: middle; color: var(--ink);
+  }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:hover td { background: #f4f8ff; }
+  code {
+    font-family: var(--mono); font-size: 0.88em; color: var(--ink);
+    background: #eef1f7; border: 1px solid #e0e6f0;
+    padding: 0.08em 0.4em; border-radius: 5px;
+  }
+  tr.total-row td {
+    background: #eef3ff; border-top: 2px solid var(--line);
+    font-weight: 700; color: var(--brand-dark);
+  }
+
+  /* ── Footer note ────────────────────────────────────────── */
+  .foot-note {
+    display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+    flex-wrap: wrap; margin-top: 1.2rem;
+    font-size: 0.85rem; color: var(--muted);
+  }
+  .foot-note .legend {
+    display: flex; gap: 1.2rem; align-items: center; flex-wrap: wrap;
+  }
+  .legend .dot { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 0.35rem; }
+  .dot.wf { background: var(--brand); }
+  .dot.fl { background: var(--accent); }
+
+  @media (max-width: 760px) {
+    .bar .b-label { flex-basis: 140px; font-size: 0.7rem; }
+    body { padding: 1.5rem 0.75rem 3rem; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="hero">
+    <div class="title">
+      <h1>Golden Dataset &mdash; Category Composition</h1>
+      <p>Evaluation breadth of the <strong>neuroshell-ire</strong> golden dataset</p>
+    </div>
+    <span class="doc-chip">R26-CS-018 &middot; IRE</span>
+  </header>
+
+  <!-- KPI strip -->
+  <div class="kpis">
+    <div class="kpi">
+      <div class="label">Total Records</div>
+      <div class="value">900</div>
+      <div class="note">Unified evaluation corpus</div>
+    </div>
+    <div class="kpi">
+      <div class="label">Safe / Well-Formed</div>
+      <div class="value">400 <small>/ 44.4%</small></div>
+      <div class="note">Baseline for false-positive rate</div>
+    </div>
+    <div class="kpi">
+      <div class="label">Flawed Inputs</div>
+      <div class="value">500 <small>/ 55.6%</small></div>
+      <div class="note">Catch-rate &amp; robustness testing</div>
+    </div>
+    <div class="kpi">
+      <div class="label">Hallucination Classes</div>
+      <div class="value">4</div>
+      <div class="note">64 records each</div>
+    </div>
+  </div>
+
+  <!-- Horizontal bar chart -->
+  <div class="chart-wrap">
+    <h2>Distribution by Category</h2>
+    <div class="bar"><span class="b-label">well_formed</span><div class="b-track"><div class="b-fill" style="width:100%"></div></div><span class="b-pct">44.44%</span></div>
+    <div class="bar"><span class="b-label">adversarial_injection</span><div class="b-track"><div class="b-fill" style="width:25%"></div></div><span class="b-pct">11.11%</span></div>
+    <div class="bar"><span class="b-label">out_of_scope</span><div class="b-track"><div class="b-fill" style="width:22.5%"></div></div><span class="b-pct">10.00%</span></div>
+    <div class="bar"><span class="b-label">hallucination_fabricated_cve</span><div class="b-track"><div class="b-fill" style="width:16%"></div></div><span class="b-pct">7.11%</span></div>
+    <div class="bar"><span class="b-label">hallucination_target_type_mismatch</span><div class="b-track"><div class="b-fill" style="width:16%"></div></div><span class="b-pct">7.11%</span></div>
+    <div class="bar"><span class="b-label">hallucination_contradictory_action_target</span><div class="b-track"><div class="b-fill" style="width:16%"></div></div><span class="b-pct">7.11%</span></div>
+    <div class="bar"><span class="b-label">hallucination_fabricated_parameter</span><div class="b-track"><div class="b-fill" style="width:16%"></div></div><span class="b-pct">7.11%</span></div>
+    <div class="bar"><span class="b-label">ambiguous</span><div class="b-track"><div class="b-fill" style="width:7.5%"></div></div><span class="b-pct">3.33%</span></div>
+    <div class="bar"><span class="b-label">rbac_violation</span><div class="b-track"><div class="b-fill" style="width:6%"></div></div><span class="b-pct">2.67%</span></div>
+  </div>
+
+  <!-- Data table -->
+  <div class="table-wrap">
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th class="num">#</th>
+            <th>Category</th>
+            <th class="num">Records</th>
+            <th class="num">Percentage</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td class="num">1</td><td><code>well_formed</code></td><td class="num">400</td><td class="num">44.44%</td></tr>
+          <tr><td class="num">2</td><td><code>adversarial_injection</code></td><td class="num">100</td><td class="num">11.11%</td></tr>
+          <tr><td class="num">3</td><td><code>out_of_scope</code></td><td class="num">90</td><td class="num">10.00%</td></tr>
+          <tr><td class="num">4</td><td><code>hallucination_fabricated_cve</code></td><td class="num">64</td><td class="num">7.11%</td></tr>
+          <tr><td class="num">5</td><td><code>hallucination_target_type_mismatch</code></td><td class="num">64</td><td class="num">7.11%</td></tr>
+          <tr><td class="num">6</td><td><code>hallucination_contradictory_action_target</code></td><td class="num">64</td><td class="num">7.11%</td></tr>
+          <tr><td class="num">7</td><td><code>hallucination_fabricated_parameter</code></td><td class="num">64</td><td class="num">7.11%</td></tr>
+          <tr><td class="num">8</td><td><code>ambiguous</code></td><td class="num">30</td><td class="num">3.33%</td></tr>
+          <tr><td class="num">9</td><td><code>rbac_violation</code></td><td class="num">24</td><td class="num">2.67%</td></tr>
+          <tr class="total-row">
+            <td class="num">&mdash;</td>
+            <td>TOTAL</td>
+            <td class="num">900</td>
+            <td class="num">100.00%</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="foot-note">
+    <div class="legend">
+      <span><span class="dot wf"></span>well_formed</span>
+      <span><span class="dot fl"></span>flawed / adversarial</span>
+    </div>
+    <span>Golden dataset &middot; Category composition</span>
+  </div>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,184 @@
+%% Chapter 9 - Conclusion and Future Directions
+%% Sections: 9.1 Conclusion; 9.2 Achievement of objectives; 9.3 Individual
+%% research and product contributions; 9.4 Future directions.
+%% Objective mapping uses only achieved/partially achieved/not-achieved
+%% statuses backed by evidence.
+
+\chapter{Conclusion and Future Directions}\label{ch:conclusion}
+
+This chapter closes the dissertation. It restates the central conclusion,
+accounts for each objective against the experiment record with an explicit
+status, isolates the individual research and product contributions, and
+itemises the directions that follow from the limitations committed in
+Chapter~\ref{ch:discussion}.
+
+\section{Conclusion}\label{sec:conclusion}
+
+The central question was whether a small, offline, unattended language model
+can be made reliable enough to drive an automated security copilot once its
+output is subject to deterministic validation. The measured answer is yes,
+within a closed threat model, on the evidence of this dissertation.
+
+On a committed 1,500-record population, the guarded pipeline raised the
+flaw-catch rate from 0\% to 64--72\%, lifted decision accuracy from 69--78\%
+to 82--86\%, and halved the false-positive rate to 14--15\% on two distinct
+offline backends (Section~\ref{sec:exp1}). The ablation record localised the
+cause: the deterministic validation stack is the dominant safety contributor
+($-30$ and $-24$ catch points when removed), the hallucination validators are
+the largest single-layer contributors, and the per-class catch spectrum tracks
+the decidability of the underlying predicate (Sections~\ref{sec:exp3} and
+\ref{sec:exp4}). Safety generalises across backends while individual accuracy
+contributions do not (Section~\ref{sec:exp2}), which makes deterministic
+guardrailing\emph{---}rather than model choice\emph{---}the primary driver of
+the measured safety.
+
+The conclusion is therefore not that the engine eliminates model error. It is
+that the engine converts an open problem---making a language model
+trustworthy---into the closed problem of classifying a single utterance under a
+known policy, and that the deterministic half of that reduction does most of
+the safety work. Three boundaries bound the claim and are restated because they
+are the honest frame for the conclusion: the evaluation is single-run point
+estimates without confidence intervals, the data set is synthetic and
+non-uniform, and the threat model closes at retrieval-free, no-free-form-output
+boundary (Sections~\ref{sec:discussion-limitations} and \ref{sec:ethics}).
+
+\section{Achievement of Objectives}\label{sec:achievement-objectives}
+
+The four objectives of Section~\ref{sec:aim-and-objectives} are accounted for
+individually below. Each status is grounded in the cited evidence; no objective
+is marked achieved on assertion alone.
+
+\begin{itemize}
+\item \textbf{Objective 1\emph{---}design and implement the Intent Recognition
+Engine}\textnormal{: a component that receives free-text security requests and
+emits strictly schema-conformant, authorised intent contracts over a small
+offline language model.}
+\textbf{Status: achieved.} The seven-stage core and five middleware components
+are implemented under \texttt{src/} and exercised by 506 automated tests (76\%
+statement coverage; 434 unit and 72 integration) described in
+Section~\ref{sec:component-implementation} and
+Section~\ref{sec:product-results}. The live C1--C2 contract verification
+confirmed that real code paths emit and consume validated,
+schema-conformant contracts (Section~\ref{sec:integration-results}).
+
+\item \textbf{Objective 2\emph{---}construct a purpose-built evaluation data set
+of security prompts, covering well-formed requests and deliberately flawed
+prompts across the flaw categories relevant in practice, each annotated with
+gold labels.}
+\textbf{Status: achieved.} The 1,500-record set (600 well-formed, 900 flawed)
+spans the eight+ flaw classes used in the experiments, is versioned with the
+project source, and underpins every measurement in
+Chapter~\ref{ch:results} (Section~\ref{sec:data-materials}).
+
+\item \textbf{Objective 3\emph{---}establish an evaluation protocol that
+quantifies the pipeline improvement over raw output and abates each guard layer
+independently.}
+\textbf{Status: achieved.} The protocol is committed in advance, applied to the
+fixed data set, and recorded in a manifest for independent audit
+(Section~\ref{sec:reproducibility}). Experiments 1 and 3 operationalise the
+raw-versus-guarded comparison and the per-layer ablation respectively
+(Sections~\ref{sec:exp1} and \ref{sec:exp3}).
+
+\item \textbf{Objective 4\emph{---}compare two offline language-model backends
+under the identical guardrail stack.}
+\textbf{Status: achieved.} Both backends were evaluated under the identical
+stack; the safety ordering was consistent across backends while per-layer
+accuracy contributions differed, a split recorded in Sections~\ref{sec:exp2}
+and \ref{sec:exp3} and analysed against RQ3 in
+Section~\ref{sec:discussion-interpretation}.
+\end{itemize}
+
+All four objectives are thus achieved. Because the evaluation is single-run and
+the three semantic flaw classes remain weakly protected, achievement is on the
+evidence available within the scope committed in Section~\ref{sec:scope-limitations-assumptions};
+the boundary conditions that would warrant a ``partially achieved''
+qualification are the same boundaries the limitations section records
+(Section~\ref{sec:discussion-limitations}).
+
+\section{Individual Research and Product Contributions}\label{sec:contributions}
+
+\subsection*{Research contributions}
+
+The research contribution is a measured result with three parts. First, the
+deterministic validation stack is shown to be the dominant driver of the
+measured safety and is reproducible across two backends: no single layer, and
+no model, produces the catch rate the composed stack produces
+(Section~\ref{sec:exp3}). Second, the catch effectiveness boundary is
+predictable from decidability: per-class catch runs from 100\% on structurally
+decidable classes down to 40\% on meaning-dependent classes, which converts the
+limitation of single-shot offline inference into a design law---ask a model for
+structure, never for a verdict (Section~\ref{sec:exp4}). Third, safety and
+usability improve together: the guarded pipeline raises accuracy, raises catch
+and halves false positives simultaneously (Section~\ref{sec:exp1}), weakening
+the implicit assumption that deterministic checks must trade precision for
+recall or fluency for utility.
+
+\subsection*{Product contributions}
+
+The product contribution is the IRE itself: a shippable,
+deployment-gated, offline component whose output is machine-consumed, not
+reviewed---the empty corner of the existing-systems survey (Section~\ref{sec:existing-systems}
+and Table~\ref{tab:existing-systems}). The product properties most worth
+exporting elsewhere are architectural: the safety invariant
+(Equation~\ref{eq:safety-invariant}), the audit-friendly structured response,
+and the executable test suite of 506 tests that encodes the invariant
+(Section~\ref{sec:product-results}). The verified integration findings
+(Section~\ref{sec:integration-results}) confirm that when the engine is asked
+to produce a contract for a downstream component, the contract it produces is
+validated, in-scope and authorised on the code paths that would run in
+production.
+
+Both contributions remain subject to the honest engineering caveats itemised in
+Section~\ref{sec:discussion-product}: several documented dependencies are
+doc-only, the default development API key bypasses transport authentication if
+left untouched, and the \texttt{production} scope-mode value is dead
+configuration that falls through to \texttt{WARN}. These are stated as
+product-integrity gaps to close, and they do not affect the validity of the
+evaluation, which ran with production credentials and strict scope semantics.
+
+\section{Future Directions}\label{sec:future-directions}
+
+The future directions follow directly from the limitations and open items
+committed in Chapters~\ref{ch:results} and \ref{ch:discussion}. Each is listed
+with the state of the evidence that motivates it.
+
+\emph{Remove the single-run limitation.} Every configuration in
+Experiments 1--4 was executed once (Section~\ref{sec:procedure}). Repeating the
+committed protocol with seed sweeps and confidence intervals would convert the
+point estimates into bounded estimates and would resolve whether the
+negative-$\Delta$Catch ablation entries are stable (Section~\ref{sec:exp3}).
+
+\emph{Close the semantic-class gap.} The three meaning-dependent flaw classes
+(contradictory, out-of-scope-target, ambiguous) remain caught at 40--59\%
+because no deterministic signal exists for them (Section~\ref{sec:exp4}).
+Structured prompting that forces the model to enumerate decision grounds,
+targeted enumerators for scope, or a bounded-sampling escalator on the
+agreement gate are concrete candidate directions within the offline budget
+(Section~\ref{sec:related-research}).
+
+\emph{Complete the production validation.} The C1--C2 happy-path re-run against
+the production \texttt{gemma4:e4b} configuration is recorded as a TODO in
+Section~\ref{sec:integration-results} until the model is provisioned on the
+evaluation machine. Latency, throughput and energy profiling on the target
+hardware were not measured and are required before interactive-use claims
+(Section~\ref{sec:discussion-limitations}).
+
+\emph{Close the engineering configuration gaps.} Shipping hardening requires
+removing the default development API key, wiring the \texttt{production}
+scope-mode value to the \texttt{BLOCK} path of the enforcement policy, and
+reconciling the doc-only dependencies (spaCy, jsonschema runtime, LoRA,
+Mahalanobis and XAI feature-flag paths) with their documented roles
+(Section~\ref{sec:discussion-product}).
+
+\emph{Extend the evaluation surface.} The threat model closes at the
+retrieval-free, no-free-form-output boundary (Section~\ref{sec:ethics}). Future
+work could expand the boundary to indirect prompt injection, device-compromise
+and backdoored-weights scenarios, or relax the deployment constraint to measure
+what a fine-tuned backend (the planned LoRA Phase~2 work) adds to the safety
+record.
+
+\emph{Re-verify the commercial position.} The comparative assessment cites no
+named commercial product for lack of verifiable primary sources
+(Section~\ref{sec:existing-systems}); a commercialisation step should survey
+named products with primary sources and re-verify the gap claim before any
+positioning statement is made (Section~\ref{sec:market-position}).

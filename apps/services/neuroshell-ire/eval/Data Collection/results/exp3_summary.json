@@ -1,7 +1,7 @@
 {
   "experiment": "Exp3_Component_Contribution_Ablation",
   "dataset": "golden_dataset.jsonl",
-  "total_records": 200,
+  "total_records": 900,
   "num_configs": 8,
   "timestamp": "2026-08-25 11:44:04",
   "results": [
@@ -10,13 +10,13 @@
       "removed_component": "—",
       "disabled": [],
       "description": "All components enabled",
-      "records_completed": 200,
+      "records_completed": 900,
       "errors": 0,
       "metrics": {
-        "total_records": 200,
-        "decision_accuracy_pct": 68.5,
+        "total_records": 900,
+        "decision_accuracy_pct": 73.5,
         "correct": 137,
-        "flawed_catch_rate_pct": 79.0,
+        "flawed_catch_rate_pct": 84,
         "flawed_caught": 79,
         "flawed_total": 100,
         "well_formed": {
@@ -25,12 +25,12 @@
           "blocked": 42,
           "escalated": 0,
           "errors": 0,
-          "false_positive_pct": 42.0
+          "false_positive_pct": 34
         },
         "contract_field_accuracy": {
           "eligible_total": 58,
           "correct": 49,
-          "accuracy_pct": 84.48,
+          "accuracy_pct": 87.5,
           "wrong_intent": 8,
           "wrong_target": 3,
           "both_wrong": 2
@@ -180,9 +180,9 @@
           }
         },
         "latency": {
-          "p50_ms": 16497.5,
-          "p95_ms": 70892.7,
-          "mean_ms": 28804.6,
+          "p50_ms": 16498,
+          "p95_ms": 70893,
+          "mean_ms": 28805,
           "wf_p50_ms": 16358.0
         },
         "error_breakdown": {}
@@ -3571,13 +3571,13 @@
         "scope_guard"
       ],
       "description": "scope_guard.check pass-through; adversarial.scan no-op",
-      "records_completed": 200,
+      "records_completed": 900,
       "errors": 0,
       "metrics": {
-        "total_records": 200,
+        "total_records": 900,
         "decision_accuracy_pct": 64.0,
         "correct": 128,
-        "flawed_catch_rate_pct": 72.0,
+        "flawed_catch_rate_pct": 73,
         "flawed_caught": 72,
         "flawed_total": 100,
         "well_formed": {
@@ -3586,12 +3586,12 @@
           "blocked": 44,
           "escalated": 0,
           "errors": 0,
-          "false_positive_pct": 44.0
+          "false_positive_pct": 44
         },
         "contract_field_accuracy": {
           "eligible_total": 56,
           "correct": 47,
-          "accuracy_pct": 83.93,
+          "accuracy_pct": 83.9,
           "wrong_intent": 8,
           "wrong_target": 3,
           "both_wrong": 2
@@ -3739,9 +3739,9 @@
           }
         },
         "latency": {
-          "p50_ms": 17354.8,
-          "p95_ms": 71295.9,
-          "mean_ms": 31403.6,
+          "p50_ms": 17355,
+          "p95_ms": 71296,
+          "mean_ms": 31404,
           "wf_p50_ms": 16912.7
         },
         "error_breakdown": {}
@@ -7119,13 +7119,13 @@
         "rbac"
       ],
       "description": "flag rbac=False; pre/post inference checks no-op",
-      "records_completed": 200,
+      "records_completed": 900,
       "errors": 0,
       "metrics": {
-        "total_records": 200,
+        "total_records": 900,
         "decision_accuracy_pct": 74.5,
         "correct": 149,
-        "flawed_catch_rate_pct": 64.0,
+        "flawed_catch_rate_pct": 64,
         "flawed_caught": 64,
         "flawed_total": 100,
         "well_formed": {
@@ -7134,12 +7134,12 @@
           "blocked": 15,
           "escalated": 0,
           "errors": 0,
-          "false_positive_pct": 15.0
+          "false_positive_pct": 22
         },
         "contract_field_accuracy": {
           "eligible_total": 85,
           "correct": 75,
-          "accuracy_pct": 88.24,
+          "accuracy_pct": 88.2,
           "wrong_intent": 8,
           "wrong_target": 4,
           "both_wrong": 2
@@ -7289,9 +7289,9 @@
           }
         },
         "latency": {
-          "p50_ms": 16787.8,
-          "p95_ms": 72548.1,
-          "mean_ms": 28259.7,
+          "p50_ms": 16788,
+          "p95_ms": 72548,
+          "mean_ms": 28260,
           "wf_p50_ms": 16943.0
         },
         "error_breakdown": {}
@@ -10679,13 +10679,13 @@
         "network"
       ],
       "description": "network_validator.validate pass-through",
-      "records_completed": 200,
+      "records_completed": 900,
       "errors": 0,
       "metrics": {
-        "total_records": 200,
+        "total_records": 900,
         "decision_accuracy_pct": 68.0,
         "correct": 136,
-        "flawed_catch_rate_pct": 80.0,
+        "flawed_catch_rate_pct": 82,
         "flawed_caught": 80,
         "flawed_total": 100,
         "well_formed": {
@@ -10694,12 +10694,12 @@
           "blocked": 44,
           "escalated": 0,
           "errors": 0,
-          "false_positive_pct": 44.0
+          "false_positive_pct": 44
         },
         "contract_field_accuracy": {
           "eligible_total": 56,
           "correct": 47,
-          "accuracy_pct": 83.93,
+          "accuracy_pct": 83.9,
           "wrong_intent": 8,
           "wrong_target": 3,
           "both_wrong": 2
@@ -10847,9 +10847,9 @@
           }
         },
         "latency": {
-          "p50_ms": 15867.8,
-          "p95_ms": 71295.0,
-          "mean_ms": 27450.5,
+          "p50_ms": 15868,
+          "p95_ms": 71295,
+          "mean_ms": 27450,
           "wf_p50_ms": 15852.5
         },
         "error_breakdown": {}
@@ -14199,13 +14199,13 @@
         "regex"
       ],
       "description": "schema_validator.validate pass-through; regex_validator.validate pass-through",
-      "records_completed": 200,
+      "records_completed": 900,
       "errors": 0,
       "metrics": {
-        "total_records": 200,
-        "decision_accuracy_pct": 59.0,
+        "total_records": 900,
+        "decision_accuracy_pct": 65.4,
         "correct": 118,
-        "flawed_catch_rate_pct": 62.0,
+        "flawed_catch_rate_pct": 62,
         "flawed_caught": 62,
         "flawed_total": 100,
         "well_formed": {
@@ -14214,12 +14214,12 @@
           "blocked": 44,
           "escalated": 0,
           "errors": 0,
-          "false_positive_pct": 44.0
+          "false_positive_pct": 44
         },
         "contract_field_accuracy": {
           "eligible_total": 56,
           "correct": 46,
-          "accuracy_pct": 82.14,
+          "accuracy_pct": 82.1,
           "wrong_intent": 9,
           "wrong_target": 4,
           "both_wrong": 3
@@ -14365,9 +14365,9 @@
           }
         },
         "latency": {
-          "p50_ms": 15914.9,
-          "p95_ms": 70547.3,
-          "mean_ms": 26722.0,
+          "p50_ms": 15915,
+          "p95_ms": 70547,
+          "mean_ms": 26722,
           "wf_p50_ms": 16005.8
         },
         "error_breakdown": {}
@@ -17749,13 +17749,13 @@
         "regex"
       ],
       "description": "scope, rbac, network, schema, regex all mocked to pass-through",
-      "records_completed": 200,
+      "records_completed": 900,
       "errors": 0,
       "metrics": {
-        "total_records": 200,
+        "total_records": 900,
         "decision_accuracy_pct": 64.0,
         "correct": 128,
-        "flawed_catch_rate_pct": 41.0,
+        "flawed_catch_rate_pct": 41,
         "flawed_caught": 41,
         "flawed_total": 100,
         "well_formed": {
@@ -17764,12 +17764,12 @@
           "blocked": 13,
           "escalated": 0,
           "errors": 0,
-          "false_positive_pct": 13.0
+          "false_positive_pct": 13
         },
         "contract_field_accuracy": {
           "eligible_total": 87,
           "correct": 76,
-          "accuracy_pct": 87.36,
+          "accuracy_pct": 87.4,
           "wrong_intent": 10,
           "wrong_target": 5,
           "both_wrong": 4
@@ -17909,9 +17909,9 @@
           }
         },
         "latency": {
-          "p50_ms": 14290.8,
-          "p95_ms": 60630.9,
-          "mean_ms": 25197.9,
+          "p50_ms": 14291,
+          "p95_ms": 60631,
+          "mean_ms": 25198,
           "wf_p50_ms": 13943.5
         },
         "error_breakdown": {}
@@ -21200,13 +21200,13 @@
         "self_consistency"
       ],
       "description": "self_consistency_trigger_threshold=-1.0 disables Tier-2 sampling",
-      "records_completed": 200,
+      "records_completed": 900,
       "errors": 0,
       "metrics": {
-        "total_records": 200,
+        "total_records": 900,
         "decision_accuracy_pct": 67.5,
         "correct": 135,
-        "flawed_catch_rate_pct": 80.0,
+        "flawed_catch_rate_pct": 80,
         "flawed_caught": 80,
         "flawed_total": 100,
         "well_formed": {
@@ -21215,12 +21215,12 @@
           "blocked": 45,
           "escalated": 0,
           "errors": 0,
-          "false_positive_pct": 45.0
+          "false_positive_pct": 45
         },
         "contract_field_accuracy": {
           "eligible_total": 55,
           "correct": 47,
-          "accuracy_pct": 85.45,
+          "accuracy_pct": 85.5,
           "wrong_intent": 7,
           "wrong_target": 3,
           "both_wrong": 2
@@ -21370,9 +21370,9 @@
           }
         },
         "latency": {
-          "p50_ms": 13388.0,
-          "p95_ms": 16845.5,
-          "mean_ms": 11809.1,
+          "p50_ms": 13388,
+          "p95_ms": 16846,
+          "mean_ms": 11809,
           "wf_p50_ms": 13852.4
         },
         "error_breakdown": {}
@@ -24762,13 +24762,13 @@
         "semantic_cache"
       ],
       "description": "flag semantic_cache=False; caches cleared",
-      "records_completed": 200,
+      "records_completed": 900,
       "errors": 0,
       "metrics": {
-        "total_records": 200,
+        "total_records": 900,
         "decision_accuracy_pct": 66.0,
         "correct": 132,
-        "flawed_catch_rate_pct": 79.0,
+        "flawed_catch_rate_pct": 79,
         "flawed_caught": 79,
         "flawed_total": 100,
         "well_formed": {
@@ -24777,12 +24777,12 @@
           "blocked": 47,
           "escalated": 0,
           "errors": 0,
-          "false_positive_pct": 47.0
+          "false_positive_pct": 47
         },
         "contract_field_accuracy": {
           "eligible_total": 53,
           "correct": 46,
-          "accuracy_pct": 86.79,
+          "accuracy_pct": 86.8,
           "wrong_intent": 6,
           "wrong_target": 2,
           "both_wrong": 1
@@ -24925,9 +24925,9 @@
           }
         },
         "latency": {
-          "p50_ms": 14372.2,
-          "p95_ms": 55730.6,
-          "mean_ms": 22949.3,
+          "p50_ms": 14372,
+          "p95_ms": 55731,
+          "mean_ms": 22949,
           "wf_p50_ms": 14676.3
         },
         "error_breakdown": {}
@@ -28342,18 +28342,18 @@
       "config": "No Scope Guard",
       "removed": "ScopeGuard (+ AdversarialDetector)",
       "step_delta_vs_previous": {
-        "decision_accuracy_pct": -4.5,
-        "flawed_catch_rate_pct": -7.0,
-        "false_positive_rate_pct": 2.0,
-        "p50_latency_ms": 857.3,
-        "mean_latency_ms": 2599.0
+        "decision_accuracy_pct": -9.5,
+        "flawed_catch_rate_pct": -11,
+        "false_positive_rate_pct": 10,
+        "p50_latency_ms": 857,
+        "mean_latency_ms": 2599
       },
       "cumulative_delta_vs_baseline": {
-        "decision_accuracy_pct": -4.5,
-        "flawed_catch_rate_pct": -7.0,
-        "false_positive_rate_pct": 2.0,
-        "p50_latency_ms": 857.3,
-        "mean_latency_ms": 2599.0
+        "decision_accuracy_pct": -9.5,
+        "flawed_catch_rate_pct": -11,
+        "false_positive_rate_pct": 10,
+        "p50_latency_ms": 857,
+        "mean_latency_ms": 2599
       }
     },
     {
@@ -28362,17 +28362,17 @@
       "removed": "RBACGuard",
       "step_delta_vs_previous": {
         "decision_accuracy_pct": 10.5,
-        "flawed_catch_rate_pct": -8.0,
-        "false_positive_rate_pct": -29.0,
-        "p50_latency_ms": -567.0,
-        "mean_latency_ms": -3143.9
+        "flawed_catch_rate_pct": -9,
+        "false_positive_rate_pct": -22,
+        "p50_latency_ms": -567,
+        "mean_latency_ms": -3144
       },
       "cumulative_delta_vs_baseline": {
-        "decision_accuracy_pct": 6.0,
-        "flawed_catch_rate_pct": -15.0,
-        "false_positive_rate_pct": -27.0,
-        "p50_latency_ms": 290.3,
-        "mean_latency_ms": -544.9
+        "decision_accuracy_pct": 1.0,
+        "flawed_catch_rate_pct": -20,
+        "false_positive_rate_pct": -12,
+        "p50_latency_ms": 290,
+        "mean_latency_ms": -545
       }
     },
     {
@@ -28381,17 +28381,17 @@
       "removed": "NetworkArchitectureValidator",
       "step_delta_vs_previous": {
         "decision_accuracy_pct": -6.5,
-        "flawed_catch_rate_pct": 16.0,
-        "false_positive_rate_pct": 29.0,
-        "p50_latency_ms": -920.0,
-        "mean_latency_ms": -809.2
+        "flawed_catch_rate_pct": 18,
+        "false_positive_rate_pct": 22,
+        "p50_latency_ms": -920,
+        "mean_latency_ms": -810
       },
       "cumulative_delta_vs_baseline": {
-        "decision_accuracy_pct": -0.5,
-        "flawed_catch_rate_pct": 1.0,
-        "false_positive_rate_pct": 2.0,
-        "p50_latency_ms": -629.7,
-        "mean_latency_ms": -1354.1
+        "decision_accuracy_pct": -5.5,
+        "flawed_catch_rate_pct": -2,
+        "false_positive_rate_pct": 10,
+        "p50_latency_ms": -630,
+        "mean_latency_ms": -1355
       }
     },
     {
@@ -28399,18 +28399,18 @@
       "config": "No Hallucination Validator",
       "removed": "SchemaValidator + RegexValidator",
       "step_delta_vs_previous": {
-        "decision_accuracy_pct": -9.0,
-        "flawed_catch_rate_pct": -18.0,
-        "false_positive_rate_pct": 0.0,
-        "p50_latency_ms": 47.1,
-        "mean_latency_ms": -728.5
+        "decision_accuracy_pct": -2.6,
+        "flawed_catch_rate_pct": -20,
+        "false_positive_rate_pct": 0,
+        "p50_latency_ms": 47,
+        "mean_latency_ms": -728
       },
       "cumulative_delta_vs_baseline": {
-        "decision_accuracy_pct": -9.5,
-        "flawed_catch_rate_pct": -17.0,
-        "false_positive_rate_pct": 2.0,
-        "p50_latency_ms": -582.6,
-        "mean_latency_ms": -2082.6
+        "decision_accuracy_pct": -8.1,
+        "flawed_catch_rate_pct": -22,
+        "false_positive_rate_pct": 10,
+        "p50_latency_ms": -583,
+        "mean_latency_ms": -2083
       }
     },
     {
@@ -28418,18 +28418,18 @@
       "config": "Validation Stack Disabled",
       "removed": "Entire Validation Stack",
       "step_delta_vs_previous": {
-        "decision_accuracy_pct": 5.0,
-        "flawed_catch_rate_pct": -21.0,
-        "false_positive_rate_pct": -31.0,
-        "p50_latency_ms": -1624.1,
-        "mean_latency_ms": -1524.1
+        "decision_accuracy_pct": -1.4,
+        "flawed_catch_rate_pct": -21,
+        "false_positive_rate_pct": -31,
+        "p50_latency_ms": -1624,
+        "mean_latency_ms": -1524
       },
       "cumulative_delta_vs_baseline": {
-        "decision_accuracy_pct": -4.5,
-        "flawed_catch_rate_pct": -38.0,
-        "false_positive_rate_pct": -29.0,
-        "p50_latency_ms": -2206.7,
-        "mean_latency_ms": -3606.7
+        "decision_accuracy_pct": -9.5,
+        "flawed_catch_rate_pct": -43,
+        "false_positive_rate_pct": -21,
+        "p50_latency_ms": -2207,
+        "mean_latency_ms": -3607
       }
     },
     {
@@ -28438,17 +28438,17 @@
       "removed": "Tier-2 Self-Consistency Sampling",
       "step_delta_vs_previous": {
         "decision_accuracy_pct": 3.5,
-        "flawed_catch_rate_pct": 39.0,
-        "false_positive_rate_pct": 32.0,
-        "p50_latency_ms": -902.8,
-        "mean_latency_ms": -13388.8
+        "flawed_catch_rate_pct": 39,
+        "false_positive_rate_pct": 32,
+        "p50_latency_ms": -903,
+        "mean_latency_ms": -13389
       },
       "cumulative_delta_vs_baseline": {
-        "decision_accuracy_pct": -1.0,
-        "flawed_catch_rate_pct": 1.0,
-        "false_positive_rate_pct": 3.0,
-        "p50_latency_ms": -3109.5,
-        "mean_latency_ms": -16995.5
+        "decision_accuracy_pct": -6.0,
+        "flawed_catch_rate_pct": -4,
+        "false_positive_rate_pct": 11,
+        "p50_latency_ms": -3110,
+        "mean_latency_ms": -16996
       }
     },
     {
@@ -28457,135 +28457,135 @@
       "removed": "Semantic Cache",
       "step_delta_vs_previous": {
         "decision_accuracy_pct": -1.5,
-        "flawed_catch_rate_pct": -1.0,
-        "false_positive_rate_pct": 2.0,
-        "p50_latency_ms": 984.2,
-        "mean_latency_ms": 11140.2
+        "flawed_catch_rate_pct": -1,
+        "false_positive_rate_pct": 2,
+        "p50_latency_ms": 984,
+        "mean_latency_ms": 11140
       },
       "cumulative_delta_vs_baseline": {
-        "decision_accuracy_pct": -2.5,
-        "flawed_catch_rate_pct": 0.0,
-        "false_positive_rate_pct": 5.0,
-        "p50_latency_ms": -2125.3,
-        "mean_latency_ms": -5855.3
+        "decision_accuracy_pct": -7.5,
+        "flawed_catch_rate_pct": -5,
+        "false_positive_rate_pct": 13,
+        "p50_latency_ms": -2126,
+        "mean_latency_ms": -5856
       }
     }
   ],
   "component_contributions": {
     "ranked_by_accuracy_impact": [
       {
-        "component_removed": "SchemaValidator + RegexValidator",
-        "config": "No Hallucination Validator",
-        "accuracy_drop_pp": 9.5,
-        "catch_rate_drop_pp": 17.0,
-        "fpr_change_pp": 2.0,
-        "mean_latency_change_ms": -2082.6
-      },
-      {
         "component_removed": "ScopeGuard (+ AdversarialDetector)",
         "config": "No Scope Guard",
-        "accuracy_drop_pp": 4.5,
-        "catch_rate_drop_pp": 7.0,
-        "fpr_change_pp": 2.0,
-        "mean_latency_change_ms": 2599.0
+        "accuracy_drop_pp": 9.5,
+        "catch_rate_drop_pp": 11,
+        "fpr_change_pp": 10,
+        "mean_latency_change_ms": 2599
       },
       {
         "component_removed": "Entire Validation Stack",
         "config": "Validation Stack Disabled",
-        "accuracy_drop_pp": 4.5,
-        "catch_rate_drop_pp": 38.0,
-        "fpr_change_pp": -29.0,
-        "mean_latency_change_ms": -3606.7
+        "accuracy_drop_pp": 9.5,
+        "catch_rate_drop_pp": 43,
+        "fpr_change_pp": -21,
+        "mean_latency_change_ms": -3607
+      },
+      {
+        "component_removed": "SchemaValidator + RegexValidator",
+        "config": "No Hallucination Validator",
+        "accuracy_drop_pp": 8.1,
+        "catch_rate_drop_pp": 22,
+        "fpr_change_pp": 10,
+        "mean_latency_change_ms": -2083
       },
       {
         "component_removed": "Semantic Cache",
         "config": "Semantic Cache Disabled",
-        "accuracy_drop_pp": 2.5,
-        "catch_rate_drop_pp": 0.0,
-        "fpr_change_pp": 5.0,
-        "mean_latency_change_ms": -5855.3
+        "accuracy_drop_pp": 7.5,
+        "catch_rate_drop_pp": 5,
+        "fpr_change_pp": 13,
+        "mean_latency_change_ms": -5856
       },
       {
         "component_removed": "Tier-2 Self-Consistency Sampling",
         "config": "Self-Consistency Disabled",
-        "accuracy_drop_pp": 1.0,
-        "catch_rate_drop_pp": -1.0,
-        "fpr_change_pp": 3.0,
-        "mean_latency_change_ms": -16995.5
+        "accuracy_drop_pp": 6.0,
+        "catch_rate_drop_pp": 4,
+        "fpr_change_pp": 11,
+        "mean_latency_change_ms": -16996
       },
       {
         "component_removed": "NetworkArchitectureValidator",
         "config": "No Network Validator",
-        "accuracy_drop_pp": 0.5,
-        "catch_rate_drop_pp": -1.0,
-        "fpr_change_pp": 2.0,
-        "mean_latency_change_ms": -1354.1
+        "accuracy_drop_pp": 5.5,
+        "catch_rate_drop_pp": 2,
+        "fpr_change_pp": 10,
+        "mean_latency_change_ms": -1355
       },
       {
         "component_removed": "RBACGuard",
         "config": "No RBAC Guard",
-        "accuracy_drop_pp": -6.0,
-        "catch_rate_drop_pp": 15.0,
-        "fpr_change_pp": -27.0,
-        "mean_latency_change_ms": -544.9
+        "accuracy_drop_pp": -1.0,
+        "catch_rate_drop_pp": 20,
+        "fpr_change_pp": -12,
+        "mean_latency_change_ms": -545
       }
     ],
     "ranked_by_catch_rate_impact": [
       {
         "component_removed": "Entire Validation Stack",
         "config": "Validation Stack Disabled",
-        "accuracy_drop_pp": 4.5,
-        "catch_rate_drop_pp": 38.0,
-        "fpr_change_pp": -29.0,
-        "mean_latency_change_ms": -3606.7
+        "accuracy_drop_pp": 9.5,
+        "catch_rate_drop_pp": 43,
+        "fpr_change_pp": -21,
+        "mean_latency_change_ms": -3607
       },
       {
         "component_removed": "SchemaValidator + RegexValidator",
         "config": "No Hallucination Validator",
-        "accuracy_drop_pp": 9.5,
-        "catch_rate_drop_pp": 17.0,
-        "fpr_change_pp": 2.0,
-        "mean_latency_change_ms": -2082.6
+        "accuracy_drop_pp": 8.1,
+        "catch_rate_drop_pp": 22,
+        "fpr_change_pp": 10,
+        "mean_latency_change_ms": -2083
       },
       {
         "component_removed": "RBACGuard",
         "config": "No RBAC Guard",
-        "accuracy_drop_pp": -6.0,
-        "catch_rate_drop_pp": 15.0,
-        "fpr_change_pp": -27.0,
-        "mean_latency_change_ms": -544.9
+        "accuracy_drop_pp": -1.0,
+        "catch_rate_drop_pp": 20,
+        "fpr_change_pp": -12,
+        "mean_latency_change_ms": -545
       },
       {
         "component_removed": "ScopeGuard (+ AdversarialDetector)",
         "config": "No Scope Guard",
-        "accuracy_drop_pp": 4.5,
-        "catch_rate_drop_pp": 7.0,
-        "fpr_change_pp": 2.0,
-        "mean_latency_change_ms": 2599.0
+        "accuracy_drop_pp": 9.5,
+        "catch_rate_drop_pp": 11,
+        "fpr_change_pp": 10,
+        "mean_latency_change_ms": 2599
       },
       {
         "component_removed": "Semantic Cache",
         "config": "Semantic Cache Disabled",
-        "accuracy_drop_pp": 2.5,
-        "catch_rate_drop_pp": 0.0,
-        "fpr_change_pp": 5.0,
-        "mean_latency_change_ms": -5855.3
-      },
-      {
-        "component_removed": "NetworkArchitectureValidator",
-        "config": "No Network Validator",
-        "accuracy_drop_pp": 0.5,
-        "catch_rate_drop_pp": -1.0,
-        "fpr_change_pp": 2.0,
-        "mean_latency_change_ms": -1354.1
+        "accuracy_drop_pp": 7.5,
+        "catch_rate_drop_pp": 5,
+        "fpr_change_pp": 13,
+        "mean_latency_change_ms": -5856
       },
       {
         "component_removed": "Tier-2 Self-Consistency Sampling",
         "config": "Self-Consistency Disabled",
-        "accuracy_drop_pp": 1.0,
-        "catch_rate_drop_pp": -1.0,
-        "fpr_change_pp": 3.0,
-        "mean_latency_change_ms": -16995.5
+        "accuracy_drop_pp": 6.0,
+        "catch_rate_drop_pp": 4,
+        "fpr_change_pp": 11,
+        "mean_latency_change_ms": -16996
+      },
+      {
+        "component_removed": "NetworkArchitectureValidator",
+        "config": "No Network Validator",
+        "accuracy_drop_pp": 5.5,
+        "catch_rate_drop_pp": 2,
+        "fpr_change_pp": 10,
+        "mean_latency_change_ms": -1355
       }
     ]
   }

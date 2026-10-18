@@ -3,69 +3,83 @@ VERSION: 3.6
 CATEGORY: Directory Brute Forcer
 
 DESCRIPTION:
-Gobuster is a tool used to brute-force URIs including directories and files,
-DNS subdomains, virtual host names, Amazon S3 buckets, Google Cloud buckets
-and TFTP servers. It is written in Go and is very fast due to its concurrent
-nature. It requires a wordlist to operate.
+Gobuster is a fast, concurrent URI, directory, file, DNS subdomain, virtual host (VHost), Amazon S3 bucket, Google Cloud Storage (GCS) bucket, and TFTP server brute-forcing tool written in Go. It relies on dictionary wordlists to discover hidden endpoints, subdomains, and cloud resources.
 
 BASIC SYNTAX:
-gobuster <mode> -u <url> -w <wordlist> [options]
+gobuster <mode> [options]
 
-MODES:
-dir     Directory and file brute forcing mode
-dns     DNS subdomain brute forcing mode
-vhost   Virtual host brute forcing mode
+SUPPORTED MODES:
+dir     Directory and file brute-forcing mode
+dns     DNS subdomain brute-forcing mode
+vhost   Virtual host (VHost) brute-forcing mode
 s3      Amazon S3 bucket enumeration mode
-gcs     Google Cloud Storage bucket enumeration
-fuzz    Fuzzing mode - replaces FUZZ keyword
-tftp    TFTP server enumeration mode
+gcs     Google Cloud Storage bucket enumeration mode
+fuzz    Fuzzing mode (replaces FUZZ keyword in URL or header)
+tftp    TFTP server resource enumeration mode
 
-DIR MODE OPTIONS:
--u <url>              Target URL including protocol
--w <wordlist>         Path to wordlist file
--x <extensions>       File extensions to search for
-                      Example: -x php,html,txt,asp,aspx
+DIR MODE OPTIONS (gobuster dir):
+-u <url>              Target URL including protocol (e.g. http://192.168.1.1 or https://example.com)
+-w <wordlist>         Path to dictionary wordlist file
+-x <extensions>       Comma-separated list of file extensions to search for (e.g. -x php,html,txt,asp,json)
+-t <threads>          Number of concurrent execution threads (default 10)
+-k                    Skip TLS/SSL certificate verification (insecure mode)
+-b <codes>            Blacklist HTTP status codes to ignore (default 404)
+-s <codes>            Whitelist HTTP status codes to include (e.g. -s 200,204,301,302,307,403)
+-o <file>             Save scan results output to specified file
+-r                    Follow HTTP redirects automatically
+--timeout <duration>  HTTP request timeout duration (default 10s)
+-a <useragent>        Set custom HTTP User-Agent string
+-H <header>           Specify custom HTTP header (can be specified multiple times, e.g. -H "Authorization: Bearer token")
+-c <cookie>           Specify HTTP Cookie header for authenticated requests
+-U <username>         HTTP Basic authentication username
+-P <password>         HTTP Basic authentication password
+--wildcard            Force scan execution to continue if wildcard response is detected
+-e                    Expanded mode (print full URLs in output)
+-q                    Quiet mode (suppress banner and non-essential output)
+-z                    No progress display mode
+--delay <duration>    Delay duration between individual requests (e.g. --delay 100ms)
+
+DNS MODE OPTIONS (gobuster dns):
+-d <domain>           Target domain name to enumerate (e.g. -d example.com)
+-w <wordlist>         Path to subdomain dictionary wordlist file
 -t <threads>          Number of concurrent threads (default 10)
--k                    Skip TLS certificate verification
--b <codes>            Blacklist status codes (default 404)
--s <codes>            Whitelist status codes
--o <file>             Output results to file
--r                    Follow HTTP redirects
---timeout             HTTP timeout duration
--a <agent>            Set custom User-Agent string
--H <header>           Specify HTTP header
--c <cookie>           Use cookie for requests
--U <username>         HTTP authentication username
--P <password>         HTTP authentication password
---wildcard            Force continue if wildcard detected
--e                    Print full URLs in output
--q                    Quiet mode - no banner
--z                    No progress display
---delay               Delay between requests
+-i                    Show IP addresses resolved for discovered subdomains
+-r <resolver>         Use custom DNS resolver IP address (e.g. -r 1.1.1.1 or -r 8.8.8.8)
+--wildcard            Force scan to continue if wildcard DNS resolution is detected
 
-DNS MODE OPTIONS:
--d <domain>           Target domain name
--w <wordlist>         Path to wordlist file
--t <threads>          Number of concurrent threads
--i                    Show IP addresses for results
--r <resolver>         Use custom DNS resolver IP
---wildcard            Force continue on wildcard DNS
+VHOST MODE OPTIONS (gobuster vhost):
+-u <url>              Target base URL or IP address (e.g. http://192.168.1.1)
+-w <wordlist>         Path to virtual hostname wordlist
+--append-domain       Append target base domain to each word in wordlist
+--exclude-length <n>  Exclude response results matching specific content byte length (comma-separated)
 
-VHOST MODE OPTIONS:
--u <url>              Target URL
--w <wordlist>         Path to wordlist file
---append-domain       Append base domain to each word
---exclude-length      Exclude results by response length
+FUZZ MODE OPTIONS (gobuster fuzz):
+-u <url_with_FUZZ>    Target URL containing the FUZZ placeholder keyword (e.g. http://192.168.1.1/index.php?id=FUZZ)
+-w <wordlist>         Path to dictionary wordlist for placeholder substitution
+-b <codes>            Blacklist HTTP status codes
+-s <codes>            Whitelist HTTP status codes
+--exclude-length <n>  Exclude response results matching specific content length
 
-STATUS CODES:
-200   Found - file or directory exists
-301   Moved permanently - redirect
-302   Found - temporary redirect
-401   Unauthorized - requires authentication
-403   Forbidden - exists but no permission
-500   Internal server error
+SECONDARY MODES (S3, GCS, TFTP):
+gobuster s3 -w <wordlist>                Enumerate public Amazon S3 buckets
+gobuster gcs -w <wordlist>               Enumerate Google Cloud Storage buckets
+gobuster tftp -h <host> -w <wordlist>   Enumerate files on TFTP server host
 
-COMMON WORDLISTS:
+PATTERN FILES & HTTP METHODS:
+-p <patternfile>      File containing pattern replacements (e.g. append/prepend prefixes and suffixes to wordlist entries)
+-m <http_method>      HTTP method to use for requests (default GET; options: GET, POST, HEAD, OPTION)
+
+STATUS CODES REFERENCE:
+200   OK - Resource exists and is accessible
+204   No Content - Endpoint processed request successfully
+301   Moved Permanently - Permanent redirect to new URI
+302   Found - Temporary redirect
+307   Temporary Redirect - Preserves HTTP method on redirect
+401   Unauthorized - Requires HTTP basic or bearer authentication
+403   Forbidden - Resource exists but server denies access
+500   Internal Server Error - Server application error
+
+COMMON KALI WORDLIST PATHS:
 /usr/share/wordlists/dirb/common.txt
 /usr/share/wordlists/dirb/big.txt
 /usr/share/wordlists/dirbuster/directory-list-2.3-medium.txt
@@ -74,7 +88,7 @@ COMMON WORDLISTS:
 /usr/share/seclists/Discovery/Web-Content/big.txt
 /usr/share/seclists/Discovery/DNS/subdomains-top1million-5000.txt
 
-COMMON EXAMPLES:
+PRACTICAL COMMAND EXAMPLES:
 gobuster dir -u http://192.168.1.1 -w /usr/share/wordlists/dirb/common.txt
 gobuster dir -u http://192.168.1.1 -w common.txt -x php,html,txt -t 50
 gobuster dir -u https://192.168.1.1 -w common.txt -k
@@ -89,3 +103,8 @@ gobuster dns -d example.com -w subdomains.txt -i
 gobuster vhost -u http://192.168.1.1 -w vhosts.txt --append-domain
 gobuster fuzz -u http://192.168.1.1/FUZZ -w common.txt
 gobuster dir -u http://192.168.1.1 -w common.txt -t 50 -o results.txt -x php,html
+gobuster dir -u https://192.168.1.1 -w common.txt -k -c "PHPSESSID=123456"
+gobuster dir -u http://192.168.1.1 -w common.txt -H "Authorization: Bearer token123"
+gobuster dns -d example.com -w subdomains.txt -i -r 1.1.1.1
+gobuster vhost -u http://192.168.1.1 -w vhosts.txt --exclude-length 0,150
+gobuster dir -u http://192.168.1.1 -w common.txt -m POST -x php

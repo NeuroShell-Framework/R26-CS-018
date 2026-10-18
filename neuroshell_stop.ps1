@@ -12,12 +12,13 @@
     PID files:
         ./.uvicorn.pid                      (C1)
         ../dynamic-planner-rag/.c2.pid      (C2)
-        ../adaptive-execution-error-recovery/app/.c3.pid  (C3)
-        ../ai-vulnerability-analysis/app/.c4.pid          (C4)
+        ../adaptive-execution-error-recovery/.c3.pid  (C3)
+        ../ai-vulnerability-analysis/.c4.pid          (C4)
         ../../web/.web.pid                  (Web)
 
-    When 'All', 'Kali' or 'Redis' is targeted, the Docker containers
-    'neuroshell-kali-active' and 'neuroshell-redis' are stopped and removed too.
+    When 'All', 'Kali', 'Redis' or 'Neo4j' is targeted, the Docker containers
+    'neuroshell-kali-active', 'neuroshell-redis' and 'neuroshell-neo4j' are
+    stopped and removed too.
 
     Use -Force to additionally kill anything still listening on the service
     ports even if its PID file is missing or the tree kill did not free a port.
@@ -62,8 +63,8 @@ if (-not $ProjectRoot) {
 
 $Root    = Join-Path $ProjectRoot 'apps\services\neuroshell-ire'
 $C2Root  = Join-Path $ProjectRoot 'apps\services\dynamic-planner-rag'
-$C3App   = Join-Path $ProjectRoot 'apps\services\adaptive-execution-error-recovery\app'
-$C4App   = Join-Path $ProjectRoot 'apps\services\ai-vulnerability-analysis\app'
+$C3App   = Join-Path $ProjectRoot 'apps\services\adaptive-execution-error-recovery'
+$C4App   = Join-Path $ProjectRoot 'apps\services\ai-vulnerability-analysis'
 $WebRoot = Join-Path $ProjectRoot 'apps\web'
 
 $Services = @(
@@ -143,15 +144,15 @@ $targets = @()
 if ($Service -contains 'All') {
     $targets = @($Services.Name)
 } else {
-    $targets = @($Service | Where-Object { $Services.Name -contains $_ -or $_ -eq 'Kali' -or $_ -eq 'Redis' })
+    $targets = @($Service | Where-Object { $Services.Name -contains $_ -or $_ -eq 'Kali' -or $_ -eq 'Redis' -or $_ -eq 'Neo4j' })
     if ($targets.Count -eq 0) {
         Write-Host "[ERROR] Unknown service(s): $($Service -join ', ')" -ForegroundColor Red
-        Write-Host "        Valid: $($Services.Name -join ', '), Kali, Redis, All"
+        Write-Host "        Valid: $($Services.Name -join ', '), Kali, Redis, Neo4j, All"
         exit 1
     }
 }
 
-foreach ($name in ($targets | Where-Object { $_ -ne 'Kali' -and $_ -ne 'Redis' })) {
+foreach ($name in ($targets | Where-Object { $_ -ne 'Kali' -and $_ -ne 'Redis' -and $_ -ne 'Neo4j' })) {
     $svc = $Services | Where-Object { $_.Name -eq $name }
     Write-Host "[..] Stopping $($svc.Name)..." -ForegroundColor Cyan
 
@@ -207,6 +208,7 @@ foreach ($name in ($targets | Where-Object { $_ -ne 'Kali' -and $_ -ne 'Redis' }
 $containerTargets = @()
 if ('Kali' -in $targets)  { $containerTargets += 'neuroshell-kali-active' }
 if ('Redis' -in $targets) { $containerTargets += 'neuroshell-redis' }
+if ('Neo4j' -in $targets) { $containerTargets += 'neuroshell-neo4j' }
 
 foreach ($cname in $containerTargets) {
     Write-Host "[..] Stopping Docker container '$cname'..." -ForegroundColor Cyan

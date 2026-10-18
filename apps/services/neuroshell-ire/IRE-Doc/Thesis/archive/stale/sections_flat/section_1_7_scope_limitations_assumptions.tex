@@ -1,0 +1,51 @@
+\section{Scope, Limitations and Assumptions}\label{sec:scope-limitations-assumptions}
+
+\subsection*{Scope}
+
+This dissertation is an individual study of a single component, the Intent
+Recognition Engine (Component 01 of the NeuroShell framework, project reference
+R26-CS-018), and does not implement the downstream planner, executor or
+vulnerability-analysis components. Within that boundary, the scope covers:
+(1) a guarded NLU pipeline that accepts free-text security requests and emits
+validated intent contracts; (2) the deterministic validation and security
+countermeasures that constrain the model's output; (3) an offline, CPU-only,
+single-device deployment in which nothing is retrieved at inference time and no
+request leaves the device; and (4) a closed intent taxonomy and an
+operator-configured engagement scope that bounds permitted targets and
+techniques. Evaluation is conducted on a curated, annotated data set of prompts
+in a lab harness, not against live production traffic.
+
+\subsection*{Limitations}
+
+The principal limitation is evidential: the results reported in this
+dissertation rest on a bounded, committed experiment record of
+single-run point estimates, without confidence intervals or seed sweeps, and
+therefore carry residual uncertainty that is discussed in
+Chapter~\ref{ch:discussion}. Only two offline language-model backends are
+compared under the guardrail stack, and the evaluation data set is
+author-authored rather than drawn from observed operational traffic.
+Measurements are specific to the evaluation hardware and CPU-only inference
+runtime, so latency and throughput figures are indicative rather than
+generalisable. The framework-level benefit of the IRE is validated at the
+component level; end-to-end orchestration with the downstream components is
+outside the measured evidence presented here.
+
+\subsection*{Assumptions}
+
+The following assumptions underpin the design and evaluation:
+\begin{itemize}
+\item The operator configures the engagement scope and authorisation policy
+correctly; the scope guard can only enforce the boundary it is given.
+\item The deployment device and the downloaded model weights are trusted;
+physical compromise of the device and backdoors embedded in the model weights
+are out of scope.
+\item Downstream components consume the intent contract as specified and
+honour the contract rule that actions derived for rejected intents must not be
+executed.
+\item Because the pipeline performs no retrieval and renders no free-form
+output, indirect prompt injection via retrieved content and tool injection via
+unfiltered rendered text are structurally out of scope, narrowing the attack
+surface to the classification of the single user utterance.
+\item The annotated prompts in the evaluation data set are representative of
+the phrasing an operator would use with the system.
+\end{itemize}

@@ -1,0 +1,40 @@
+Automated security assessments require an analyst to translate a natural-language
+request into tool commands, run those commands, interpret their output, and
+recover when a tool fails. Each step is manual, error-prone, and difficult to
+automate end-to-end because an error message in the middle of a scan normally
+stops the whole operation. This dissertation presents NeuroShell, an autonomous,
+natural-language-driven orchestration framework for offensive security
+operations that addresses this gap with four cooperating components.
+
+The Intent Recognition Engine (Component 1) converts free-form security requests
+into validated, machine-readable intent contracts. A small, offline, CPU-only
+language model acts as a guarded natural-language gateway: a multi-stage
+pipeline and deterministic validation stack reject malformed, out-of-scope and
+adversarial outputs before any downstream action. The Dynamic Planner and
+Retrieval-Augmented Generation Engine (Component 2) translates a structured
+intent into a tool command for Nmap, Nikto or Gobuster, using retrieval over a
+documentation knowledge base to ground command synthesis, and applies explicit
+validation and safety checks. The Adaptive Execution and Error-Recovery Engine
+(Component 3) runs every command in a locked-down Docker sandbox, and when a
+command fails it labels the error, plans a fix with a local AI model, and retries
+automatically, while refusing any command that fails its safety checks. The
+AI-Driven Vulnerability Analysis Engine (Component 4) parses the execution
+records produced by the security tools, enriches findings with CISA KEV, EPSS
+and NVD intelligence, and prioritises vulnerabilities with an XGBoost-based
+classifier explained by SHAP values.
+
+NeuroShell keeps model inference entirely on the local machine, so no command,
+error text or target ever leaves the deployment boundary. Evaluations measured
+command-intent accuracy at 87.54\% for the planner, error-labelling macro-F1 of
+99.1\% (and above 96\% under heavy message noise) for the recovery engine, and a
+curated vulnerability-classification pipeline with strong discriminative
+performance on a 155,852-record data set. Findings confirm that deterministic
+validation, documentation grounding, sandboxed recovery and explainable
+vulnerability scoring each contribute to a safer automated workflow. The
+framework narrows the gap left by current AI copilots, which stop at tool
+selection, execute without an autonomous error-recovery loop, or rely on
+cloud-hosted models that conflict with strict data-governance requirements.
+
+\sliitkeywords{Offensive Security, Natural Language Orchestration, Intent
+Recognition, Retrieval-Augmented Generation, Error Recovery, Vulnerability
+Analysis, Offline Language Models}

@@ -1,0 +1,20 @@
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\contentsline {table}{\numberline {2.1}{\ignorespaces Surveyed existing systems and techniques against the properties adopted in this dissertation. Judgements summarise the cited primary sources and are re-verified at the final AUDIT.}}{18}{table.caption.16}%
+\addvspace {10\p@ }
+\contentsline {table}{\numberline {3.1}{\ignorespaces Experimental data set composition ($N=1500$). $D^+$ holds 600 well-formed requests across the nine-intent taxonomy; $D^-$ holds 900 deliberately flawed requests across eight flaw categories.}}{26}{table.caption.17}%
+\addvspace {10\p@ }
+\contentsline {table}{\numberline {4.1}{\ignorespaces Role model for the IRE. The default role is analyst; unknown roles coerce to viewer (least privilege).}}{38}{table.caption.18}%
+\contentsline {table}{\numberline {4.2}{\ignorespaces Verified pipeline stages and middleware under \texttt {src/}.}}{46}{table.caption.19}%
+\addvspace {10\p@ }
+\contentsline {table}{\numberline {5.1}{\ignorespaces Verified technology stack.}}{47}{table.caption.20}%
+\addvspace {10\p@ }
+\contentsline {table}{\numberline {6.1}{\ignorespaces Experiment 1: raw model output against the guarded pipeline on the full 1500-record set ($N{=}1500$, $D^+{=}600$, $D^-{=}900$).}}{54}{table.caption.21}%
+\contentsline {table}{\numberline {6.2}{\ignorespaces Experiment 2: identical guardrail stack, both backends.}}{55}{table.caption.22}%
+\contentsline {table}{\numberline {6.3}{\ignorespaces Experiment 3: ablation on the full 1500-record set. $\Delta $Catch is in percentage points relative to the fully guarded pipeline (a negative value means the layer contributes); Noise is the approximate run-to-run variation in percentage points. The validation-stack row is the joint S5--S7 ablation.}}{56}{table.caption.23}%
+\contentsline {table}{\numberline {6.4}{\ignorespaces Experiment 4: per-class catch rate and primary detection mechanism (deep-dive subset, each class's own denominator).}}{56}{table.caption.24}%
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\addvspace {10\p@ }

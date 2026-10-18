@@ -1,0 +1,23 @@
+\addvspace {10\p@ }
+\contentsline {figure}{\numberline {1.1}{\ignorespaces The four parts of NeuroShell (Component 3, the AEERE, is the subject of one of the component reports).}}{1}{figure.caption.16}%
+\contentsline {figure}{\numberline {1.2}{\ignorespaces Conceptual framework of the IRE within the NeuroShell chain: from the request to the guarded intent contract that downstream components consume.}}{6}{figure.caption.18}%
+\addvspace {10\p@ }
+\contentsline {figure}{\numberline {2.1}{\ignorespaces Position of the Intent Recognition Engine within the NeuroShell four-component stack.}}{11}{figure.caption.19}%
+\contentsline {figure}{\numberline {2.2}{\ignorespaces The guarded pipeline of the IRE and the ablation protocol used to quantify the contribution of each layer.}}{12}{figure.caption.21}%
+\contentsline {figure}{\numberline {2.3}{\ignorespaces Internal architecture of the Dynamic Planner and RAG Engine.}}{19}{figure.caption.28}%
+\contentsline {figure}{\numberline {2.4}{\ignorespaces The five-stage error-recovery loop of the AEERE.}}{20}{figure.caption.29}%
+\contentsline {figure}{\numberline {2.5}{\ignorespaces The three-step error check: fast path first; the AI is used only for new or unusual errors.}}{21}{figure.caption.30}%
+\contentsline {figure}{\numberline {2.6}{\ignorespaces The 8,000 test cases spread across ten error types.}}{22}{figure.caption.32}%
+\contentsline {figure}{\numberline {2.7}{\ignorespaces Vulnerability-feature engineering implementation of the AVAE.}}{24}{figure.caption.33}%
+\addvspace {10\p@ }
+\contentsline {figure}{\numberline {3.1}{\ignorespaces Decision accuracy, catch rate and false-positive rate for raw and guarded configurations of both backends.}}{34}{figure.caption.40}%
+\contentsline {figure}{\numberline {3.2}{\ignorespaces Overall and per-tool exact-match rates on the held-out assessment.}}{37}{figure.caption.45}%
+\contentsline {figure}{\numberline {3.3}{\ignorespaces Semantic accuracy without and with RAG in the 25-case ablation.}}{38}{figure.caption.46}%
+\contentsline {figure}{\numberline {3.4}{\ignorespaces Labelling accuracy of the full cascade as message noise rises, compared with the pattern-only path.}}{41}{figure.caption.48}%
+\contentsline {figure}{\numberline {3.5}{\ignorespaces Confusion matrix of the cascade on the test set at 30\% noise.}}{41}{figure.caption.49}%
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\addvspace {10\p@ }

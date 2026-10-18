@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, Field
 from typing import List, Optional, Literal, Dict, Any
 
 
@@ -39,97 +39,37 @@ class IREIntentContract(BaseModel):
 
 
 class PlanRequest(BaseModel):
-    """Request body must match the C1 /parse version1 output exactly.
-
-    Canonical structure:
-        {"intent_contract": {...}, "session_id": "..."}
-
-    Legacy flat fields (intent, target_value, primary_tool, ...) are still
-    accepted for backward compatibility, but are hidden from the OpenAPI
-    documentation so the docs reflect the real v1 contract.
-    """
-
-    model_config = ConfigDict(extra="allow")
-
+    # Old nested format
     intent_contract: Optional[IREIntentContract] = None
+
+    # Common request fields
     session_id: str
+    contract_version: Optional[str] = None
+    request_id: Optional[str] = None
 
-    @property
-    def legacy(self) -> Dict[str, Any]:
-        """Legacy flat fields forwarded as model extras."""
-        return self.model_extra or {}
+    # Direct C1 fields
+    intent: Optional[str] = None
+    sub_intent: Optional[str] = None
+    confidence: Optional[float] = None
+    human_readable_intent: Optional[str] = None
 
-    @property
-    def intent(self):
-        return self.legacy.get("intent")
+    # New enriched C1 format
+    target_type: Optional[str] = None
+    target_value: Optional[str] = None
+    target_in_scope: Optional[bool] = None
+    primary_tool: Optional[str] = None
+    tool_parameters: Optional[ToolParameters] = None
+    safety_notes: List[str] = []
 
-    @property
-    def sub_intent(self):
-        return self.legacy.get("sub_intent")
-
-    @property
-    def confidence(self):
-        return self.legacy.get("confidence")
-
-    @property
-    def human_readable_intent(self):
-        return self.legacy.get("human_readable_intent")
-
-    @property
-    def target_type(self):
-        return self.legacy.get("target_type")
-
-    @property
-    def target_value(self):
-        return self.legacy.get("target_value")
-
-    @property
-    def target_in_scope(self):
-        return self.legacy.get("target_in_scope")
-
-    @property
-    def primary_tool(self):
-        return self.legacy.get("primary_tool")
-
-    @property
-    def tool_parameters(self):
-        return self.legacy.get("tool_parameters")
-
-    @property
-    def safety_notes(self):
-        return self.legacy.get("safety_notes") or []
-
-    @property
-    def target(self):
-        return self.legacy.get("target")
-
-    @property
-    def ports(self):
-        return self.legacy.get("ports") or []
-
-    @property
-    def modifiers(self):
-        return self.legacy.get("modifiers") or []
-
-    @property
-    def cve_ids(self):
-        return self.legacy.get("cve_ids") or []
-
-    @property
-    def tool_hint(self):
-        return self.legacy.get("tool_hint")
-
-    @property
-    def schedule(self):
-        return self.legacy.get("schedule")
-
-    @property
-    def rejection_reason(self):
-        return self.legacy.get("rejection_reason")
-
-    @property
-    def scope_warnings(self):
-        return self.legacy.get("scope_warnings") or []
+    # Direct old-style C1 format
+    target: Optional[Dict[str, Any]] = None
+    ports: List[int] = []
+    modifiers: List[str] = []
+    cve_ids: List[str] = []
+    tool_hint: Optional[str] = None
+    schedule: Optional[str] = None
+    rejection_reason: Optional[str] = None
+    scope_warnings: List[str] = []
 
 
 class PlannerOutput(BaseModel):

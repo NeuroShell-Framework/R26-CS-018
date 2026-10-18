@@ -1,0 +1,1857 @@
+﻿\documentclass[10pt,journal,onecolumn]{IEEEtran}
+
+% ---------- Packages ----------
+\usepackage[T1]{fontenc}
+\usepackage{newtxtext}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{newtxmath}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{tabularx}
+\usepackage{multirow}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage[hidelinks]{hyperref}
+
+% ---------- Paragraph breaking ----------
+\emergencystretch=3em
+\tolerance=2000
+
+% ---------- Code style ----------
+\definecolor{codegray}{gray}{0.94}
+\definecolor{codebar}{gray}{0.65}
+\lstdefinestyle{srs}{
+  basicstyle=\ttfamily\footnotesize,
+  backgroundcolor=\color{codegray},
+  breaklines=true,
+  showstringspaces=false,
+  frame=single,
+  rulecolor=\color{codebar},
+  framerule=0.3pt,
+  columns=fullflexible,
+  keepspaces=true,
+  aboveskip=4pt,
+  belowskip=4pt
+}
+\lstset{style=srs}
+
+% ---------- Commands ----------
+\newcommand{\reqid}[1]{\textbf{#1}}
+
+% ---------- Title / Authors ----------
+\title{Software Requirements Specification:\\[0.4em] NeuroShell Intent Recognition Engine (IRE)}
+\author{\IEEEauthorblockN{NeuroShell Core Team}
+\IEEEauthorblockA{Cyber Operations Research Group\\
+MSc Cybersecurity Research Project R26-CS-018}}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+This Software Requirements Specification (SRS) defines the complete functional and non-functional requirements for the NeuroShell Intent Recognition Engine (IRE), designated Component 01 of the NeuroShell Framework. The IRE is a domain-specific Natural Language Understanding (NLU) gateway that converts natural-language offensive-security operator commands into validated, schema-constrained JSON intent contracts. This document specifies the seven-stage pipeline architecture with its eleven middleware components, the hallucination and adversarial detection mechanisms, role-based access control, external interfaces, non-functional requirements, data requirements, and the empirical verification results obtained from a 900-record evaluation campaign.
+\end{abstract}
+
+\begin{IEEEkeywords}
+Software Requirements Specification, Intent Recognition, Natural Language Understanding, Large Language Models, FastAPI, Cybersecurity Automation, Penetration Testing.
+\end{IEEEkeywords}
+
+% =================== Document Control ===================
+\section*{Document Control}
+\begin{center}
+\begin{tabularx}{0.9\columnwidth}{>{\bfseries}l >{\raggedright\arraybackslash}X}
+Document ID & NS-IRE-SRS-001\\
+Version & 1.0\\
+Date & 2026-09-01\\
+Project & NeuroShell Framework --- Component 01\\
+Reference & R26-CS-018 (MSc Cybersecurity Research)\\
+Classification & Internal / Academic Research\\
+Status & Current\\
+\end{tabularx}
+\end{center}
+
+\section*{Revision History}
+\begin{center}
+\begin{tabularx}{0.9\columnwidth}{l l l X}
+\toprule
+\textbf{Version} & \textbf{Date} & \textbf{Author} & \textbf{Changes}\\
+\midrule
+1.0 & 2026-09-01 & NeuroShell IRE & Initial comprehensive SRS\\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\tableofcontents
+
+\newpage
+
+% =================== 1. INTRODUCTION ===================
+\section{Introduction}
+
+\subsection{Purpose}
+This Software Requirements Specification (SRS) defines the complete functional and non-functional requirements for the \textbf{NeuroShell Intent Recognition Engine (IRE)}, designated Component 01 of the NeuroShell Framework. The IRE is a domain-specific Natural Language Understanding (NLU) gateway that converts natural-language offensive-security operator commands into validated, schema-constrained JSON intent contracts.
+
+This document is intended for:
+\begin{itemize}
+\item \textbf{Research evaluators} assessing the IRE's design and empirical performance;
+\item \textbf{Developers} maintaining or extending the pipeline;
+\item \textbf{Downstream consumers} (e.g., Component 02 Dynamic Planner) integrating with the IRE API;
+\item \textbf{Examiners} reviewing the MSc Cybersecurity research project (ref.~R26-CS-018).
+\end{itemize}
+
+\subsection{Scope}
+
+\subsubsection{Product Scope}
+The IRE is a \textbf{self-contained FastAPI microservice} that:
+\begin{enumerate}
+\item Accepts natural-language offensive-security commands via a REST API;
+\item Applies multi-layer validation (adversarial detection, schema, regex, network architecture, scope);
+\item Produces a validated \texttt{IntentSchema} or \texttt{PlannerContract} JSON output;
+\item Enforces role-based access control, session context, and hallucination detection;
+\item Maintains a durable, privacy-preserving audit log.
+\end{enumerate}
+
+\subsubsection{In Scope}
+\begin{itemize}
+\item All source code under \texttt{src/} (pipeline, middleware, validation, inference, schemas, API, audit, utilities);
+\item Configuration under \texttt{config/} (settings, features, RBAC policy, enforcement policy, LoRA config);
+\item Grounding data under \texttt{data/} (CVE grounding, alias map);
+\item Evaluation harness under \texttt{eval/} (diagnose, metrics, experiment scripts);
+\item Test suite under \texttt{tests/} (unit and integration);
+\item Deployment artifacts (Dockerfile, docker-compose.yml, scripts).
+\end{itemize}
+
+\subsubsection{Out of Scope}
+\begin{itemize}
+\item Component 02 (Dynamic Planner), Component 03 (AEERE Executor), and Component 04 (AVAE Vulnerability Analyzer) --- these are downstream consumers referenced only for interface-design justification;
+\item Frontend UI (separate project);
+\item Network infrastructure and physical security;
+\item LoRA fine-tuning execution (Phase 2, planned but not yet implemented).
+\end{itemize}
+
+\subsection{Definitions, Acronyms, Abbreviations}
+\begin{table}[h]
+\caption{Definitions, Acronyms, and Abbreviations.}
+\label{tab:definitions}
+\begin{tabularx}{\columnwidth}{>{\ttfamily}l X}
+\toprule
+\textbf{Term} & \textbf{Definition}\\
+\midrule
+IRE & Intent Recognition Engine\\
+NLU & Natural Language Understanding\\
+LLM & Large Language Model\\
+CVE & Common Vulnerabilities and Exposures\\
+RBAC & Role-Based Access Control\\
+CIDR & Classless Inter-Domain Routing\\
+RFC-1918 & Address Allocation for Private Internets\\
+SRS & Software Requirements Specification\\
+Tier-1 & Single-sample LLM inference path\\
+Tier-2 & Conditional N-sample self-consistency path\\
+DAcc & Decision Accuracy\\
+CFAcc & Contract-Field Accuracy\\
+FP & False Positive (incorrectly blocked well-formed input)\\
+S5/S6/S6B/S7 & Pipeline validation stages (Schema/Regex/Network/Scope)\\
+M1--M11 & Pipeline middleware components\\
+PlannerContract & Machine-readable JSON hand-off object for Component 02\\
+Grounding Hash & SHA-256 digest of CVE and alias datasets for cache invalidation\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{References}
+\begin{thebibliography}{10}
+\bibitem{R1} NeuroShell IRE README. \emph{README.md}, NeuroShell IRE Repository.
+\bibitem{R2} IRE Research Extraction. \emph{IRE-Doc/research-extraction.md}.
+\bibitem{R3} Experiment Results (900-record). \emph{IRE-Doc/NeuroShell\_IRE\_Test\_New\_Results.md}.
+\bibitem{R4} Data Collection Plan. \emph{IRE-Doc/Data\_Collection\_Plan.md}.
+\bibitem{R5} Results Section Draft. \emph{IRE-Doc/Results\_Section\_Draft.md}.
+\bibitem{R6} Gaps and Future Works. \emph{IRE-Doc/Gaps \& Future Works.md}.
+\bibitem{R7} IEEE Standard 830-1998, \emph{Recommended Practice for Software Requirements Specifications}, IEEE Computer Society.
+\bibitem{R8} OWASP Top 10 (2021), owasp.org.
+\bibitem{R9} RFC 1918 --- \emph{Address Allocation for Private Internets}, IETF.
+\bibitem{R10} \emph{CVE Format Standard}, mitre.org.
+\end{thebibliography}
+
+\subsection{Overview}
+The remainder of this document is organized as follows:
+\begin{itemize}
+\item \textbf{Section 2} describes the overall product perspective, user classes, and operating environment;
+\item \textbf{Section 3} specifies all system features and functional requirements in detail;
+\item \textbf{Section 4} defines external interface requirements (API, hardware, software, communication);
+\item \textbf{Section 5} specifies non-functional requirements (performance, security, reliability);
+\item \textbf{Section 6} covers data requirements (models, retention, grounding data);
+\item \textbf{Section 7} describes verification, validation, and empirical results;
+\item \textbf{Section 8} covers deployment procedures;
+\item \textbf{Section 9} provides appendices with enumerations, policy tables, and schema definitions.
+\end{itemize}
+% =================== 2. OVERALL DESCRIPTION ===================
+\section{Overall Description}
+
+\subsection{Product Perspective}
+The NeuroShell IRE is \textbf{Component 01} of the NeuroShell Framework, an autonomous penetration testing system. The IRE operates as an \textbf{independently deployable microservice} that bridges the gap between human operator intent (natural language) and machine-executable actions (validated JSON contracts).
+
+\begin{lstlisting}
+                +------------------------------------+
+                |     Operator / Frontend UI         |
+                |   (natural-language command)       |
+                +----------------+------------------+
+                                 | POST /parse
+                                 v
+                +------------------------------------+
+                |     NeuroShell IRE (C01)           |
+                |  NLU Gateway + Validation Stack    |
+                |  Port 8001 (FastAPI)               |
+                +--------+----------------+----------+
+                         |                |
+                  POST /parse/plan       POST /execute
+                         |                |
+                +--------v-------+  +----v--------------+
+                | Component 02   |  | Component 03      |
+                |   Dynamic      |  |  AEERE Executor   |
+                |   Planner      |  |  (Port 8003)      |
+                | (Port 8002)    |  +-------------------+
+                +--------+-------+
+                         |
+                +--------v-------+
+                | Component 04   |
+                |    AVAE        |
+                |  Vuln Analy.   |
+                | (Port 8004)    |
+                +----------------+
+\end{lstlisting}
+
+The IRE does \textbf{not} depend on downstream components for core operation. Component 02 (Planner), Component 03 (Executor), and Component 04 (Vulnerability Analyzer) are optional integrations controlled by feature flags.
+
+\subsection{Product Functions}
+The IRE provides the following core functions:
+
+\begin{table*}[t]
+\caption{IRE core product functions.}
+\label{tab:functions}
+\begin{tabularx}{\textwidth}{l X}
+\toprule
+\textbf{Function} & \textbf{Description}\\
+\midrule
+\textbf{Intent Classification} & Classify natural-language commands into one of 9 intent types.\\
+\textbf{Target Extraction} & Extract and validate target specification (IP, subnet, domain, URL, hostname).\\
+\textbf{Entity Extraction} & Extract ports, modifiers, CVE IDs, tool hints, and scheduling.\\
+\textbf{Hallucination Detection} & Detect 6 classes of LLM hallucination via structured validation.\\
+\textbf{Adversarial Detection} & Detect prompt injection, jailbreak, and encoded payload attacks.\\
+\textbf{RBAC Enforcement} & Enforce role-based access control (4 roles, 9 intents).\\
+\textbf{Session Management} & Multi-turn context injection with configurable memory window.\\
+\textbf{Semantic Caching} & Exact-hash plus cosine-similarity response cache with grounding invalidation.\\
+\textbf{Self-Consistency Voting} & Tier-2 N-sample consensus with semantic entropy uncertainty quantification.\\
+\textbf{Contract Generation} & Produce \texttt{PlannerContract} JSON with tool synthesis and command generation.\\
+\textbf{Audit Logging} & Privacy-preserving (SHA-256 hashed) append-only audit trail.\\
+\textbf{Escalation Queue} & Human-in-the-loop review for high-severity findings with HTTP 202 pattern.\\
+\bottomrule
+\end{tabularx}
+\end{table*}
+
+\subsection{User Classes and Characteristics}
+\begin{table*}[t]
+\caption{User classes, privileges, and permitted intents.}
+\label{tab:roles}
+\begin{tabularx}{\textwidth}{l l X l}
+\toprule
+\textbf{Role} & \textbf{Privilege Level} & \textbf{Permitted Intents} & \textbf{Description}\\
+\midrule
+\textbf{viewer} & Read-only & None (pre-inference fast-fail) & Observation-only; cannot execute any commands.\\
+\textbf{analyst} & Standard & NETWORK\_SCAN, VULNERABILITY\_AUDIT, SERVICE\_ENUMERATION, PASSIVE\_RECON, AMBIGUOUS, REJECTED & Passive and observational operations only.\\
+\textbf{operator} & Elevated & All 9 intents & Active operations including exploitation and password attacks.\\
+\textbf{admin} & Full & All 9 intents & System administration including model switching and policy management.\\
+\bottomrule
+\end{tabularx}
+\end{table*}
+
+\textbf{Default role:} \texttt{analyst} (when no role is specified in the request).
+
+\textbf{Unknown roles:} Treated as \texttt{viewer} (most restrictive --- implicitly denied everywhere).
+
+\subsection{Operating Environment}
+
+\subsubsection{Hardware}
+\begin{table}[h]
+\caption{Hardware requirements.}
+\label{tab:hardware}
+\begin{tabularx}{\columnwidth}{l X X}
+\toprule
+\textbf{Component} & \textbf{Minimum} & \textbf{Recommended}\\
+\midrule
+CPU & 4 cores (2.0 GHz+) & 8 cores (3.0 GHz+)\\
+RAM & 8 GB & 16 GB\\
+GPU & None (CPU-only supported) & NVIDIA CUDA-capable GPU\\
+Storage & 10 GB free & 50 GB SSD\\
+Network & Loopback (localhost) & LAN (100 Mbps+)\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsubsection{Software}
+\begin{table}[h]
+\caption{Software environment.}
+\label{tab:software}
+\begin{tabularx}{\columnwidth}{l l X}
+\toprule
+\textbf{Component} & \textbf{Version} & \textbf{Purpose}\\
+\midrule
+Python & 3.11+ & Runtime\\
+Ollama & 0.32.x & LLM inference daemon\\
+Docker & 24.x (optional) & Containerized deployment\\
+Docker Compose & 2.x (optional) & Multi-service orchestration\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsubsection{LLM Models}
+\begin{table}[h]
+\caption{LLM models.}
+\label{tab:models}
+\begin{tabularx}{\columnwidth}{l l X}
+\toprule
+\textbf{Model} & \textbf{Size} & \textbf{Purpose}\\
+\midrule
+\texttt{gemma4:latest} & 9.6 GB & Primary inference (default)\\
+\texttt{qwen2.5-coder:7b} & 4.7 GB & Alternative inference backbone\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{Design and Implementation Constraints}
+\begin{enumerate}
+\item \textbf{Language:} Python 3.11+ (async-first with FastAPI/uvicorn).
+\item \textbf{Schema Validation:} Pydantic v2 with \texttt{extra="forbid"} (strict schema enforcement).
+\item \textbf{Inference Runtime:} Ollama (local daemon, no cloud API calls).
+\item \textbf{Async Concurrency:} Single-worker uvicorn (pipeline is CPU-bound during LLM inference).
+\item \textbf{Rate Limiting:} slowapi, 30 requests/minute per IP.
+\item \textbf{Input Limit:} 2000 characters per command.
+\item \textbf{Session Limit:} 1024 concurrent sessions, 8 turns per session, 30-minute TTL.
+\item \textbf{Cache Limits:} 256 entries (inference LRU), 512 entries (semantic cache).
+\item \textbf{Privacy:} Raw input never stored in plaintext; SHA-256 hashing only.
+\end{enumerate}
+
+\subsection{Assumptions and Dependencies}
+
+\subsubsection{Assumptions}
+\begin{enumerate}
+\item Ollama daemon is running and accessible at the configured URL.
+\item Required LLM models are pre-pulled and available.
+\item The operator has valid credentials for the assigned RBAC role.
+\item Network connectivity exists between IRE and the Ollama daemon.
+\item The engagement scope CIDR is correctly configured for the target environment.
+\end{enumerate}
+
+\subsubsection{Dependencies}
+\begin{table}[h]
+\caption{External dependencies.}
+\label{tab:deps}
+\begin{tabularx}{\columnwidth}{l l X}
+\toprule
+\textbf{Dependency} & \textbf{Type} & \textbf{Purpose}\\
+\midrule
+Ollama & Runtime & LLM inference engine\\
+\texttt{data/cve\_grounding.json} & Data & CVE reference dataset (20 entries)\\
+\texttt{data/alias\_map.json} & Data & Exploit-name to CVE alias mappings (17 entries)\\
+\texttt{all-MiniLM-L6-v2} & ML Model & Sentence embeddings for semantic cache\\
+\texttt{en\_core\_web\_sm} & ML Model & spaCy English NLP model\\
+\bottomrule
+\end{tabularx}
+\end{table}
+% =================== 3. SYSTEM FEATURES ===================
+\section{System Features and Functional Requirements}
+
+\subsection{Pipeline Architecture}
+
+\subsubsection{Overview}
+The IRE implements a \textbf{7-stage pipeline with 11 middleware components}, organized as follows:
+\begin{lstlisting}
+PRE-INFERENCE MIDDLEWARE (M1-M4)
+    v
+7-STAGE PIPELINE (S1-S7)
+    v
+POST-INFERENCE MIDDLEWARE (M5-M11)
+    v
+RESPONSE ASSEMBLY + AUDIT
+\end{lstlisting}
+
+\reqid{Requirement FR-PIPE-001:} The pipeline shall process each request through the full stage sequence (S1$\rightarrow$S7) unless an earlier stage raises a blocking exception.
+
+\reqid{Requirement FR-PIPE-002:} Each middleware and stage shall be wrapped in individual try/except blocks so that a failure in non-critical middleware degrades gracefully rather than aborting the request.
+
+\reqid{Requirement FR-PIPE-003:} The pipeline shall accumulate \texttt{ValidationFindings} across all stages (S5/S6/S6B/S7) and include them in the response payload regardless of pass/fail status.
+
+\reqid{Requirement FR-PIPE-004:} Every non-passed finding shall be written to the SQLite audit log via \texttt{\_log\_audit\_findings}.
+
+\subsubsection{Stage Sequence}
+\begin{table*}[t]
+\caption{Pipeline stage sequence (S1--S7).}
+\label{tab:stages}
+\begin{tabularx}{\textwidth}{l l X X X}
+\toprule
+\textbf{Stage} & \textbf{Module} & \textbf{Function} & \textbf{Input} & \textbf{Output}\\
+\midrule
+S1 & \texttt{InputNormalizer} & NFKC Unicode normalization, control-char strip, jargon standardization & Raw text & Normalized text\\
+S2 & \texttt{AliasResolver} & Alias to CVE canonical mapping with provenance annotation & Normalized text & Enriched text\\
+S3 & \texttt{OllamaInferenceEngine} & Tier-1/Tier-2 LLM inference with self-consistency & Enriched text & \texttt{IntentSchema}\\
+S4 & \texttt{JSONParser} & Strip thought tags, fences; extract JSON object & LLM output text & Parsed dict\\
+S5 & \texttt{SchemaValidator} & Pydantic v2 \texttt{IntentSchema} validation & Dict & \texttt{IntentSchema}\\
+S6 & \texttt{RegexValidator} & IP/CIDR/CVE/port/metachar regex checks & \texttt{IntentSchema} & Validated \texttt{IntentSchema}\\
+S6B & \texttt{NetworkArchitectureValidator} & Type consistency, \texttt{ipaddress} parse, scope containment, CIDR sanity & \texttt{IntentSchema} & Validated \texttt{IntentSchema}\\
+S7 & \texttt{ScopeGuard} & 7 injection regexes on raw input plus RFC-1918 private-range check & Raw input + \texttt{IntentSchema} & (\texttt{IntentSchema}, warnings)\\
+\bottomrule
+\end{tabularx}
+\end{table*}
+
+\subsubsection{Middleware Sequence}
+\begin{table*}[t]
+\caption{Middleware sequence (M1--M11).}
+\label{tab:middleware}
+\begin{tabularx}{\textwidth}{l l l X}
+\toprule
+\textbf{Middleware} & \textbf{Module} & \textbf{Phase} & \textbf{Function}\\
+\midrule
+M1 & \texttt{AdversarialDetector} & Pre-inference & Weighted threat scoring $\rightarrow$ block/allow\\
+M2 & \texttt{RBACGuard.pre\_inference\_check} & Pre-inference & Restricted-role fast-fail\\
+M3 & \texttt{SessionContextStore.inject\_context} & Pre-inference & Prepend session turn history\\
+M4 & \texttt{SemanticCache.lookup} & Pre-inference & Exact-hash then cosine cache hit\\
+M5 & \texttt{RBACGuard.post\_inference\_check} & Post-inference & Role $\times$ intent authorization\\
+M7 & \texttt{SemanticCache.store} & Post-inference & Store successful response\\
+M8 & \texttt{IREResponseV2.from\_v1} & Post-inference & Assemble V2 response with metadata\\
+M9 & \texttt{SubIntentClassifier.enrich} & Post-inference & Hierarchical sub-intent classification\\
+M10 & \texttt{SessionContextStore.update} & Post-inference & Record completed turn\\
+M11 & Session info enrich & Post-inference & Attach turn count to response\\
+\bottomrule
+\end{tabularx}
+\end{table*}
+
+\subsection{Pre-Inference Middleware (M1--M4)}
+
+\subsubsection{M1 --- AdversarialDetector}
+\reqid{Requirement FR-ADV-001:} The adversarial detector shall scan raw input against 15 lexical injection patterns (weights 0.8--1.0) and 7 structural anomaly patterns (weights 0.5--0.9) plus 3 heuristic checks.
+
+\reqid{Requirement FR-ADV-002:} Any single signal with weight $\geq$ 0.95 shall trigger immediate blocking (auto-block), regardless of cumulative score.
+
+\reqid{Requirement FR-ADV-003:} The cumulative threat score shall be capped at 1.0, and blocking shall occur when the score meets or exceeds the configured threshold (default 0.70).
+
+\reqid{Requirement FR-ADV-004:} Scanning shall short-circuit as soon as the threshold is reached (efficiency optimization).
+
+\reqid{Requirement FR-ADV-005:} The adversarial detector may be disabled via the \texttt{adversarial\_detection} feature flag.
+
+Detection categories:
+\begin{table}[h]
+\caption{Adversarial detection layers.}
+\label{tab:advlayers}
+\begin{tabularx}{\columnwidth}{l >{\raggedright\arraybackslash}p{0.18\columnwidth} X >{\raggedright\arraybackslash}p{0.3\columnwidth}}
+\toprule
+\textbf{Layer} & \textbf{Patterns} & \textbf{Weight Range} & \textbf{Examples}\\
+\midrule
+A: Lexical & 15 regex patterns & 0.8--1.0 & \texttt{ignore previous instructions}, \texttt{jailbreak}, \texttt{$<$|im\_start|$>$}\\
+B: Structural & 7 regex patterns & 0.5--0.9 & Hex encoding, base64 payloads, \texttt{$<$script$>$}, \texttt{eval()}\\
+B: Heuristic & 3 checks & 0.3--0.4 & Special-char density $>$30\%, token $>$100 chars, repeated n-grams\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+Decision rule:
+\begin{equation}
+\mathrm{BLOCK} \iff \bigl(\exists\, i \in M(x):\ w_{i} \geq 0.95\bigr) \lor \bigl(S(x) \geq \tau\bigr),
+\end{equation}
+\begin{equation}
+S(x) = \min\Bigl(1,\ \sum_{i \in M(x)} w_{i}\Bigr), \qquad \tau = 0.70.
+\end{equation}
+
+\subsubsection{M2 --- RBACGuard (Pre-Inference)}
+\reqid{Requirement FR-RBAC-001:} The pre-inference check shall fast-fail for any role in the \texttt{RESTRICTED\_ROLES} set (\texttt{viewer}).
+
+\reqid{Requirement FR-RBAC-002:} An \texttt{RBACError} shall be raised with \texttt{intent="ANY"} for restricted roles.
+
+\reqid{Requirement FR-RBAC-003:} The pre-check may be disabled via the \texttt{rbac} feature flag.
+
+\subsubsection{M3 --- SessionContextStore}
+\reqid{Requirement FR-SES-001:} The session context store shall maintain per-session turn logs with configurable limits: max 8 turns, max 1024 sessions, 30-minute TTL, LRU eviction.
+
+\reqid{Requirement FR-SES-002:} Context shall be injected in the following format:
+\begin{lstlisting}
+Session context:
+[Turn 1] NETWORK_SCAN on SUBNET "192.168.1.0/24" ports=[22,80]
+[Turn 2] VULNERABILITY_AUDIT on IP "10.0.0.5" cves=[CVE-2021-44228]
+Current command: <user command>
+\end{lstlisting}
+
+\reqid{Requirement FR-SES-003:} Context injection shall occur BEFORE input normalization and BEFORE cache lookup, so cache keys include session state.
+
+\reqid{Requirement FR-SES-004:} Only successful responses shall be recorded as turns (error responses are not stored).
+
+\subsubsection{M4 --- SemanticCache}
+\reqid{Requirement FR-CACHE-001:} The semantic cache shall support two-tier lookup: exact SHA-256 hash match first, then cosine similarity over all entries.
+
+\reqid{Requirement FR-CACHE-002:} The cosine similarity threshold shall be configurable (default 0.82).
+
+\reqid{Requirement FR-CACHE-003:} Each cache entry shall carry a \texttt{grounding\_hash} (SHA-256 of \texttt{cve\_grounding.json} + \texttt{alias\_map.json}). Entries with stale grounding hashes shall be purged on contact.
+
+\reqid{Requirement FR-CACHE-004:} The cache shall use LRU eviction at capacity (default 512 entries).
+
+\reqid{Requirement FR-CACHE-005:} Only successful responses shall be cached.
+
+\reqid{Requirement FR-CACHE-006:} The embedding model (\texttt{all-MiniLM-L6-v2}) shall be lazy-loaded on first use.
+
+\subsection{Core Pipeline Stages (S1--S7)}
+
+\subsubsection{S1 --- InputNormalizer}
+\reqid{Requirement FR-NORM-001:} Input normalization shall apply: NFKC Unicode normalization, control-char stripping (ord $<$ 32), think-token removal (\texttt{ thinking}, \texttt{$<$|think|$>$}), whitespace collapse.
+
+\reqid{Requirement FR-NORM-002:} A 20-term jargon standardization table shall map offensive-security slang to canonical terms (e.g., \texttt{syn scan} $\rightarrow$ \texttt{SYN stealth scan}, \texttt{pwn} $\rightarrow$ \texttt{exploit}, \texttt{privesc} $\rightarrow$ \texttt{privilege escalation}).
+
+\reqid{Requirement FR-NORM-003:} Empty or whitespace-only input shall raise an \texttt{InputValidationError} with an HTTP 200 error envelope.
+
+\subsubsection{S2 --- AliasResolver}
+\reqid{Requirement FR-ALIAS-001:} The alias resolver shall load \texttt{data/alias\_map.json} (17 active entries) and compile word-boundary patterns sorted longest-first.
+
+\reqid{Requirement FR-ALIAS-002:} Aliases shall be rewritten to \texttt{CANONICAL (alias: ORIGINAL)} format so the LLM sees provenance.
+
+\reqid{Requirement FR-ALIAS-003:} Each alias shall be rewritten only at its first occurrence per input.
+
+\subsubsection{S3 --- OllamaInferenceEngine (Tier-1/Tier-2)}
+\reqid{Requirement FR-INF-001:} The inference engine shall support two tiers of inference with conditional gating.
+
+\reqid{Requirement FR-INF-002:} Tier-1 shall execute a single Ollama API call at the configured temperature (default 0.1).
+
+\reqid{Requirement FR-INF-003:} The Tier-1 confidence proxy shall be computed as
+\begin{equation}
+c_{\mathrm{base}} = \begin{cases} o.\mathrm{confidence}, & \text{if parsed to } [0,1],\\ 0.5, & \text{otherwise.} \end{cases}
+\end{equation}
+\begin{equation}
+c_{1} = \begin{cases} \min(c_{\mathrm{base}},\,0.4), & i \in \mathcal{H},\\ \min(c_{\mathrm{base}},\,0.5), & i \notin \mathcal{H},\ t_{v} \text{ missing},\\ c_{\mathrm{base}}, & \text{otherwise,} \end{cases}
+\end{equation}
+where $i = \mathrm{intent}$, $t_{v} = \mathrm{target.value}$, and $\mathcal{H} = \{\mathrm{AMBIGUOUS},\ \mathrm{REJECTED},\ \emptyset\}$.
+
+\reqid{Requirement FR-INF-004:} If $c_{1} \geq \gamma$ ($\gamma = 0.7$), the Tier-1 output shall be returned immediately (entropy logged as 0, band ``low'', tier ``1'').
+
+\reqid{Requirement FR-INF-005:} Tier-2 shall execute when $c_{1} < \gamma$, generating $N=5$ total samples (Tier-1 reused $+$ $N-1$ resamples) at a higher temperature (default 0.7).
+
+\reqid{Requirement FR-INF-006:} Tier-2 outputs shall be clustered by semantic-equivalence signature
+\begin{equation}
+\begin{aligned}
+\sigma(o) ={}& \bigl(\mathrm{intent},\ \mathrm{target\_type},\ \mathrm{target\_value.lower()},\\
+&\quad \mathrm{tuple}(\mathrm{sorted}(cve\_ids))\bigr),
+\end{aligned}
+\end{equation}
+which deliberately ignores ports and modifiers.
+
+\reqid{Requirement FR-INF-007:} Semantic entropy shall be computed as
+\begin{equation}
+H(x) = -\sum_{j} p_{j}\, \ln p_{j}, \qquad p_{j} = |C_{j}|/N.
+\end{equation}
+
+\reqid{Requirement FR-INF-008:} Entropy bands shall be mapped via configurable thresholds:
+\begin{itemize}
+\item $H < 0.3$ $\rightarrow$ ``low'';
+\item $0.3 \leq H \leq 0.8$ $\rightarrow$ ``medium'';
+\item $H > 0.8$ $\rightarrow$ ``high''.
+\end{itemize}
+
+\reqid{Requirement FR-INF-009:} The resolution method for Tier-2 shall be plurality vote (largest cluster wins; ties resolve by insertion order).
+
+\reqid{Requirement FR-INF-010:} The inference engine shall maintain a two-layer cache: in-memory LRU (256 entries) plus JSON disk persistence, keyed by \texttt{SHA-256(model\_name|enriched\_input)}.
+
+\subsubsection{S4 --- JSONParser}
+\reqid{Requirement FR-JSON-001:} The JSON parser shall strip \texttt{ thinking...response}, \texttt{$<$|think|$>$}, and markdown code fences.
+
+\reqid{Requirement FR-JSON-002:} It shall extract the substring from the first \texttt{\{} to the last \texttt{\}} (inclusive).
+
+\reqid{Requirement FR-JSON-003:} It shall validate that the result is a Python dict; failure raises \texttt{JSONParseError}.
+
+\subsubsection{S5 --- SchemaValidator}
+\reqid{Requirement FR-SCH-001:} The schema validator shall validate the parsed dict against the \texttt{IntentSchema} Pydantic v2 model via \texttt{model\_validate()}.
+
+\reqid{Requirement FR-SCH-002:} On validation failure, a \texttt{ValidationFinding} shall be created with \texttt{severity="block"} and the appropriate \texttt{HallucinationClass} mapped from the failing field:
+\begin{table*}[t]
+\caption{Schema error to hallucination-class mapping.}
+\label{tab:schmap}
+\begin{tabularx}{\textwidth}{>{\ttfamily}l >{\ttfamily}X}
+\toprule
+\textbf{Error Field/Condition} & \textbf{Hallucination Class}\\
+\midrule
+\texttt{ports} in error path & FABRICATED\_PARAMETER\\
+\texttt{cve\_ids} in error path & FABRICATED\_CVE\\
+\texttt{target} or \texttt{intent} in error path & TARGET\_TYPE\_MISMATCH\\
+\texttt{rejection\_reason}, \texttt{confidence}, AMBIGUOUS, REJECTED in message & UNGROUNDED\_CONFIDENCE\\
+Default fallback & UNGROUNDED\_CONFIDENCE\\
+\bottomrule
+\end{tabularx}
+\end{table*}
+
+\reqid{Requirement FR-SCH-003:} Schema constraints include:
+\begin{itemize}
+\item \texttt{intent} $\in$ 9-class \texttt{IntentType} enum;
+\item \texttt{target.type} $\in$ 6-class \texttt{TargetType} enum;
+\item \texttt{confidence} $\in$ [0.0,~1.0];
+\item \texttt{ports[$i$]} $\in$ [1,~65535];
+\item \texttt{cve\_ids[$i$]} matches \texttt{\^{}CVE-\textbackslash d\{4\}-\textbackslash d\{4,7\}\$};
+\item \texttt{intent=REJECTED} $\Rightarrow$ \texttt{rejection\_reason} required;
+\item \texttt{intent=AMBIGUOUS} $\Rightarrow$ \texttt{confidence} $<$ 0.5;
+\item No extra fields allowed (\texttt{extra="forbid"}).
+\end{itemize}
+
+\subsubsection{S6 --- RegexValidator}
+\reqid{Requirement FR-REG-001:} Four sequential checks shall be performed:
+\begin{table*}[t]
+\caption{RegexValidator checks.}
+\label{tab:regex}
+\begin{tabularx}{\textwidth}{l X l l}
+\toprule
+\textbf{Check} & \textbf{Description} & \textbf{Failure Class} & \textbf{Severity}\\
+\midrule
+1. Target Format & Type-specific regex: IPv4, IPv6, CIDR, Domain, Hostname, URL & TARGET\_TYPE\_MISMATCH & block\\
+2. CVE Syntax + Grounding & \texttt{\^{}CVE-\textbackslash d\{4\}-\textbackslash d\{4,7\}\$} syntax; then lookup in \texttt{cve\_grounding.json} & FABRICATED\_CVE / UNGROUNDED\_CONFIDENCE & block / from policy\\
+3. Port Bounds & $\forall p$: $1 \leq p \leq 65535$ & FABRICATED\_PARAMETER & block\\
+4. Shell Metacharacters & Scan for \texttt{[;\&|`\$!$>$]} in \texttt{target.value} and modifiers & FABRICATED\_PARAMETER & block\\
+\bottomrule
+\end{tabularx}
+\end{table*}
+
+\reqid{Requirement FR-REG-002:} CVE syntax failures shall produce severity from \texttt{EnforcementPolicy} (default: block).
+
+\reqid{Requirement FR-REG-003:} Syntactically valid but ungrounded CVEs (not in \texttt{cve\_grounding.json}) shall produce \texttt{UNGROUNDED\_CONFIDENCE} with severity from policy (default: warn --- advisory only).
+
+\subsubsection{S6B --- NetworkArchitectureValidator}
+\reqid{Requirement FR-NET-001:} Four-step validation for IP/SUBNET targets:
+\begin{table*}[t]
+\caption{Network architecture validation steps.}
+\label{tab:net}
+\begin{tabularx}{\textwidth}{l X >{\raggedright\arraybackslash}p{0.2\textwidth}}
+\toprule
+\textbf{Step} & \textbf{Check} & \textbf{Failure Class}\\
+\midrule
+1. Type Consistency & IP must not contain ``/''; SUBNET must contain ``/''; UNKNOWN must be empty & TARGET\_TYPE\_MISMATCH\\
+2. Parseability & \texttt{ipaddress.ip\_network()} or \texttt{ip\_address()} parse & format error\\
+3. Scope Containment & IP: $\mathrm{addr} \in \Omega$; SUBNET: $\mathrm{net} \subseteq \Omega$ (\texttt{subnet\_of}) & OUT\_OF\_SCOPE\_TARGET\\
+4. CIDR Sanity & Prefix $\geq$ \texttt{max\_cidr\_prefix} (30); reject /32 subnet; IPv6 $<$ /64 rejected & OUT\_OF\_SCOPE\_TARGET\\
+\bottomrule
+\end{tabularx}
+\end{table*}
+
+\reqid{Requirement FR-NET-002:} Domain, URL, Hostname, and UNKNOWN types shall auto-pass the scope check (scope validation not applicable).
+
+\reqid{Requirement FR-NET-003:} Engagement mode \texttt{"disabled"} shall short-circuit all validation; \texttt{"warn"} shall downgrade all severities to advisory warnings.
+
+\subsubsection{S7 --- ScopeGuard}
+\reqid{Requirement FR-SCOPE-001:} The scope guard shall scan the \textbf{raw input} (not the enriched/normalized form) against 7 injection regex patterns. Any match shall produce an unconditional hard block.
+
+\reqid{Requirement FR-SCOPE-002:} Private-range membership shall be checked against 7 network ranges:
+\begin{itemize}
+\item \texttt{10.0.0.0/8}, \texttt{172.16.0.0/12}, \texttt{192.168.0.0/16};
+\item \texttt{127.0.0.0/8} (loopback), \texttt{169.254.0.0/16} (link-local);
+\item \texttt{::1/128} (IPv6 loopback), \texttt{fc00::/7} (IPv6 ULA).
+\end{itemize}
+
+\reqid{Requirement FR-SCOPE-003:} Public (non-private) targets shall trigger \texttt{OUT\_OF\_SCOPE\_TARGET} with severity determined by \texttt{EnforcementPolicy}:
+\begin{itemize}
+\item \texttt{"strict"} mode $\rightarrow$ block;
+\item \texttt{"research"} mode $\rightarrow$ warn (advisory).
+\end{itemize}
+
+\subsection{Post-Inference Middleware (M5--M11)}
+
+\subsubsection{M5 --- RBACGuard (Post-Inference)}
+\reqid{Requirement FR-RBAC-010:} The post-inference check shall verify that the detected intent is permitted for the caller's role using \texttt{INTENT\_ROLE\_POLICY}.
+
+\reqid{Requirement FR-RBAC-011:} Denied intents shall raise \texttt{RBACError} listing the detected intent and the role's permitted intents.
+
+\subsubsection{M7 --- SemanticCache (Store)}
+\reqid{Requirement FR-CACHE-010:} Successful responses shall be stored with their grounding hash for future invalidation.
+
+\subsubsection{M8 --- IREResponseV2 Assembly}
+\reqid{Requirement FR-RESP-001:} The V2 response shall include all V1 fields plus: \texttt{sub\_intent}, \texttt{secondary\_intents}, \texttt{uncertainty\_band}, \texttt{raw\_entropy}, \texttt{tier\_triggered}, \texttt{resolution\_method}, \texttt{cache\_hit}, \texttt{rbac\_role}, \texttt{session\_turns}, \texttt{validation\_findings}, \texttt{schema\_version}.
+
+\reqid{Requirement FR-RESP-002:} Error responses shall follow the 200-envelope pattern: HTTP 200 with \texttt{status:"error"}, carrying \texttt{error}, \texttt{stage}, \texttt{detail}, \texttt{field}, \texttt{validation\_findings}, and \texttt{latency\_ms}.
+
+\subsubsection{M9 --- SubIntentClassifier}
+\reqid{Requirement FR-SUB-001:} The sub-intent classifier shall be a first-match-wins rule table over 27 sub-intent types across 7 parent intents.
+
+\reqid{Requirement FR-SUB-002:} Classification shall be gated: disabled for AMBIGUOUS/REJECTED intents and for confidence $<$ 0.6.
+
+\subsubsection{M10/M11 --- Session Update}
+\reqid{Requirement FR-SES-010:} After successful processing, the session store shall record the turn with intent, target, ports, CVE IDs, and confidence.
+\subsection{Schema and Contract System}
+
+\subsubsection{IntentSchema (IRE Internal)}
+The \texttt{IntentSchema} is the IRE's internal validated representation:
+\begin{table*}[t]
+\caption{IntentSchema fields.}
+\label{tab:intentschema}
+\begin{tabularx}{\textwidth}{>{\ttfamily}l l l X}
+\toprule
+\textbf{Field} & \textbf{Type} & \textbf{Required} & \textbf{Constraints}\\
+\midrule
+\texttt{intent} & IntentType & Yes & 9-class enum\\
+\texttt{target} & Target & Yes & \texttt{\{type: TargetType, value: str\}}\\
+\texttt{ports} & List[int] & No & Each $\in$ [1, 65535]\\
+\texttt{modifiers} & List[str] & No & Free text\\
+\texttt{cve\_ids} & List[str] & No & Each matches \texttt{\^{}CVE-\textbackslash d\{4\}-\textbackslash d\{4,7\}\$}\\
+\texttt{tool\_hint} & Optional[str] & No & Suggested tool\\
+\texttt{schedule} & Optional[str] & No & Cron expression\\
+\texttt{confidence} & float & Yes & $\in$ [0.0, 1.0]\\
+\texttt{rejection\_reason} & Optional[str] & Yes if REJECTED & Required when \texttt{intent=REJECTED}\\
+\bottomrule
+\end{tabularx}
+\end{table*}
+
+\subsubsection{PlannerContract (Component 02 Hand-off)}
+The \texttt{PlannerContract} extends the intent schema with downstream-consumption fields:
+\begin{table}[h]
+\caption{PlannerContract fields.}
+\label{tab:plannercontract}
+\begin{tabularx}{\columnwidth}{>{\ttfamily}l l X}
+\toprule
+\textbf{Field} & \textbf{Type} & \textbf{Purpose}\\
+\midrule
+\texttt{sub\_intent} & Optional[SubIntentType] & Hierarchical refinement for C02 command construction\\
+\texttt{tool\_hint} & Optional[str] & Tool suggestion (nmap, gobuster, nikto, manual, none)\\
+\texttt{schedule} & Optional[str] & Cron expression; None = execute immediately\\
+\texttt{scope\_warnings} & List[str] & SCOPE\_WARNING and ARCH\_WARNING entries\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+Executability predicates:
+\begin{itemize}
+\item \texttt{is\_executable} $\rightarrow$ False if REJECTED/AMBIGUOUS, or if any \texttt{scope\_warning} contains ``SCOPE\_VIOLATION'' or ``ARCH\_WARNING'';
+\item \texttt{is\_immediate} $\rightarrow$ True if \texttt{schedule} is None;
+\item \texttt{has\_scope\_issues} $\rightarrow$ True if any \texttt{scope\_warnings} present.
+\end{itemize}
+
+\subsection{Hallucination Taxonomy and Enforcement}
+
+\subsubsection{HallucinationClass Enum (6 Classes)}
+\begin{table*}[t]
+\caption{Hallucination classes.}
+\label{tab:hallucination}
+\begin{tabularx}{\textwidth}{>{\ttfamily}l X X}
+\toprule
+\textbf{Class} & \textbf{Description} & \textbf{Detection Stage}\\
+\midrule
+FABRICATED\_CVE & Malformed or non-existent CVE ID & S5 (schema), S6 (regex+grounding)\\
+TARGET\_TYPE\_MISMATCH & Structural mismatch between target type and value & S5 (schema), S6 (format), S6B (consistency)\\
+CONTRADICTORY\_ACTION\_TARGET & Incompatible action-target pairing & S5 (schema)\\
+FABRICATED\_PARAMETER & Out-of-bounds or injected parameters & S5 (schema), S6 (port/metachar)\\
+UNGROUNDED\_CONFIDENCE & Valid syntax but unindexed CVE; low-confidence output & S6 (grounding), S5 (confidence)\\
+OUT\_OF\_SCOPE\_TARGET & Target outside authorized engagement scope & S6B (scope), S7 (RFC-1918)\\
+\bottomrule
+\end{tabularx}
+\end{table*}
+
+\subsubsection{Enforcement Policy}
+\begin{table}[h]
+\caption{Default enforcement by class.}
+\label{tab:enforcement}
+\begin{tabularx}{\columnwidth}{>{\ttfamily}l l X}
+\toprule
+\textbf{HallucinationClass} & \textbf{Default Action} & \textbf{Reasoning}\\
+\midrule
+FABRICATED\_PARAMETER & BLOCK & Execution risk from out-of-bounds parameters or injection\\
+CONTRADICTORY\_ACTION\_TARGET & BLOCK & Safety invariant violation\\
+TARGET\_TYPE\_MISMATCH & BLOCK & Structural mismatch prevents downstream execution\\
+FABRICATED\_CVE & BLOCK & Complete LLM hallucination\\
+UNGROUNDED\_CONFIDENCE & WARN & Novel but plausible CVEs; advisory only\\
+OUT\_OF\_SCOPE\_TARGET & Dynamic & BLOCK in strict mode; WARN in research mode\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsubsection{ValidationFinding Schema}
+Each validation check produces a \texttt{ValidationFinding}:
+\begin{table*}[t]
+\caption{ValidationFinding fields.}
+\label{tab:vf}
+\begin{tabularx}{\textwidth}{>{\ttfamily}l l X}
+\toprule
+\textbf{Field} & \textbf{Type} & \textbf{Values}\\
+\midrule
+\texttt{validator} & str & Which component performed the check\\
+\texttt{passed} & bool & True if check passed\\
+\texttt{hallucination\_class} & Optional[HallucinationClass] & Assigned class on failure\\
+\texttt{detail} & str & Human-readable description\\
+\texttt{severity} & Literal["block","warn","escalate"] & Enforcement action\\
+\bottomrule
+\end{tabularx}
+\end{table*}
+
+\subsection{Contract Builder and Tool Synthesis}
+
+\subsubsection{Tool Synthesis Table}
+\begin{table*}[t]
+\caption{Tool synthesis per intent.}
+\label{tab:toolsynth}
+\begin{tabularx}{\textwidth}{>{\ttfamily}l l X}
+\toprule
+\textbf{Intent} & \textbf{Tool} & \textbf{Command Template}\\
+\midrule
+NETWORK\_SCAN & nmap & \texttt{nmap [flags] $<$target$>$}\\
+VULNERABILITY\_AUDIT & nikto (URL) / nmap & \texttt{nikto -h $<$target$>$ [-p port] [-ssl]}\\
+SERVICE\_ENUMERATION & nmap & \texttt{nmap -sV [flags] $<$target$>$}\\
+EXPLOITATION & manual & Requires human authorization\\
+PASSWORD\_ATTACK & manual & Lockout risk warning\\
+DIRECTORY\_BRUTEFORCE & gobuster & \texttt{gobuster dir -u $<$url$>$ -w $<$wordlist$>$ -q}\\
+PASSIVE\_RECON & none & Information gathering only\\
+AMBIGUOUS & none & Requires clarification\\
+REJECTED & none & Command rejected\\
+\bottomrule
+\end{tabularx}
+\end{table*}
+
+\subsubsection{Priority Ladder}
+\begin{table}[h]
+\caption{Contract priority ladder.}
+\label{tab:priority}
+\begin{tabularx}{\columnwidth}{l X}
+\toprule
+\textbf{Priority} & \textbf{Condition}\\
+\midrule
+SCHEDULED & Cron expression is set\\
+CRITICAL & Intent is EXPLOITATION\\
+HIGH & Intent is VULNERABILITY\_AUDIT with CVE IDs\\
+MEDIUM & NETWORK\_SCAN, SERVICE\_ENUMERATION, or VULNERABILITY\_AUDIT (no CVEs)\\
+LOW & All other intents\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsubsection{Nmap Flag Mapping}
+\begin{table}[h]
+\caption{Modifier to nmap-flag mapping.}
+\label{tab:nmapflags}
+\begin{tabularx}{\columnwidth}{>{\ttfamily}l >{\ttfamily}l}
+\toprule
+\textbf{Modifier} & \textbf{Flag}\\
+\midrule
+\texttt{stealth} & \texttt{-sS} (SYN scan)\\
+\texttt{aggressive} & \texttt{-A}\\
+\texttt{version\_detect} & \texttt{-sV}\\
+\texttt{os\_detect} & \texttt{-O}\\
+\texttt{udp} & \texttt{-sU}\\
+\texttt{full\_port} & \texttt{-p-}\\
+\texttt{verbose} & \texttt{-v}\\
+\texttt{stealth} timing & \texttt{-T1}\\
+Default timing & \texttt{-T3}\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{Audit and Escalation System}
+
+\subsubsection{Audit Logger}
+\reqid{Requirement FR-AUDIT-001:} The audit logger shall maintain an append-only SQLite \texttt{audit\_log} table.
+
+\reqid{Requirement FR-AUDIT-002:} Raw user input shall NEVER be stored in plaintext; only SHA-256 hashes shall be recorded.
+
+\reqid{Requirement FR-AUDIT-003:} Each finding shall be recorded with: timestamp, session\_id, raw\_input\_hash, intent\_summary, hallucination\_class, severity, enforcement\_action, and status.
+
+\subsubsection{Escalation Queue}
+\reqid{Requirement FR-ESC-001:} Findings with \texttt{severity="escalate"} shall be recorded with \texttt{status="pending"} in the audit log.
+
+\reqid{Requirement FR-ESC-002:} The \texttt{POST /parse/plan} endpoint shall return HTTP 202 with \texttt{escalation\_id} when an ESCALATE-severity finding is encountered, withholding the contract.
+
+\reqid{Requirement FR-ESC-003:} Admins may approve or reject escalations via \texttt{POST /admin/escalations/\{id\}/resolve}, which releases or discards the cached contract.
+% =================== 4. EXTERNAL INTERFACES ===================
+\section{External Interface Requirements}
+
+\subsection{User Interfaces}
+The IRE does not have a direct user interface. It provides a REST API consumed by:
+\begin{itemize}
+\item Frontend UI (separate project, \texttt{apps/web/});
+\item Downstream components (C02, C03, C04);
+\item CLI tools and scripts.
+\end{itemize}
+
+\subsection{Hardware Interfaces}
+\begin{table}[h]
+\caption{Hardware interfaces.}
+\label{tab:hwinterface}
+\begin{tabularx}{\columnwidth}{l X}
+\toprule
+\textbf{Interface} & \textbf{Specification}\\
+\midrule
+Network & TCP/IP over Ethernet or loopback\\
+Ollama Communication & HTTP/1.1 to Ollama daemon (default port 11434)\\
+Storage & Filesystem for SQLite audit log, JSON cache files, grounding data\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{Software Interfaces}
+\begin{table*}[t]
+\caption{Software interface map.}
+\label{tab:swinterfaces}
+\begin{tabularx}{\textwidth}{l l X}
+\toprule
+\textbf{Interface} & \textbf{Protocol} & \textbf{Target}\\
+\midrule
+Ollama API & HTTP POST \texttt{/api/generate} & Local Ollama daemon\\
+Component 02 & HTTP POST \texttt{/plan} & Dynamic Planner (port 8002, optional)\\
+Component 03 & HTTP POST & AEERE Executor (port 8003, optional)\\
+Component 04 & HTTP POST & AVAE Vulnerability Analyzer (port 8004, optional)\\
+SQLite & File I/O & \texttt{data/audit\_log.db}\\
+Filesystem & Read & \texttt{data/cve\_grounding.json}, \texttt{data/alias\_map.json}\\
+\bottomrule
+\end{tabularx}
+\end{table*}
+
+\subsection{Communication Interfaces}
+
+\subsubsection{REST API Base}
+\begin{itemize}
+\item \textbf{Protocol:} HTTP/1.1 (HTTPS recommended for production);
+\item \textbf{Content-Type:} \texttt{application/json};
+\item \textbf{Authentication:} \texttt{X-API-Key} header (Bearer-style);
+\item \textbf{Rate Limiting:} 30 requests/minute per IP (slowapi);
+\item \textbf{CORS:} Allow all origins (development mode).
+\end{itemize}
+
+\subsubsection{Response Headers}
+\begin{table}[h]
+\caption{IRE response headers.}
+\label{tab:headers}
+\begin{tabularx}{\columnwidth}{>{\ttfamily}l X}
+\toprule
+\textbf{Header} & \textbf{Description}\\
+\midrule
+\texttt{X-IRE-Schema-Version} & Schema version(s) supported: \texttt{"1,2"}\\
+\texttt{X-IRE-Latency-Ms} & Pipeline processing latency in milliseconds\\
+\texttt{X-IRE-Intent} & Detected intent type\\
+\texttt{X-IRE-Cache-Hit} & Cache hit type: \texttt{"exact"}, \texttt{"semantic"}, or \texttt{"none"}\\
+\texttt{X-Chain-Cache-Hit} & Chain cache hit (on \texttt{/execute} only)\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{API Endpoint Specifications}
+
+\subsubsection{GET /}
+\textbf{Purpose:} Service information (no auth required).
+
+\textbf{Response 200:}
+\begin{lstlisting}
+{
+  "service": "NeuroShell IRE",
+  "version": "2.0.0",
+  "status": "running",
+  "docs": "/docs",
+  "endpoints": { ... }
+}
+\end{lstlisting}
+
+\subsubsection{GET /health}
+\textbf{Purpose:} System health check (no auth required).
+
+\textbf{Response 200:}
+\begin{lstlisting}
+{
+  "status": "healthy",
+  "ollama": { "connected": true, "model": "gemma4:latest" },
+  "pipeline": { "stages": 7, "features": { ... } },
+  "sessions": { "active": 0, "max": 1024 },
+  "semantic_cache": { "size": 0, "max_size": 512 },
+  "inference_cache": { "size": 0 }
+}
+\end{lstlisting}
+
+\textbf{Response 503:} Service unavailable.
+
+\subsubsection{POST /parse}
+\textbf{Purpose:} Core intent recognition endpoint.
+
+\textbf{Request:}
+\begin{lstlisting}
+{
+  "command": "scan 192.168.1.0/24 for open ports",
+  "session_id": "optional-session-id",
+  "role": "analyst"
+}
+\end{lstlisting}
+
+\textbf{Constraints:}
+\begin{itemize}
+\item \texttt{command}: required, non-empty, $\leq$ 2000 characters;
+\item \texttt{role}: optional, default \texttt{"analyst"}.
+\end{itemize}
+
+\textbf{Response 200 (success):}
+\begin{lstlisting}
+{
+  "status": "success",
+  "intent": "NETWORK_SCAN",
+  "target": { "type": "SUBNET", "value": "192.168.1.0/24" },
+  "ports": [],
+  "modifiers": [],
+  "cve_ids": [],
+  "tool_hint": null,
+  "schedule": null,
+  "confidence": 0.85,
+  "rejection_reason": null,
+  "scope_warnings": [],
+  "latency_ms": 27650,
+  "sub_intent": "SYN_STEALTH",
+  "uncertainty_band": "low",
+  "raw_entropy": 0.0,
+  "tier_triggered": 1,
+  "resolution_method": "single_sample",
+  "cache_hit": "none",
+  "rbac_role": "analyst",
+  "validation_findings": [],
+  "schema_version": 2
+}
+\end{lstlisting}
+
+\textbf{Response 200 (error envelope):}
+\begin{lstlisting}
+{
+  "status": "error",
+  "error": "SCOPE_VIOLATION",
+  "stage": "scope_guard",
+  "detail": "Target outside authorized scope",
+  "latency_ms": 150,
+  "validation_findings": [...]
+}
+\end{lstlisting}
+
+\textbf{Other Responses:} 400 (bad request), 401 (unauthorized), 403 (RBAC denied), 413 (payload too large), 429 (rate limited), 503 (service unavailable).
+
+\subsubsection{POST /parse/plan}
+\textbf{Purpose:} Intent recognition plus \texttt{PlannerContract} generation for Component 02.
+
+\textbf{Request:} Same as \texttt{/parse}.
+
+\textbf{Response 200:} \texttt{PlannerContract} JSON (see Section 3.5.2).
+
+\textbf{Response 202:} Escalation pending --- returns \texttt{escalation\_id} and \texttt{status: "pending\_review"}, withholds contract.
+
+\textbf{Response 422:} Contract validation failure.
+
+\subsubsection{POST /execute}
+\textbf{Purpose:} Full synchronous C1$\rightarrow$C2$\rightarrow$C3$\rightarrow$C4 chain execution.
+
+\textbf{Request:} Same as \texttt{/parse}.
+
+\textbf{Response 200:} Combined multi-component result (IRE parse + planner output + executor output + vulnerability analysis).
+
+\subsubsection{GET /metrics}
+\textbf{Purpose:} Pipeline performance metrics (requires auth).
+
+\textbf{Response 200:}
+\begin{lstlisting}
+{
+  "intent_distribution": { ... },
+  "error_counts": { ... },
+  "latency_percentiles": { "p50": 16498, "p95": 70893, "p99": ... },
+  "entropy_records": { ... },
+  "cache_hits": { "exact": 0, "semantic": 0 }
+}
+\end{lstlisting}
+
+\subsubsection{GET/DELETE /session/\{session\_id\}}
+\textbf{Purpose:} Session management (requires auth).
+
+\textbf{GET Response 200:} Session info with turns list.
+
+\textbf{DELETE Response 200:}
+\begin{lstlisting}
+{ "cleared": true }
+\end{lstlisting}
+
+\subsubsection{Admin Endpoints}
+\begin{table*}[t]
+\caption{Administrative endpoints.}
+\label{tab:admin}
+\begin{tabularx}{\textwidth}{l >{\ttfamily}l X}
+\toprule
+\textbf{Method} & \textbf{Path} & \textbf{Purpose}\\
+\midrule
+GET & \texttt{/admin/rbac/\{role\}} & Role permissions summary\\
+GET & \texttt{/admin/features} & Feature flags + tuning params\\
+POST & \texttt{/admin/features/reload} & Reload features.yaml\\
+GET & \texttt{/admin/models} & List available LLM models + active\\
+POST & \texttt{/admin/models/switch} & Switch active model (persists to .env)\\
+GET & \texttt{/admin/enforcement-policy} & Full enforcement policy\\
+GET & \texttt{/admin/escalations} & Escalation queue\\
+POST & \texttt{/admin/escalations/\{id\}/resolve} & Approve/reject escalation\\
+GET & \texttt{/admin/audit/summary} & Audit log summary\\
+GET & \texttt{/admin/chain-cache} & Chain cache stats\\
+DELETE & \texttt{/admin/chain-cache} & Clear chain cache\\
+GET & \texttt{/engagement/scope} & Current engagement scope config\\
+\bottomrule
+\end{tabularx}
+\end{table*}
+% =================== 5. NON-FUNCTIONAL REQUIREMENTS ===================
+\section{Non-Functional Requirements}
+
+\subsection{Performance Requirements}
+
+\subsubsection{Latency (Measured on CPU-only Hardware)}
+\begin{table*}[t]
+\caption{Latency metrics.}
+\label{tab:latency}
+\begin{tabularx}{\textwidth}{l X X X}
+\toprule
+\textbf{Metric} & \textbf{Raw LLM} & \textbf{Full Pipeline} & \textbf{Notes}\\
+\midrule
+p50 & 11.5--13.5 s & 16.5 s & Pipeline adds $\sim$3--5 s validation overhead\\
+p95 & 16.5--63.3 s & 70.9 s & Dominated by Tier-2 spikes on uncertain inputs\\
+p99 & 17.4--93.7 s & $\sim$150 s & Rare Tier-2 chains\\
+Mean & 13.4--25.3 s & 28.8 s & Weighted by Tier-1 majority\\
+\bottomrule
+\end{tabularx}
+\end{table*}
+
+\reqid{Requirement NFR-PERF-001:} Pipeline validation overhead (S5--S7) shall not exceed 5 seconds for single-sample requests.
+
+\reqid{Requirement NFR-PERF-002:} Adversarial detection (M1) shall complete in $<$ 5 ms.
+
+\reqid{Requirement NFR-PERF-003:} The semantic cache lookup shall complete in $<$ 50 ms for up to 512 entries.
+
+\textbf{Note:} All latency figures reflect \textbf{CPU-only inference} on an ASUS VivoBook X513EA (Intel i5-1135G7, 4C/8T, 24 GB DDR4). GPU deployment would significantly reduce Tier-1 and Tier-2 latencies.
+
+\subsubsection{Throughput}
+\begin{table}[h]
+\caption{Throughput limits.}
+\label{tab:throughput}
+\begin{tabularx}{\columnwidth}{l X}
+\toprule
+\textbf{Metric} & \textbf{Value}\\
+\midrule
+Rate limit & 30 requests/minute per IP\\
+Concurrent sessions & 1024\\
+Cache capacity & 256 (inference) + 512 (semantic)\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{Safety Requirements}
+\reqid{Requirement NFR-SAF-001:} The pipeline shall be fail-closed: unknown roles are denied by absence from permit lists; schema violations hard-fail.
+
+\reqid{Requirement NFR-SAF-002:} The pipeline bias shall be toward the safe cell: every observed false positive is an over-block (false rejection), never a dangerous misclassification.
+
+\reqid{Requirement NFR-SAF-003:} Exploitation and password attack intents shall require at least the \texttt{operator} role.
+
+\reqid{Requirement NFR-SAF-004:} Shell metacharacters in target/modifiers shall be blocked regardless of RBAC role.
+
+\reqid{Requirement NFR-SAF-005:} The pipeline shall produce ESCALATE findings (not ALLOW) when enforcement severity is \texttt{"escalate"}, deferring to human review.
+
+\subsection{Security Requirements}
+
+\subsubsection{Input Security}
+\reqid{Requirement NFR-SEC-001:} The pipeline shall defend against 4 adversary capabilities:
+\begin{enumerate}
+\item \textbf{T1 --- Prompt injection:} Lexical injection patterns, structural anomaly detection, LLM self-rejection.
+\item \textbf{T2 --- Privilege abuse:} Pre-inference role fast-fail, post-inference role$\times$intent policy.
+\item \textbf{T3 --- Model hallucination:} Schema/regex/network/scope validation stack.
+\item \textbf{T4 --- Out-of-scope targets:} CIDR containment, RFC-1918 check, scope mode enforcement.
+\end{enumerate}
+
+\subsubsection{Data Security}
+\reqid{Requirement NFR-SEC-002:} Raw user input shall NEVER be stored in plaintext. Only SHA-256 hashes shall be recorded in the audit log.
+
+\reqid{Requirement NFR-SEC-003:} API authentication shall use the \texttt{X-API-Key} header. The default development key (\texttt{dev\_insecure\_key}) shall NOT be used in production.
+
+\reqid{Requirement NFR-SEC-004:} CORS shall be restricted to specific origins in production (current default: allow all, development mode only).
+
+\subsubsection{Injection Defense Layers}
+\begin{table}[h]
+\caption{Injection defense layers.}
+\label{tab:defense}
+\begin{tabularx}{\columnwidth}{l >{\raggedright\arraybackslash}p{0.28\columnwidth} X}
+\toprule
+\textbf{Layer} & \textbf{Target} & \textbf{Mechanism}\\
+\midrule
+M1 AdversarialDetector & Raw input & 15 lexical + 7 structural + 3 heuristic patterns\\
+S7 ScopeGuard & Raw input & 7 injection regexes (independent of M1)\\
+S4 JSONParser & LLM output & Strip thought tags, fences\\
+S5 SchemaValidator & Parsed JSON & Pydantic \texttt{extra="forbid"} (no extra fields)\\
+S6 RegexValidator & Validated schema & Shell metacharacter scan\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{Reliability and Availability}
+\reqid{Requirement NFR-REL-001:} Non-critical middleware failures (session context, adversarial detection, cache store) shall degrade gracefully without aborting the pipeline.
+
+\reqid{Requirement NFR-REL-002:} The audit logger shall be append-only with no delete operations.
+
+\reqid{Requirement NFR-REL-003:} The semantic cache shall self-heal via grounding-hash invalidation when reference datasets change.
+
+\reqid{Requirement NFR-REL-004:} Docker health checks shall verify IRE (30s interval) and Ollama (15s interval) connectivity.
+
+\subsection{Maintainability}
+\reqid{Requirement NFR-MNT-001:} All pipeline stages and middleware shall be individually configurable via feature flags in \texttt{config/features.yaml}.
+
+\reqid{Requirement NFR-MNT-002:} Enforcement policy shall be environment-configurable (research/strict/production) without code changes.
+
+\reqid{Requirement NFR-MNT-003:} The test suite shall achieve $\geq$ 80\% line coverage (current: 434 unit + 48 integration = 482 tests).
+
+\subsection{Portability}
+\reqid{Requirement NFR-PORT-001:} The IRE shall run on Linux, macOS, and Windows with Python 3.11+.
+
+\reqid{Requirement NFR-PORT-002:} Docker deployment shall use the \texttt{python:3.11-slim} base image.
+
+\reqid{Requirement NFR-PORT-003:} All configuration shall be environment-variable-driven via the \texttt{.env} file or Docker environment.
+% =================== 6. DATA REQUIREMENTS ===================
+\section{Data Requirements}
+
+\subsection{Logical Data Model}
+
+\subsubsection{Core Entities}
+\begin{lstlisting}
+IntentSchema
++-- intent: IntentType (9 values)
++-- target: Target {type: TargetType, value: str}
++-- ports: List[int]
++-- modifiers: List[str]
++-- cve_ids: List[str]
++-- tool_hint: Optional[str]
++-- schedule: Optional[str]
++-- confidence: float [0.0, 1.0]
++-- rejection_reason: Optional[str]
+
+PlannerContract (extends IntentSchema)
++-- sub_intent: Optional[SubIntentType]
++-- scope_warnings: List[str]
++-- executability predicates
+
+IREResponseV2 (extends IntentSchema)
++-- validation_findings: List[ValidationFinding]
++-- uncertainty metadata
++-- session context
++-- XAI metadata (optional)
+\end{lstlisting}
+
+\subsubsection{ValidationFinding}
+\begin{lstlisting}
+ValidationFinding
++-- validator: str
++-- passed: bool
++-- hallucination_class: Optional[HallucinationClass]
++-- detail: str
++-- severity: "block" | "warn" | "escalate"
+\end{lstlisting}
+
+\subsubsection{CacheEntry (Semantic Cache)}
+\begin{lstlisting}
+CacheEntry
++-- key_hash: str (SHA-256)
++-- embedding: List[float] (384-dim)
++-- response: IREResponse
++-- grounding_hash: str (SHA-256)
++-- hit_count: int
++-- created_at: float
++-- last_hit_at: float
+\end{lstlisting}
+
+\subsubsection{AuditRecord (SQLite)}
+\begin{lstlisting}
+audit_log
++-- id: INTEGER PRIMARY KEY
++-- timestamp: TEXT (ISO 8601)
++-- session_id: TEXT (nullable)
++-- raw_input_hash: TEXT (SHA-256)
++-- intent_summary: TEXT
++-- hallucination_class: TEXT
++-- severity: TEXT
++-- enforcement_action: TEXT
++-- status: TEXT ("recorded" | "pending" | "approved" | "rejected")
++-- resolved_by: TEXT
++-- resolved_at: TEXT
++-- resolution_note: TEXT
++-- cached_contract_json: TEXT
+\end{lstlisting}
+
+\subsection{Data Retention and Privacy}
+\begin{table*}[t]
+\caption{Data types, retention, and privacy.}
+\label{tab:retention}
+\begin{tabularx}{\textwidth}{l X X}
+\toprule
+\textbf{Data Type} & \textbf{Retention} & \textbf{Privacy}\\
+\midrule
+Raw user input & Transient (in-memory only) & Never stored\\
+Audit log & Append-only, persistent & SHA-256 hashed input only\\
+Semantic cache & LRU eviction (512 max) & In-memory + optional disk\\
+Inference cache & LRU eviction (256 max) & Disk: \texttt{eval/.ollama\_inference\_cache.json}\\
+Session context & 30-minute TTL, LRU eviction & In-memory only, never persisted\\
+\bottomrule
+\end{tabularx}
+\end{table*}
+
+\subsection{Grounding Data}
+
+\subsubsection{CVE Grounding Dataset (\texttt{data/cve\_grounding.json})}
+\begin{itemize}
+\item \textbf{Purpose:} Reference dataset for CVE validation (Check 2 of RegexValidator);
+\item \textbf{Format:} JSON with 20 curated entries plus a \texttt{\_meta} block;
+\item \textbf{Schema per entry:} \texttt{\{id, description, affected\_service, severity\}};
+\item \textbf{Refresh:} Manual via \texttt{scripts/update\_cve\allowbreak{}grounding.py} (CISA KEV catalog);
+\item \textbf{Grounding Hash:} SHA-256 digest computed on each cache lookup; stale entries purged.
+\end{itemize}
+
+\subsubsection{Alias Map (\texttt{data/alias\_map.json})}
+\begin{itemize}
+\item \textbf{Purpose:} Map exploit names and slang to canonical CVE identifiers;
+\item \textbf{Entries:} 10 exploit-name to CVE mappings + 8 slang/term normalizations;
+\item \textbf{Format:} JSON object \texttt{\{alias: canonical, ...\}};
+\item \textbf{Processing:} Word-boundary regex compilation, longest-first matching.
+\end{itemize}
+
+\subsection{Configuration Data}
+\begin{table*}[t]
+\caption{Configuration files.}
+\label{tab:config}
+\begin{tabularx}{\textwidth}{>{\ttfamily}l l X}
+\toprule
+\textbf{File} & \textbf{Format} & \textbf{Purpose}\\
+\midrule
+\texttt{config/settings.py} & pydantic-settings & Environment-driven configuration (30+ fields)\\
+\texttt{config/features.yaml} & YAML & Feature flags (10) + tuning parameters (11)\\
+\texttt{config/rbac\_policy.py} & Python & Role to intent permission table\\
+\texttt{config/enforcement\_policy.py} & Python & HallucinationClass to action mapping\\
+\texttt{config/lora\_config.yaml} & YAML & Phase-2 fine-tuning plan\\
+\bottomrule
+\end{tabularx}
+\end{table*}
+
+% =================== 7. VERIFICATION AND VALIDATION ===================
+\section{Verification and Validation}
+
+\subsection{Test Suite}
+\begin{table*}[t]
+\caption{Test suite summary.}
+\label{tab:testsuite}
+\begin{tabularx}{\textwidth}{l l p{3cm} X}
+\toprule
+\textbf{Category} & \textbf{Count} & \textbf{Files} & \textbf{Notable Coverage}\\
+\midrule
+Unit tests & 434 & 22 files under \texttt{tests/unit/} & adversarial (42), sub\_intent (46), regex (40), semantic\_cache (37), session\_context (35)\\
+Integration tests & 48 & 5 files under \texttt{tests/integration/} & API v1 (12), API v2 (33), audit escalation (3)\\
+\textbf{Total} & \textbf{482} & \textbf{27 files} & \\
+\bottomrule
+\end{tabularx}
+\end{table*}
+
+Key behavioral assertions:
+\begin{itemize}
+\item Tier-2 gating calls the LLM exactly once when confident (\texttt{test\_self\_consistency\_entropy.py});
+\item Near-duplicate cache isolation and grounding invalidation (\texttt{test\_semantic\_cache\_adversarial.py});
+\item IPv6 and production-mode edge coverage (\texttt{test\_uncovered\_source\_behaviors.py}).
+\end{itemize}
+
+\subsection{Evaluation Harness}
+\begin{table*}[t]
+\caption{Evaluation harness scripts.}
+\label{tab:evalharness}
+\begin{tabularx}{\textwidth}{>{\ttfamily}l X X}
+\toprule
+\textbf{Script} & \textbf{Purpose} & \textbf{Path}\\
+\midrule
+\texttt{diagnose.py} & Full-pipeline runner $\rightarrow$ JSONL debug rows + per-category report & \texttt{eval/diagnose.py}\\
+\texttt{metrics.py} & Decision/accuracy/catch/cache metrics & \texttt{eval/metrics.py}\\
+\texttt{category\_metrics.py} & NormalizedRow-based metrics engine (canonical) & \texttt{eval/category\_metrics.py}\\
+\texttt{run\_baseline.py} & Raw unconstrained LLM baseline scorer & \texttt{eval/run\_baseline.py}\\
+\texttt{exp1\_raw\_vs\_pipeline.py} & Exp1: raw vs. pipeline, 4 configs & \texttt{eval/Data Collection/}\\
+\texttt{exp2\_model\_head\_to\_head.py} & Exp2: Gemma vs. Qwen & \texttt{eval/Data Collection/}\\
+\texttt{exp3\_ablation\_study.py} & Exp3: 8-config $\times$ 900-record ablation & \texttt{eval/Data Collection/}\\
+\texttt{exp4\_hallucination\_analysis.py} & Exp4: per-class deep-dive (250 records) & \texttt{eval/Data Collection/}\\
+\bottomrule
+\end{tabularx}
+\end{table*}
+
+\subsection{Empirical Results Summary (900-Record Canonical Runs)}
+
+\subsubsection{Experiment 1 --- Raw LLM vs. Full Pipeline}
+\begin{table}[h]
+\caption{Experiment 1 results.}
+\label{tab:exp1}
+\begin{tabularx}{\columnwidth}{l X X X X}
+\toprule
+\textbf{Metric} & \textbf{Raw Gemma} & \textbf{Raw Qwen} & \textbf{Pipeline Gemma} & \textbf{Pipeline Qwen}\\
+\midrule
+Intent Accuracy & 78.0\% & 69.0\% & \textbf{86.0\%} & \textbf{82.0\%}\\
+Hallucination Catch & 0.0\% & 0.0\% & \textbf{72.0\%} & \textbf{64.0\%}\\
+False Positive Rate & 32.0\% & 31.0\% & \textbf{14.0\%} & \textbf{15.0\%}\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\noindent\textbf{Pipeline lift:} +8pp/+13pp accuracy, +72pp/+64pp catch, $-18$pp/$-16$pp FP.
+
+\subsubsection{Experiment 2 --- Model Head-to-Head}
+\begin{table}[h]
+\caption{Experiment 2 results.}
+\label{tab:exp2}
+\begin{tabularx}{\columnwidth}{l X X X}
+\toprule
+\textbf{Metric} & \textbf{Gemma 4} & \textbf{Qwen 2.5 Coder} & \textbf{Delta}\\
+\midrule
+Intent Accuracy & 86.0\% & 82.0\% & $-4.0$pp\\
+Hallucination Catch & 72.0\% & 64.0\% & $-8.0$pp\\
+FP Rate & 14.0\% & 15.0\% & $+1.0$pp\\
+p50 Latency & 27,650 ms & 32,755 ms & $+18\%$\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsubsection{Experiment 3 --- Component Ablation}
+\begin{table*}[t]
+\caption{Experiment 3 ablation results.}
+\label{tab:exp3}
+\begin{tabularx}{\textwidth}{l X X X X X}
+\toprule
+\textbf{Config} & \textbf{DAcc} & \textbf{Catch} & \textbf{FP} & \textbf{CFAcc} & \textbf{Mean Latency}\\
+\midrule
+\textbf{Full Pipeline} & \textbf{73.5\%} & \textbf{84\%} & 34\% & 87.5\% & 28,805 ms\\
+No Scope Guard & 64.0\% & 73\% & 44\% & 83.9\% & 31,404 ms\\
+No RBAC Guard & 74.5\% & 64\% & 22\% & 88.2\% & 28,260 ms\\
+No Network Validator & 68.0\% & 82\% & 44\% & 83.9\% & 27,450 ms\\
+No Hallucination Validator & 65.4\% & 62\% & 44\% & 82.1\% & 26,722 ms\\
+Validation Stack Disabled & 64.0\% & 41\% & 13\% & 87.4\% & 25,198 ms\\
+Self-Consistency Disabled & 67.5\% & 80\% & 45\% & 85.5\% & 11,809 ms\\
+Semantic Cache Disabled & 66.0\% & 79\% & 47\% & 86.8\% & 22,949 ms\\
+\bottomrule
+\end{tabularx}
+\end{table*}
+
+\textbf{Component contribution ranking (by accuracy impact):}
+\begin{enumerate}
+\item ScopeGuard ($+9.5$pp);
+\item Entire Validation Stack ($+9.5$pp);
+\item SchemaValidator + RegexValidator ($+8.1$pp);
+\item Semantic Cache ($+7.5$pp);
+\item Tier-2 Self-Consistency ($+6.0$pp);
+\item NetworkArchitectureValidator ($+5.5$pp);
+\item RBACGuard ($-1.0$pp).
+\end{enumerate}
+
+\subsubsection{Experiment 4 --- Hallucination Deep-Dive (250 Records)}
+\begin{table}[h]
+\caption{Experiment 4 per-category catch rates.}
+\label{tab:exp4}
+\begin{tabularx}{\columnwidth}{l X X >{\raggedright\arraybackslash}p{0.15\columnwidth}}
+\toprule
+\textbf{Category} & \textbf{Total} & \textbf{Caught} & \textbf{Catch \%}\\
+\midrule
+rbac\_violation & 12 & 12 & \textbf{100.0\%}\\
+adversarial\_injection & 45 & 43 & \textbf{95.6\%}\\
+fabricated\_parameter & 32 & 28 & 87.5\%\\
+target\_type\_mismatch & 32 & 26 & 81.2\%\\
+fabricated\_cve & 32 & 25 & 78.1\%\\
+contradictory\_action\_target & 32 & 19 & 59.4\%\\
+out\_of\_scope & 45 & 21 & \textbf{46.7\%}\\
+ambiguous & 20 & 8 & 40.0\%\\
+\textbf{Total} & \textbf{250} & \textbf{182} & \textbf{72.8\%}\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\textbf{Largest structural gap:} \texttt{llm\_no\_scope\_detection} (35\% of all misses) --- public/out-of-scope targets reach the LLM before any scope gate.
+
+\subsection{Metric Definitions}
+\begin{table}[h]
+\caption{Metric definitions.}
+\label{tab:metrics}
+\begin{tabularx}{\columnwidth}{>{\bfseries}l X}
+\toprule
+\textbf{Metric} & \textbf{Formula}\\
+\midrule
+DAcc (Decision Accuracy) & \texttt{sum}/\texttt{N\_total} of correct decisions: well\_formed$\rightarrow$ALLOWED+correct fields, flawed$\rightarrow$BLOCKED/ESCALATED\\
+Catch (Flawed-Input Catch) & \texttt{|flawed records with BLOCKED/ESCALATED|}/\texttt{N\_flawed}\\
+FP (False Positive Rate) & \texttt{|well\_formed records with non-ALLOWED decision|}/\texttt{N\_well\_formed}\\
+CFAcc (Contract-Field Accuracy) & \texttt{|ALLOWED records with correct intent+target|}/\texttt{|ALLOWED well\_formed|}\\
+\bottomrule
+\end{tabularx}
+\end{table}
+% =================== 8. DEPLOYMENT ===================
+\section{Deployment}
+
+\subsection{Docker Deployment (Recommended)}
+\begin{lstlisting}
+# 1. Clone and configure
+cd apps/services/neuroshell-ire
+cp .env.example .env
+# Edit .env: set IRE_API_KEY, OLLAMA_MODEL
+
+# 2. Build and start
+docker-compose up -d --build
+
+# 3. Verify
+curl http://localhost:8001/health
+\end{lstlisting}
+
+Services:
+\begin{table*}[t]
+\caption{Docker services.}
+\label{tab:docker}
+\begin{tabularx}{\textwidth}{>{\ttfamily}l >{\ttfamily}l >{\ttfamily}l >{\raggedright\arraybackslash}X}
+\toprule
+\textbf{Service} & \textbf{Container} & \textbf{Port} & \textbf{Health Check}\\
+\midrule
+ire-service & neuroshell-ire & 8001 & \texttt{curl -f http://localhost:8001/health}\\
+ollama & neuroshell-ollama & 11434 & \texttt{curl -f http://localhost:11434/api/tags}\\
+\bottomrule
+\end{tabularx}
+\end{table*}
+
+\noindent\textbf{Volumes:} \texttt{ollama\_models} mounted at \texttt{/root/.ollama} (persists downloaded models).
+
+\subsection{Manual Deployment}
+\begin{lstlisting}
+# 1. Prerequisites
+python --version  # 3.11+
+ollama --version  # 0.32.x
+
+# 2. Virtual environment
+python -m venv .venv
+.venv\Scripts\activate  # Windows
+# source .venv/bin/activate  # Linux/macOS
+
+# 3. Dependencies
+pip install -r requirements.txt
+python -m spacy download en_core_web_sm
+
+# 4. Configuration
+cp .env.example .env
+# Edit .env: set IRE_API_KEY, OLLAMA_MODEL, OLLAMA_BASE_URL
+
+# 5. Pull LLM model
+ollama pull gemma4:e4b
+
+# 6. Start server
+python scripts/run_dev.py
+\end{lstlisting}
+
+\subsection{Configuration Management}
+
+\subsubsection{Environment Variables (.env)}
+\begin{table*}[t]
+\caption{Environment variables.}
+\label{tab:envvars}
+\begin{tabularx}{\textwidth}{>{\ttfamily}l >{\ttfamily}l X}
+\toprule
+\textbf{Variable} & \textbf{Default} & \textbf{Description}\\
+\midrule
+\texttt{IRE\_API\_KEY} & \texttt{dev\_insecure\_key} & API authentication key\\
+\texttt{OLLAMA\_BASE\_URL} & \texttt{http://localhost:11434} & Ollama daemon URL\\
+\texttt{OLLAMA\_MODEL} & \texttt{gemma4:e4b} & Active LLM model\\
+\texttt{SCOPE\_MODE} & \texttt{research} & Scope enforcement mode\\
+\texttt{ENGAGEMENT\_SCOPE} & \texttt{192.168.0.0/16} & Authorised target CIDR\\
+\texttt{LOG\_LEVEL} & \texttt{INFO} & Logging level\\
+\texttt{PORT} & \texttt{8001} & Server port\\
+\bottomrule
+\end{tabularx}
+\end{table*}
+
+\subsubsection{Feature Flags (config/features.yaml)}
+\begin{table}[h]
+\caption{Feature flags.}
+\label{tab:flags}
+\begin{tabularx}{\columnwidth}{>{\ttfamily}l >{\ttfamily}l X}
+\toprule
+\textbf{Flag} & \textbf{Default} & \textbf{Description}\\
+\midrule
+\texttt{session\_context} & true & Multi-turn session memory\\
+\texttt{rbac} & true & Role-based access control\\
+\texttt{adversarial\_detection} & true & Adversarial input detection\\
+\texttt{semantic\_cache} & true & Embedding-based response cache\\
+\texttt{sub\_intent} & true & Hierarchical sub-intent classification\\
+\texttt{schema\_v2} & true & V2 schema routing\\
+\texttt{xai} & false & XAI token attribution\\
+\texttt{uncertainty\_estimation} & false & Monte Carlo dropout\\
+\texttt{continual\_learning} & false & EWC active learning\\
+\texttt{speculative\_decoding} & false & Draft model acceleration\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+% =================== 9. APPENDICES ===================
+\appendices
+
+\section{IntentType Enumeration (9 Values)}
+\begin{table*}[t]
+\caption{Intent types.}
+\label{tab:appA}
+\begin{tabularx}{\textwidth}{>{\ttfamily}l X >{\raggedright\arraybackslash}p{0.4\textwidth}}
+\toprule
+\textbf{Value} & \textbf{Category} & \textbf{Description}\\
+\midrule
+NETWORK\_SCAN & Active Recon & Port scanning, host discovery, OS detection\\
+VULNERABILITY\_AUDIT & Assessment & CVE-specific or service-specific vulnerability checks\\
+DIRECTORY\_BRUTEFORCE & Enumeration & Web directory/file brute-forcing\\
+SERVICE\_ENUMERATION & Enumeration & Service version detection, banner grabbing\\
+EXPLOITATION & Attack & Remote code execution, privilege escalation\\
+PASSWORD\_ATTACK & Attack & Brute force, credential stuffing, password spray\\
+PASSIVE\_RECON & Recon & DNS lookup, WHOIS, OSINT gathering\\
+AMBIGUOUS & Special & Confident $<$ 0.5; requires clarification\\
+REJECTED & Special & Command rejected (injection, policy, etc.)\\
+\bottomrule
+\end{tabularx}
+\end{table*}
+
+\section{TargetType Enumeration (6 Values)}
+\begin{table*}[t]
+\caption{Target types.}
+\label{tab:appB}
+\begin{tabularx}{\textwidth}{>{\ttfamily}l X X}
+\toprule
+\textbf{Value} & \textbf{Format} & \textbf{Example}\\
+\midrule
+IP & IPv4 address & \texttt{192.168.1.1}\\
+SUBNET & CIDR notation & \texttt{192.168.1.0/24}\\
+DOMAIN & Domain name & \texttt{example.com}\\
+URL & HTTP/HTTPS URL & \texttt{https://example.com/api}\\
+HOSTNAME & Single-label hostname & \texttt{webserver01}\\
+UNKNOWN & Empty/unspecified & (empty string)\\
+\bottomrule
+\end{tabularx}
+\end{table*}
+
+\section{SubIntentType Enumeration (27 Values)}
+\begin{table}[h]
+\caption{Sub-intent types by parent intent.}
+\label{tab:appC}
+\begin{tabularx}{\columnwidth}{>{\ttfamily}l >{\ttfamily}X}
+\toprule
+\textbf{Parent Intent} & \textbf{Sub-Intents}\\
+\midrule
+NETWORK\_SCAN & ICMP\_DISCOVERY, SYN\_STEALTH, UDP\_SWEEP, VERSION\_DETECT, OS\_DETECT, FULL\_PORT\\
+EXPLOITATION & RCE, PRIV\_ESC, LATERAL, PERSISTENCE\\
+VULNERABILITY\_AUDIT & CVE\_SPECIFIC, SERVICE\_SPECIFIC, FULL\_SCAN\\
+SERVICE\_ENUMERATION & SMB, SNMP, VERSION\_DETECT, BANNER\_GRAB\\
+PASSWORD\_ATTACK & SPRAY, CREDENTIAL\_STUFFING, BRUTE\_FORCE\\
+PASSIVE\_RECON & DNS, WHOIS, OSINT\\
+DIRECTORY\_BRUTEFORCE & API, FILES, WEB\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\section{HallucinationClass Enumeration (6 Values)}
+\begin{table}[h]
+\caption{Hallucination classes and enforcement.}
+\label{tab:appD}
+\begin{tabularx}{\columnwidth}{>{\ttfamily}l X X}
+\toprule
+\textbf{Class} & \textbf{Detection} & \textbf{Default Enforcement}\\
+\midrule
+FABRICATED\_CVE & S5 + S6 (syntax) & BLOCK\\
+TARGET\_TYPE\_MISMATCH & S5 + S6 (format) + S6B & BLOCK\\
+CONTRADICTORY\_ACTION\_TARGET & S5 (schema) & BLOCK\\
+FABRICATED\_PARAMETER & S5 + S6 (port/metachar) & BLOCK\\
+UNGROUNDED\_CONFIDENCE & S5 (confidence) + S6 (grounding) & WARN\\
+OUT\_OF\_SCOPE\_TARGET & S6B (scope) + S7 (RFC-1918) & Dynamic (BLOCK/WARN)\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\section{RBAC Policy Table}
+\begin{table*}[t]
+\caption{RBAC policy matrix.}
+\label{tab:appE}
+\begin{tabularx}{\textwidth}{>{\ttfamily}l c c c c}
+\toprule
+\textbf{Intent} & \textbf{viewer} & \textbf{analyst} & \textbf{operator} & \textbf{admin}\\
+\midrule
+NETWORK\_SCAN & --- & \checkmark & \checkmark & \checkmark\\
+VULNERABILITY\_AUDIT & --- & \checkmark & \checkmark & \checkmark\\
+DIRECTORY\_BRUTEFORCE & --- & --- & \checkmark & \checkmark\\
+SERVICE\_ENUMERATION & --- & \checkmark & \checkmark & \checkmark\\
+EXPLOITATION & --- & --- & \checkmark & \checkmark\\
+PASSWORD\_ATTACK & --- & --- & \checkmark & \checkmark\\
+PASSIVE\_RECON & --- & \checkmark & \checkmark & \checkmark\\
+AMBIGUOUS & --- & \checkmark & \checkmark & \checkmark\\
+REJECTED & --- & \checkmark & \checkmark & \checkmark\\
+\bottomrule
+\end{tabularx}
+\end{table*}
+
+\noindent\textbf{Sensitive intents (require operator+):} EXPLOITATION, PASSWORD\_ATTACK, DIRECTORY\_BRUTEFORCE.
+\section{Enforcement Policy Table}
+\begin{table*}[t]
+\caption{Enforcement policy by environment mode.}
+\label{tab:appF}
+\begin{tabularx}{\textwidth}{>{\ttfamily}l l l l}
+\toprule
+\textbf{HallucinationClass} & \textbf{research} & \textbf{strict} & \textbf{production}\\
+\midrule
+FABRICATED\_PARAMETER & BLOCK & BLOCK & BLOCK\\
+CONTRADICTORY\_ACTION\_TARGET & BLOCK & BLOCK & BLOCK\\
+TARGET\_TYPE\_MISMATCH & BLOCK & BLOCK & BLOCK\\
+FABRICATED\_CVE & BLOCK & BLOCK & BLOCK\\
+UNGROUNDED\_CONFIDENCE & WARN & WARN & WARN\\
+OUT\_OF\_SCOPE\_TARGET & WARN & BLOCK & BLOCK\\
+\bottomrule
+\end{tabularx}
+\end{table*}
+
+\section{Adversarial Detection Patterns}
+
+\subsection{Layer A: Lexical (15 patterns)}
+\begin{table*}[t]
+\caption{Layer A lexical patterns.}
+\label{tab:appG1}
+\begin{tabularx}{\textwidth}{>{\ttfamily}X >{\raggedright\arraybackslash}p{0.08\textwidth}}
+\toprule
+\textbf{Pattern} & \textbf{Weight}\\
+\midrule
+\texttt{ignore (all~)?(previous|prior|above) instructions?} & 0.9\\
+\texttt{forget (everything|all|your instructions?)} & 0.9\\
+\texttt{you are now (?!scanning|checking|running)} & 0.8\\
+\texttt{act as (a~)?(different|new|another|evil|unrestricted)} & 0.8\\
+\texttt{jailbreak} & 1.0\\
+\texttt{dan mode} & 1.0\\
+\texttt{prompt injection} & 0.9\\
+\texttt{(system|assistant|user):\textbackslash{}s*you (must|shall|will)} & 0.85\\
+\texttt{$<$|im\_(start|end)|$>$} & 1.0\\
+\texttt{$<$|think|$>$} & 0.95\\
+\texttt{[INST]} or \texttt{[/INST]} & 0.9\\
+\texttt{\#\#\# (instruction|system|human|assistant)} & 0.85\\
+\texttt{disregard (all~)?(prior|previous|your)} & 0.85\\
+\texttt{new instructions:} & 0.8\\
+\texttt{override (previous~)?(instructions?|rules?|guidelines?)} & 0.85\\
+\bottomrule
+\end{tabularx}
+\end{table*}
+
+\subsection{Layer B: Structural (7 patterns + 3 heuristics)}
+\begin{table*}[t]
+\caption{Layer B structural patterns.}
+\label{tab:appG2}
+\begin{tabularx}{\textwidth}{>{\ttfamily}X >{\raggedright\arraybackslash}p{0.08\textwidth}}
+\toprule
+\textbf{Pattern} & \textbf{Weight}\\
+\midrule
+\texttt{(\textbackslash{}x[0-9a-f]\{2\})\{4,\}} & 0.6\\
+\texttt{(\%[0-9a-f]\{2\})\{4,\}} & 0.5\\
+\texttt{base64:\textbackslash{}s*[A-Za-z0-9+/]\{20,\}} & 0.7\\
+\texttt{$<$script[\textbackslash{}s$>$]} & 0.8\\
+\texttt{\textbackslash{}\$\{[\^{}]\}\{0,50\}\textbackslash{}\}} & 0.6\\
+\texttt{eval( |exec(|\_\_import\_\_()} & 0.9\\
+\texttt{rm -rf|del /[sq]|format c:} & 0.8\\
+\bottomrule
+\end{tabularx}
+\end{table*}
+
+\begin{table}[h]
+\caption{Layer B heuristics.}
+\label{tab:appG3}
+\begin{tabularx}{\columnwidth}{l X X}
+\toprule
+\textbf{Heuristic} & \textbf{Threshold} & \textbf{Weight}\\
+\midrule
+Special-char density & $>$ 30\% (for inputs $>$ 20 chars) & 0.4\\
+Single token length & $>$ 100 chars & 0.3\\
+Repeated n-gram & $>$ 3 occurrences of 3/4/5-grams ($\geq$ 10 chars) & 0.35\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\section{Configuration Parameters (Complete)}
+\begin{table*}[t]
+\caption{All configuration parameters.}
+\label{tab:appH}
+\begin{tabularx}{\textwidth}{>{\ttfamily}l X l l}
+\toprule
+\textbf{Parameter} & \textbf{Default} & \textbf{Type} & \textbf{Source}\\
+\midrule
+\texttt{ire\_api\_key} & \texttt{dev\_insecure\_key} & str & .env\\
+\texttt{port} & 8001 & int & .env\\
+\texttt{ollama\_base\_url} & \texttt{http://localhost:11434} & str & .env\\
+\texttt{ollama\_model} & \texttt{gemma4:e4b} & str & .env\\
+\texttt{ollama\_timeout\_seconds} & 60 & int & .env\\
+\texttt{inference\_temperature} & 0.1 & float & .env\\
+\texttt{inference\_max\_tokens} & 2048 & int & .env\\
+\texttt{self\_consistency\_trigger\_threshold} & 0.7 & float & .env\\
+\texttt{self\_consistency\_samples} & 5 & int & .env\\
+\texttt{self\_consistency\_temperature} & 0.7 & float & .env\\
+\texttt{entropy\_low\_threshold} & 0.3 & float & .env\\
+\texttt{entropy\_high\_threshold} & 0.8 & float & .env\\
+\texttt{scope\_mode} & research & literal & .env\\
+\texttt{engagement\_scope} & \texttt{192.168.0.0/16} & str & .env\\
+\texttt{engagement\_name} & Lab Environment & str & .env\\
+\texttt{engagement\_mode} & warn & literal & .env\\
+\texttt{max\_cidr\_prefix} & 30 & int & .env\\
+\texttt{min\_cidr\_prefix} & 32 & int & .env\\
+\texttt{lru\_cache\_max\_size} & 256 & int & .env\\
+\texttt{planner\_enabled} & false & bool & .env\\
+\texttt{planner\_url} & \texttt{http://127.0.0.1:8002} & str & .env\\
+\texttt{planner\_api\_key} & \texttt{neuroshell-c2-secret-key} & str & .env\\
+\texttt{planner\_timeout\_seconds} & 300 & int & .env\\
+\texttt{component3\_enabled} & false & bool & .env\\
+\texttt{component3\_url} & \texttt{http://127.0.0.1:8003} & str & .env\\
+\texttt{component4\_enabled} & false & bool & .env\\
+\texttt{component4\_url} & \texttt{http://127.0.0.1:8004} & str & .env\\
+\texttt{session\_ttl\_minutes} & 30 & int & features.yaml\\
+\texttt{session\_max\_turns} & 8 & int & features.yaml\\
+\texttt{session\_max\_sessions} & 1024 & int & features.yaml\\
+\texttt{semantic\_cache\_threshold} & 0.82 & float & features.yaml\\
+\texttt{semantic\_cache\_max\_size} & 512 & int & features.yaml\\
+\texttt{adversarial\_classifier\_threshold} & 0.7 & float & features.yaml\\
+\texttt{sub\_intent\_confidence\_threshold} & 0.6 & float & features.yaml\\
+\bottomrule
+\end{tabularx}
+\end{table*}
+
+\section{Exception Hierarchy}
+\begin{lstlisting}
+IREError (base)
++-- JSONParseError          (stage: "json_parser")
++-- SchemaValidationError   (stage: "schema_validator")
++-- RegexValidationError    (stage: "regex_validator")
++-- NetworkValidationError  (stage: "network_validator")
+|   +-- extra: validation_type
++-- ScopeError              (stage: "scope_guard")
++-- InferenceError          (stage: "inference")
++-- RBACError               (stage: "rbac_guard")
+    +-- extra: role, denied_intent
+\end{lstlisting}
+
+\section{Dependency Versions}
+\begin{table*}[t]
+\caption{Package dependency versions.}
+\label{tab:appJ}
+\begin{tabularx}{\textwidth}{>{\ttfamily}l >{\ttfamily}l X}
+\toprule
+\textbf{Package} & \textbf{Version} & \textbf{Purpose}\\
+\midrule
+\texttt{fastapi} & 0.115.0 & Async REST framework\\
+\texttt{uvicorn[standard]} & 0.30.6 & ASGI server\\
+\texttt{pydantic} & $\geq$2.9, $<$3.0 & Schema validation\\
+\texttt{pydantic-settings} & 2.4.0 & Environment config\\
+\texttt{jsonschema} & 4.23.0 & JSON Schema support\\
+\texttt{spacy} & 3.7.6 & NLP preprocessing\\
+\texttt{ollama} & 0.3.3 & LLM client\\
+\texttt{httpx} & 0.27.2 & HTTP client\\
+\texttt{structlog} & 24.4.0 & Structured logging\\
+\texttt{sentence-transformers} & 3.0.1 & Semantic cache embeddings\\
+\texttt{slowapi} & 0.1.9 & Rate limiting\\
+\texttt{pytest} & 8.3.2 & Test framework\\
+\texttt{pytest-asyncio} & 0.23.8 & Async test support\\
+\bottomrule
+\end{tabularx}
+\end{table*}
+
+\section{Hashing Algorithms}
+\begin{table*}[t]
+\caption{Hash algorithm uses.}
+\label{tab:appK}
+\begin{tabularx}{\textwidth}{l l X}
+\toprule
+\textbf{Use} & \textbf{Algorithm} & \textbf{Input}\\
+\midrule
+Audit input privacy & SHA-256 & Raw user input\\
+Semantic cache exact key & SHA-256 & Lowercased, stripped input text\\
+Inference cache key & SHA-256 & \texttt{model\_name|enriched\_input}\\
+Grounding invalidation & SHA-256 & Concatenation of \texttt{cve\_grounding.json} + \texttt{alias\_map.json}\\
+\bottomrule
+\end{tabularx}
+\end{table*}
+
+\vspace{1em}
+\noindent\textit{--- End of Document ---}
+
+\end{document}

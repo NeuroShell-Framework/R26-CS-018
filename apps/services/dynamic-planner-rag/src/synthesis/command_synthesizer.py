@@ -5,7 +5,7 @@ from typing import List, Dict
 
 # Load environment variables
 load_dotenv()
-MODEL_NAME = os.getenv("OLLAMA_MODEL", "gemma4:e4b")
+MODEL_NAME = os.getenv("OLLAMA_MODEL", "neuroshell-c2-gemma2-final")
 
 
 class CommandSynthesizer:
@@ -66,7 +66,7 @@ class CommandSynthesizer:
 
         Args:
             prompt:  The fully-assembled LLM prompt (built by ContextAssembler
-                     in main.py, with target-reinforcement already appended).
+                     in main.py).
             params:  The interpreted params dict from IntentInterpreter.
                      May contain '_query_used' for pass-through logging.
             docs:    The retrieved RAG documents from VectorRetriever.
@@ -76,20 +76,25 @@ class CommandSynthesizer:
         """
         # Collect sources from the pre-retrieved docs
         sources = [d.get("source", d.get("tool", "unknown")) for d in docs]
+        active_model = os.getenv("OLLAMA_MODEL", MODEL_NAME)
 
         # Call Ollama with the pre-built prompt
         response = ollama.chat(
-            model=MODEL_NAME,
+            model=active_model,
             messages=[
                 {
                     "role": "system",
-                    "content": "You are a Kali Linux command generator. Output ONLY valid commands. Do not explain."
+                    "content": "You are NeuroShell Component 2, a Dynamic Planner for authorized cybersecurity tasks. Output ONLY valid executable commands. Do not explain."
                 },
                 {
                     "role": "user",
                     "content": prompt
                 }
-            ]
+            ],
+            options={
+                "temperature": 0,
+                "num_predict": 96
+            }
         )
 
         raw_output = response["message"]["content"].strip()

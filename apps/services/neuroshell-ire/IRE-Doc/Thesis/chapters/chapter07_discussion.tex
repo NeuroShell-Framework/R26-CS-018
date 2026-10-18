@@ -1,0 +1,289 @@
+%% Chapter 7 - Discussion
+%% Sections: 7.1 Interpretation of findings; 7.2 Comparison with literature
+%% baselines and existing solutions; 7.3 Research contribution; 7.4 Product
+%% contribution; 7.5 Limitations and threats to validity; 7.6 Implications.
+
+\chapter{Discussion}\label{ch:discussion}
+
+This chapter interprets the measurements reported in
+Chapter~\ref{ch:results} against the research questions of
+Section~\ref{sec:research-questions}, compares the guardrail stack with the
+surveyed baselines of Chapter~\ref{ch:literature-review}, and separates the
+research from the product contribution. It then states the verified limitations
+and threats to validity and draws the practical and research implications.
+
+\section{Interpretation of Findings}\label{sec:discussion-interpretation}
+
+The guarded pipeline answers the central question affirmatively: a small,
+offline, unattended language model can be made reliable enough to gate an
+automated security copilot, provided its output never reaches downstream
+tooling before it satisfies a conjunction of deterministic predicates. The
+measured basis for this claim is the experiment record reported in
+Chapter~\ref{ch:results}, whose headline deltas are considered under each
+research question in turn.
+
+\subsection*{RQ1: pipeline value}
+
+The raw model is not merely imprecise---it is unusable as an intent
+classifier. Experiment~1
+(Section~\ref{sec:exp1}) shows a catch rate of $0\%$ on both backends:
+a single-shot schema probe never happens to produce a flaw-free intent for
+the nine-category taxonomy, and the false-positive rate compounds the
+problem---32\% for Gemma and 31\% for Qwen of well-formed records are rejected
+or misclassified. The guarded pipeline converts this into $D_{\mathrm{Acc}}$
+86\%/82\%, catch 72\%/64\% and FP 14\%/15\% (Gemma/Qwen,
+Table~\ref{tab:exp1}). The accuracy gain is therefore not the headline
+result: it is the catch rate, which the guards raise from zero to between two
+thirds and three quarters of all flawed records while simultaneously halving
+the false-positive rate. The most useful single reading of RQ1 is the
+asymmetry between the two movements---the deterministic stack adds the 
+ability to detect flaws, and reduces spurious rejection at the same time,
+rather than trading one for the other.
+
+\subsection*{RQ2: layer contribution}
+
+Experiment~3 (Table~\ref{tab:ablation}) identifies the validation stack as the
+decisive component: removing it entirely collapses catch from 72\% to 42\% for
+Gemma and 64\% to 40\% for Qwen ($\Delta$Catch $-30$ and $-24$). Individually,
+the hallucination validators are the largest single-layer contributors to catch
+($-9$ Gemma, $-14$ Qwen), which is consistent with the dominant flaw classes in
+the synthetic population: fabricated parameters and CVEs are the most frequent
+flaw kinds. The design insight from Experiment~4
+(Section~\ref{sec:exp4}) is that per-class catch accords with determinism:
+the classes that expose a syntactic or enumerable signal (RBAC violations,
+adversarial phrasing, fabricated parameters and CVE identifiers) are caught at
+78--100\%, whereas the classes that require meaning resolution
+(contradictory, out-of-scope, ambiguous) remain at 40--59\%. RQ2 is therefore
+answered both at the layer level and at the class level: the guard layers that
+contribute most are exactly the ones that encode decidable predicates, and the
+residual risk concentrates in the predicates that are not decidable.
+
+The negative $\Delta$Catch entries in the left column of
+Table~\ref{tab:ablation}---removing the ablation-row guard apparently raising
+catch---are read, as Section~\ref{sec:data-analysis} commits, not as a
+deficiency of running the counterfactual treatment, but as a removal-adversity
+finding: the default configuration trades a small portion of catch against a
+large preservation of usability (false positives and accuracy). This is
+expected under the framework of Chapter~\ref{ch:literature-review} and does not
+contradict the safety invariant; it is artefact behaviour of the committed
+single-run protocol rather than evidence about the production setting.
+
+\subsection*{RQ3: generalisability}
+
+The catch-rate ordering of the ablation rows is broadly consistent across the
+two backends (Experiment~3), so RQ3 is answered affirmatively for the safety
+dimension: deterministic guardrailing, not model choice, is the primary driver
+of catch-rate performance, provided the trust boundary remains closed. The
+condition on that conclusion is the accuracy dimension. The accuracy
+contribution of individual layers is backend-specific---the scope guard
+dominates accuracy for Gemma, the hallucination validator for Qwen---so the 
+generality claim must be restricted to the ordering of catch-rate effects
+(Section~\ref{sec:data-analysis}) and explicitly must not be extended to a
+claim that any single layer is required in the same rank order to preserve
+accuracy across backends. The measured safety therefore generalises; the
+measured usability-tuning does not.
+
+\section{Comparison with Literature Baselines and Existing Solutions}\label{sec:discussion-comparison}
+
+Against the existing-systems survey
+(Table~\ref{tab:existing-systems}), the IRE occupies the combination that the
+review found empty: a dedicated intent-recognition layer that is
+machine-consumed, schema-checked, scope- and authorisation-enforced, offline
+and CPU-only, in the single-inference budget. The comparison with each family
+makes the positioning concrete.
+
+The generation-side copilots---PENTESTGPT
+\parencite{deng2024pentestgpt} and the sparring-partner system
+\parencite{happe2023pwned}---demonstrate that a model can drive security
+tooling, but both route output to a human reviewer and validate correctness
+informally. The IRE's checked output is structurally different: it is a
+machine-consumed intent contract that has already passed deterministic
+validation before any executor sees it. The measured 72\%/64\% catch rate does
+not compete with those systems' task coverage; it answers a question they do
+not pose, namely what fraction of flawed machine-bound decisions is caught
+before dispatch.
+
+\begin{sloppypar}
+Fabrication-detection and agreement methods---SelfCheckGPT
+\parencite{manakul2023selfcheckgpt}, semantic-uncertainty and
+semantic-entropy approaches \parencite{kuhn2023semantic,farquhar2024semantic},
+and self-consistency decoding \parencite{wang2023selfconsistency}---assume
+repeated or interactive generation whose cost collides with the offline,
+CPU-only, single-inference budget adopted here
+(Section~\ref{sec:domain-foundations}). The IRE does not abandon their
+rationale; it relocates it. Instead of sampling a verifier, it resolves the
+cost tension with a bounded-sampling agreement gate and a deterministic
+escalation path (the hallucination validator) that needs no large model
+(Section~\ref{sec:related-research}). The measured greed of the semantic cache
+(Section~\ref{sec:exp3}) is the accuracy-pressure relief that makes this
+resolution practical on the constrained device.
+\end{sloppypar}
+
+The comparison with OWASP-prioritised defences
+\parencite{owasp2025} and the empirically demonstrated insufficiency of
+individual prevention techniques \parencite{liu2023promptinjection,
+greshake2023indirect, kang2024dualuse} is the strongest one. Those surveyed
+defences act as post-hoc application-layer checks; the IRE's contribution is
+that the checks are composed into a stage that sits \emph{between} generation
+and dispatch, where each predicate (schema, syntax, network, scope,
+authorisation) is independently decidable on a closed intent taxonomy. The
+ablation evidence that the complete stack outperforms any single layer is the
+empirical counterpart of that architectural difference, and it is the reason
+the comparison proceeds at the level of a composed system rather than of
+individual techniques.
+
+\section{Research Contribution}\label{sec:discussion-research}
+
+The research contribution is the answered question, not the artefact. Three
+stated findings constitute it.
+
+\emph{First}, the deterministic validation stack is the dominant driver of the
+measured safety, and its effect is reproducible across the two backends. The
+ablation evidence in Section~\ref{sec:exp3} shows the stack removing
+$30/24$ catch points against a $9/14$ contribution from the largest single
+layer; the same ordering holds across backends. This generaliates the narrow
+claim ``guardrails help'' into a measurable ordering result: which layers
+matter, and in which combination.
+
+\emph{Second}, the effectiveness boundary is predictable: catch concentrates
+on flaw classes that expose decidable structure. The per-class catch spectrum
+of Section~\ref{sec:exp4} runs from 100\% down to 40\%, and the ranking is
+exactly the decidability ranking developed in the conceptual framework
+(Section~\ref{sec:gap-synthesis}). This turns the limitation of single-shot
+offline inference into a design law for trustworthy automation: a model in the
+closed-intent setting should be asked for structure, never for verdicts.
+
+\emph{Third}, usability and safety can improve together. The guarded pipeline
+simultaneously raises accuracy, raises catch and halves false positives
+(Section~\ref{sec:exp1}). The experiment record therefore weakens the frequent
+implicit assumption that adding deterministic checks to model output must trade
+either precision for recall or fluency for utility.
+
+\section{Product Contribution}\label{sec:discussion-product}
+
+The product contribution is the shippable IRE implementation developed in
+Chapter~\ref{ch:implementation-testing} and exercised by the integration
+analysis of Section~\ref{sec:integration-results}: a guarded intent-recognition
+engine that converts free-form offensive-security instructions into validated,
+schema-constrained, authorised machine contracts end-to-end. Its measured and
+verifiable properties are an automated test suite of 506 tests (76\%
+statement coverage, 434 unit and 72 integration) that encode the safety
+invariant as executable expectations, and a live C1--C2 contract verification
+that exercised the real code paths (Section~\ref{sec:integration-results}).
+
+The product's differentiated value sits in the stack, not in the model: the
+engine's own documentation and configuration define OWASP-aligned guardrail
+hardening, and the safety gate rejects or warns on every flaw class rather
+than rendering model output downstream. Within the deployment constraints--
+offline, CPU-only, single-inference, retrieval-free--the product is the only
+surveyed design in Table~\ref{tab:existing-systems} that provides the full
+conjunction of schema check, scope/authorisation enforcement and offline
+operation.
+
+The practical caveats are the ones verified in the source audit
+(Section~\ref{sec:requirements} and the integration record): several documented
+dependencies are not implemented (flagged as \emph{doc-only}); the shipped
+configuration uses a default development API key that bypasses transport
+authentication when left untouched; and the ``\texttt{production}''
+scope-mode value admitted by the settings schema is dead configuration that
+falls through to the \texttt{WARN} enforcement path rather than
+\texttt{BLOCK}. These are real product-integrity gaps and are stated as such;
+none affects the validity of the evaluation, which ran with production
+credentials and strict scope semantics, but each must be closed before the
+engine is deployed in an untrusted environment.
+
+\section{Limitations and Threats to Validity}\label{sec:discussion-limitations}
+
+The limitations are stated precisely because the dissertation commits to
+evidence over assertion. They are organised by validity category and, where
+possible, bounded by the reproducibility record of
+Section~\ref{sec:reproducibility}.
+
+\emph{Single-run point estimates and the absence of confidence intervals}
+are the principal internal-validity limitation. Each configuration in
+Experiments~1--4 was executed once (Section~\ref{sec:procedure}), so no
+measurement error or seed sweep bounds the deltas; the magnitude of individual
+layer effects, especially the small negative-$\Delta$Catch entries, must be
+read as one-sample observations. The protocol mitigates this by committing the
+execution in advance and fixing the data set, but it does not remove it.
+
+\emph{Synthetic, non-uniform data} bounds content validity. The 1,500-record
+population is generated against a committed taxonomy, and its category sizes
+are non-uniform (600 D+ / 900 D-, and per-class sizes that differ), so accuracy
+and catch figures are population-specific and should not be read as
+population-mean estimates for real production traffic.
+
+\emph{Closed threat boundary} bounds external validity. The design explicitly
+excludes retrieval and free-form rendering, which truncates the indirect- and
+tool-injection channels, but the evaluation does not cover threats outside the
+trust boundary: indirect prompt injection, physical device compromise, or
+backdoored model weights were never presented to the engine. The claim is
+therefore ``reliable within the evaluated threat model'', not ``reliable
+unconditionally''.
+
+\emph{Hardware-dependence.} All experiments ran on a single CPU-only device,
+so conclusions about throughput, cache behaviour and feasibility are
+single-platform observations. The hardware bound is recorded in the
+reproducibility manifest (Section~\ref{sec:reproducibility}).
+
+\emph{Unconfirmed mechanism.} The mechanism behind the
+increase-on-removal pattern of the ablation's negative-$\Delta$Catch rows is
+unconfirmed; it is attributed to removal-adversity interactions but no
+mechanistic study isolates it. This is flagged as open rather than explained.
+
+\emph{Weak protection of semantic classes.} The three semantic flaw classes
+(contradictory, out-of-scope, ambiguous) are caught at 40--59\% because no
+deterministic signal exists for them. The research question of how to improve
+these classes within the offline budget is left open.
+
+\emph{Engineering configuration caveats.} As stated in
+Section~\ref{sec:discussion-product}, the default development API key and the
+dead ``\texttt{production}'' scope mode are verified findings that materially
+affect deployment posture and are recorded as product limitations, not
+conflated with the evaluation.
+
+\emph{Latency, energy and operational cost} are acknowledged as unmeasured
+throughout. The evaluation prioritised correctness and catch; an operator
+deploying the engine should measure end-to-end latency on their own hardware
+before committing to interactive use.
+
+\section{Implications}\label{sec:discussion-implications}
+
+\subsection*{Implications for practice}
+
+For practitioners deploying language models in security automation, the
+strongest implication is architectural: put a deterministic, decidable
+validation stage between a small offline model and machine dispatch, and the
+safety and usability of the system can improve together rather than trade. The
+catch-before-dispatch posture means the model is consulted for structure while
+the system decides; this is directly actionable with offline inference and a
+closed intent taxonomy, and it does not require a large verifier model. The
+verified product gaps---default development credentials and the dead
+\texttt{production} scope route---should be treated as design requirements for
+any similar engine before deployment.
+
+\subsection*{Implications for research}
+
+The measured ordering result answers RQ3's conditional reading: safety
+generalises across backends, accuracy tuning does not. That split suggests the
+research frontier is not ``which model'' but ``which decidable predicate
+structure'', and it strengthens the case for composing model behaviour with
+enumerable checks over sampling-based agreement for single-inference budgets.
+The weak-protection gap for the three semantic classes is the clearest open
+problem: closing it within the offline budget (for example with stronger
+structured prompting, targeted enumerators, or the bounded-sampling escalator)
+is a concrete direction for future work. The single-run limitation should be
+removed by repeating the committed protocol with seed sweeps and interval
+estimates to convert the point estimates of this dissertation into bounded
+ones.
+
+\subsection*{Implications for the thesis}
+
+For the dissertation itself, the implication is that the central question is
+answered with the evidence available and the gaps are stated with the sources
+that would close them. The evaluation remains valid within the closed threat
+model and the committed protocol; the follow-up work---production provision
+of \texttt{gemma4:e4b} for the C1--C2 happy-path re-run recorded in
+Section~\ref{sec:integration-results}, latency measurement, and the semantic
+class research---is itemised in the project's reproducibility record rather
+than asserted.

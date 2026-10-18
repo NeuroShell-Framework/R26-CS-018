@@ -1,0 +1,137 @@
+\section{Existing Systems, Products and Techniques}\label{sec:existing-systems}
+
+This section examines the systems, products and techniques that currently occupy
+the space in which the Intent Recognition Engine operates. They are reviewed
+against the same inclusion criteria as the wider survey (Section~\ref{sec:review-method-and-scope}): relevance to at
+least one research question and a verifiable primary source reporting either an
+empirical evaluation or an authoritative specification. Where a surveyed option
+is a technique rather than a delivered product, the assessment asks whether it
+can be combined with the deployment constraint adopted in this
+dissertation---offline, CPU-only, single-inference, retrieval-free operation.
+
+\subsection*{Deterministic security tooling}
+
+The techniques that the IRE ultimately drives are mature and deterministic. Nmap
+is the canonical network-discovery and scanning tool, whose techniques---host
+discovery, port enumeration, service and version detection---define the target
+values an intent contract must carry \parencite{lyon2009nmap}. Metasploit is the
+canonical exploitation-framework driver, whose modules and options parameterise
+the most privileged class of intents \parencite{metasploit}. Both expose
+structured command interfaces (a tool name, target, options and constraints)
+rather than free-form prose, and neither embeds a natural-language layer of its
+own. In current practice the mapping from operator intent onto these structured
+interfaces is performed by a human analyst or by a scripted wrapper, and any
+authorisation policy has to be wired externally; RFC~1918 \parencite{rfc1918}
+provides only the technical basis for distinguishing internal from external
+addressing. These tools therefore constitute the deterministic ``ground truth''
+that a translation layer must produce---and the reason a translation error
+(Chapter~\ref{ch:product-design}) becomes a machine-dispatched error.
+
+\subsection*{Language-model copilots for security}
+
+The recent systems that add natural language to this toolchain are generation-side
+copilots. PENTESTGPT decomposes a penetration-testing engagement across reasoning,
+generation and guidance chains and executes each phase incrementally, producing
+structured guidance that a human operator reviews \parencite{deng2024pentestgpt}.
+The sparring-partner system demonstrated by Happe and Cito is a closed loop in
+which a model proposes low-level actions that are executed automatically against
+a deliberately vulnerable machine, up to root access \parencite{happe2023pwned}.
+Both establish that a model can drive security tooling in controlled
+environments, and both treat output correctness informally: the intended consumer
+of the output is human, and neither system subjects generation to deterministic
+schema, scope or authorisation validation before an action is taken. As products,
+they are representative of the ``AI assistant'' category of security copilots
+rather than of an automated, machine-consumed intent layer.
+
+\subsection*{Model-integration techniques: retrieval and tool calling}
+
+Beyond security copilots, two integration techniques are common to LLM-driven
+automation generally. Retrieval-augmented generation (RAG) conditions answers on
+external corpora so that claims can be traced to sources
+\parencite{lewis2020rag}, using sentence embeddings as the similarity signal
+\parencite{reimers2019sbert}; tool-calling scaffolds connect a model to external
+commands through function-call interfaces. As deployed techniques both widen the
+integration surface: retrieved content enters the prompt at inference time and is
+therefore an indirect-injection vector \parencite{greshake2023indirect}, and
+tool-calling binds a model action to a machine effect with no intermediate
+validation stage. The IRE is deliberately retrieval-free and does not render
+free-form model output to a downstream shell, which narrows these channels to the
+classification of a single utterance (Section~\ref{sec:domain-foundations}).
+
+\subsection*{Guardrail techniques for model-integrated applications}
+
+At the application layer, guardrail practice is codified by the OWASP Top~10 for
+LLM applications, which catalogues prompt injection (LLM01), insecure output
+handling and related classes as first-class risks rather than theoretical
+concerns \parencite{owasp2025}. The defence techniques surveyed in
+Section~\ref{sec:related-research} are the prevention-detection families
+benchmarked by Liu \emph{et al.} \parencite{liu2023promptinjection}---shown in
+that study to be individually insufficient---together with detection techniques
+for indirect injection \parencite{greshake2023indirect} and the empirically
+demonstrated bypass of deployed content safeguards by dual-use attacks
+\parencite{kang2024dualuse}. What these techniques have in common is that they
+act as app-layer checks over a model's behaviour after the fact. None of them is
+integrated as a deterministic validation stack that sits \emph{between} model
+generation and machine dispatch and that makes syntax, scope and authorisation
+independently decidable (Section~\ref{sec:domain-foundations}).
+
+\subsection*{Fabrication-detection and uncertainty techniques}
+
+A separate product-facing technique family detects fabricated output. SelfCheckGPT
+scores the mutual consistency of sampled responses \parencite{manakul2023selfcheckgpt};
+semantic-uncertainty and semantic-entropy methods measure answer disagreement over
+meaning-equivalence clusters \parencite{kuhn2023semantic,farquhar2024semantic};
+and self-consistency decoding accumulates agreement across samples
+\parencite{wang2023selfconsistency}. These are deployed as techniques that assume
+repeated or interactive generation. Two external references complement them for
+the value spaces relevant here: the National Vulnerability Database (NVD) is the
+authoritative registry of CVE identifiers \parencite{nistnvd}, and the Exploit
+Prediction Scoring System (EPSS) scores the likelihood that a vulnerability will
+be exploited \parencite{firstepss}. Both are the deterministic, offline-unfriendly
+references that a fabricated-identifier guard would consult if the offline
+boundary were relaxed (Chapter~\ref{ch:results}).
+
+\subsection*{Comparative assessment}
+
+Table~\ref{tab:existing-systems} consolidates the judgments from the subsections above against the properties that matter for the RQ1--RQ3
+measurement (Section~\ref{sec:research-questions}). ``Schema check'' and
+``scope/authorisation enforcement'' record whether a system subjects
+machine-consumed output to structural and policy checks; ``offline CPU'' and
+``retrieval-free'' record whether the system can run under the deployment
+constraint adopted here.
+
+\begin{table}[h]
+\centering
+\footnotesize
+\caption{Surveyed existing systems and techniques against the properties adopted in this dissertation. Judgements summarise the cited primary sources and are re-verified at the final AUDIT.}
+\label{tab:existing-systems}
+\begin{tabular}{@{}lcccc@{}}
+\hline
+\textbf{System / technique} & \textbf{Human review} & \textbf{Schema check} & \textbf{Scope / authz} & \shortstack{\textbf{Offline CPU}\\\textbf{retrieval-free}} \\
+\hline
+Nmap / Metasploit & -- & Yes (interface) & External only & Yes \\
+PENTESTGPT & Yes & No & No & -- \\
+Sparring partner & Partial & No & No & -- \\
+RAG agents & Partial & No & No & No \\
+Fabrication detection & -- & No & No & Partial \\
+IRE (this work) & No & Yes & Yes & Yes \\
+\hline
+\end{tabular}
+\end{table}
+
+In summary, the surveyed landscape contains tools that are deterministic but
+require manual intent mapping, copilots that map intent but consume human review,
+integration techniques that connect models to tools without an intermediate
+validation stage, and defence techniques that check model behaviour after the
+fact. None combines a deterministic schema, scope and authorisation validation
+stack with offline, CPU-only, single-inference and retrieval-free operation over
+a closed intent taxonomy. That combination is the space the existing-systems
+survey leaves open and is consolidated in Section~\ref{sec:gap-synthesis}.
+
+\TODO{If the assessment rubric requires a survey of \emph{named} commercial
+security copilots (for example cloud SIEM/EDR copilot products), provide
+verifiable primary sources for each; none are currently in the reference
+database, so no commercial product is named here.}
+
+\TODO{At the final AUDIT step, re-verify the comparative-table judgements in
+Table~\ref{tab:existing-systems} against the full text of each cited source.}

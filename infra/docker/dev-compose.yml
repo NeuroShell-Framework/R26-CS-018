@@ -82,7 +82,7 @@ services:
 
   intent-recognition:
     build:
-      context: ../../apps/services/intent-recognition
+      context: ../../apps/services/neuroshell-ire
       dockerfile: Dockerfile
     container_name: neuroshell-intent-recognition
     ports:
@@ -93,7 +93,7 @@ services:
       - DEBUG=true
       - LOG_LEVEL=DEBUG
     volumes:
-      - ../../apps/services/intent-recognition:/app
+      - ../../apps/services/neuroshell-ire:/app
     networks:
       - neuroshell-network
     restart: unless-stopped

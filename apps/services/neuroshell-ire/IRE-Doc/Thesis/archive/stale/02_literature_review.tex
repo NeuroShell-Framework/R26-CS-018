@@ -1,0 +1,49 @@
+\chapter{Literature Review}\label{ch:litreview}
+
+\section{Introduction}\label{sec:lit-intro}
+
+This chapter reviews the relevant literature that informs the design of the NeuroShell Intent Recognition Engine (IRE). The review focuses on four areas: (1) LLMs applied to security tooling and penetration testing assistance; (2) adversarial attacks on LLM-integrated applications, particularly prompt injection; (3) hallucination detection and mitigation techniques; and (4) semantic representations and retrieval-augmented generation concepts relevant to validation. The chapter concludes by identifying the research gaps that motivate this dissertation.
+
+\section{LLMs for Security Tooling}\label{sec:lit-llm-security}
+
+Large language models have been increasingly explored as copilots for cybersecurity tasks. Happe and Cito~\cite{happe2023pwned} demonstrated that LLMs can act as sparring partners for penetration testing, showing how models can guide enumeration and exploitation steps in controlled virtual environments. Deng et al.~\cite{deng2024pentestgpt} developed PENTESTGPT, an LLM-centric assistant that decomposes penetration testing workflows into reasoning, generation and guidance phases to support human operators through complex attack scenarios.
+
+These systems demonstrate the potential of LLMs to reduce expertise barriers in security operations. However, their primary focus is on generating plausible next actions for human consumption. The outputs are typically free-form text intended to be interpreted by a human operator, with limited or informal validation before any automated execution. When model outputs must be consumed directly by automated toolchains (as in intent recognition feeding a planner/executor), the failure modes shift from ``plausible but maybe suboptimal'' to ``structurally invalid or unauthorised and directly executable''. The IRE addresses this shift by treating the LLM as an unreliable generator whose output must satisfy deterministic constraints before propagation.
+
+\section{Adversarial Attacks on LLM-Integrated Applications}\label{sec:lit-adversarial}
+
+The integration of LLMs into applications introduces new attack surfaces. Greshake et al.~\cite{greshake2023indirect} introduced the concept of indirect prompt injection, showing that instructions planted in external data sources (e.g. retrieved documents, web content) can be interpreted as commands by the model, compromising real-world LLM-integrated systems. Liu et al.~\cite{liu2023promptinjection} formalised prompt injection attacks and systematically benchmarked ten defence strategies, concluding that prevention-based defences remain weak and detection-based approaches are incomplete.
+
+Kang et al.~\cite{kang2024dualuse} further demonstrated that classic computer security attack techniques can be adapted to bypass LLM safety mechanisms, achieving high success rates against in-the-wild content filters. These findings are reflected in the OWASP Top 10 for LLM Applications~\cite{owasp2025}, which identifies prompt injection as the top risk (LLM01) and highlights related concerns around sensitive information disclosure and excessive agency.
+
+These works establish that adversarial inputs can cause models to abandon their intended task. For an intent recognition gateway operating in a security context, robust defences against direct and indirect prompt injection are essential. The IRE implements a three-layer adversarial detector (M1) that combines lexical, structural and fused scoring to block adversarial inputs before or during processing, alongside RBAC enforcement to constrain the action space even if injection succeeds in altering classification.
+
+\section{Hallucination Detection and Mitigation}\label{sec:lit-hallucination}
+
+Hallucination remains a fundamental challenge for LLMs. Ji et al.~\cite{ji2023hallucination} provide a comprehensive survey distinguishing intrinsic hallucinations (contradicting input/context) from extrinsic hallucinations (unverifiable or fabricated content). For security tooling, extrinsic hallucinations such as fabricated CVE identifiers, non-existent ports, or invented targets are particularly dangerous as they can drive automated actions based on false premises.
+
+Several sampling-based approaches detect hallucinations without requiring external knowledge. Manakul et al.~\cite{manakul2023selfcheckgpt} proposed SelfCheckGPT, which scores consistency across multiple sampled responses to identify unreliable outputs. Kuhn et al.~\cite{kuhn2023semantic} introduced semantic uncertainty, arguing that uncertainty should be measured over semantic meaning rather than token sequences. Building on this, Farquhar et al.~\cite{farquhar2024semantic} developed semantic entropy to detect confabulations in free-form generation by clustering semantically equivalent responses.
+
+Wang et al.~\cite{wang2023selfconsistency} demonstrated that self-consistency — taking a majority vote over multiple reasoning paths — improves chain-of-thought reasoning accuracy. These ideas inform the IRE's approach: rather than trusting a single sampled output, the system can assess agreement across samples and trigger additional validation when confidence is low. The IRE implements a self-consistency gating mechanism (as described in the research paper and pipeline) that draws multiple samples when confidence falls below threshold and assesses semantic agreement to inform the hallucination validator's enforcement action.
+
+Beyond sampling-based detection, schema-constrained decoding and deterministic post-validation provide strong guarantees. By enforcing a strict JSON schema (S5), regex-based entity formats (S6), network architecture constraints (S6B) and scope rules (S7), the IRE deterministically rejects outputs that are structurally impossible or violate domain constraints — catching many hallucinations regardless of model confidence.
+
+\section{Semantic Representations and Retrieval Concepts}\label{sec:lit-semantic}
+
+Sentence-BERT~\cite{reimers2019sbert} introduced a bi-encoder approach for generating semantically meaningful sentence embeddings, enabling efficient semantic similarity comparison via cosine distance. These embeddings underpin many modern semantic search, clustering and consistency-checking approaches, including those used in semantic entropy and self-consistency frameworks~\cite{farquhar2024semantic,kuhn2023semantic,wang2023selfconsistency}.
+
+Retrieval-Augmented Generation (RAG)~\cite{lewis2020rag} grounds model outputs in external knowledge corpora to reduce hallucination. While RAG can improve factuality in knowledge-intensive tasks, it introduces its own risks in security contexts: retrieved content becomes an attack vector for indirect prompt injection~\cite{greshake2023indirect}. The IRE deliberately avoids retrieval at inference time, maintaining an offline, single-device deployment boundary with no external data ingestion during normal operation. Instead, it uses local semantic representations (via embeddings for the semantic cache and self-consistency clustering) and local grounding data (e.g. \texttt{data/cve\_grounding.json}, alias maps) loaded at startup. This design choice trades the potential benefits of live retrieval for a reduced attack surface and stronger offline guarantees.
+
+\section{Research Gap Identification}\label{sec:lit-gap}
+
+The literature reviewed above establishes both the promise and the risks of using LLMs in security tooling. However, several gaps remain unaddressed in prior work:
+
+\begin{enumerate}
+  \item \textbf{Lack of deterministic pre-execution validation:} Existing security copilots~\cite{deng2024pentestgpt,happe2023pwned} focus on generation for human consumption and do not enforce strict schema, entity format, network policy and scope constraints on outputs before automated use.
+  \item \textbf{Limited per-layer ablation in security intent domain:} While individual defences (adversarial detection, RBAC, schema validation, consistency checks) are known, few studies quantify their individual contributions when stacked together for security intent classification on a dedicated dataset.
+  \item \textbf{Offline, CPU-constrained evaluation:} Much of the literature evaluates cloud-hosted models with interactive latency budgets. There is limited empirical data on the effectiveness of stacked guardrails for small offline models running in CPU-only, unattended configurations.
+  \item \textbf{Safety–usability trade-off measurement:} Prior work rarely reports false positive rates on legitimate well-formed prompts alongside flaw catch rates, making it difficult to assess operational viability.
+  \item \textbf{Domain-specific taxonomy enforcement:} General hallucination detection methods~\cite{manakul2023selfcheckgpt,farquhar2024semantic} detect inconsistency but do not directly enforce domain-specific rules (e.g. CVE format \texttt{CVE-YYYY-NNNNN}, RFC1918/private range policy, engagement scope CIDR constraints, port ranges 1–65535, RBAC matrix by intent class).
+\end{enumerate}
+
+The NeuroShell IRE addresses these gaps by implementing a hybrid approach: combining LLM inference with deterministic validation (schema/regex/network/scope), explicit safety controls (RBAC, adversarial detection), sampling-based consistency checks, and empirically measuring accuracy, catch rate, false positives and per-layer ablation across two offline backends on a purpose-built 900-record dataset. The following chapters describe the methodology, implementation and evaluation in detail.

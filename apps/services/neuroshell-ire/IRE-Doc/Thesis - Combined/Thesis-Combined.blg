@@ -1,0 +1,15 @@
+[0] Config.pm:328> INFO - This is Biber 2.21
+[0] Config.pm:331> INFO - Logfile is 'Thesis-Combined.blg'
+[260] biber-MSWIN64:342> INFO - === 
+[380] Biber.pm:421> INFO - Reading 'Thesis-Combined.bcf'
+[489] Biber.pm:1002> INFO - Found 21 citekeys in bib section 0
+[509] Biber.pm:4487> INFO - Processing section 0
+[539] Biber.pm:4678> INFO - Looking for bibtex file 'references.bib' for section 0
+[602] bibtex.pm:1713> INFO - LaTeX decoding ...
+[636] bibtex.pm:1519> INFO - Found BibTeX data source 'references.bib'
+[886] UCollate.pm:68> INFO - Overriding locale 'en-US' defaults 'variable = shifted' with 'variable = non-ignorable'
+[886] UCollate.pm:68> INFO - Overriding locale 'en-US' defaults 'normalization = NFD' with 'normalization = prenormalized'
+[888] Biber.pm:4307> INFO - Sorting list 'none/global//global/global/global' of type 'entry' with template 'none' and locale 'en-US'
+[888] Biber.pm:4313> INFO - No sort tailoring available for locale 'en-US'
+[951] bbl.pm:676> INFO - Writing 'Thesis-Combined.bbl' with encoding 'UTF-8'
+[969] bbl.pm:779> INFO - Output to Thesis-Combined.bbl

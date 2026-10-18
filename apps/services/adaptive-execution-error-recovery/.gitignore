@@ -1,0 +1,17 @@
+.venv/
+.env
+__pycache__/
+*.pyc
+data/audit.db
+*.log
+server*.log
+server*.err.log
+benchmark_*_results.json
+probe_*.py
+body.json
+body3.json
+debug_stderr.py
+_find_unknown.py
+scan_csv.py
+test_fix.py
+llm_test.py

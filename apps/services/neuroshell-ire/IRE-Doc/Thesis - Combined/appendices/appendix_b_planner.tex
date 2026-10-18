@@ -1,0 +1,62 @@
+\section{Asian and scope of the instrument}
+
+This appendix reproduces the research instruments of the Dynamic Planner and
+Retrieval-Augmented Generation Engine (Component~2): the held-out evaluation
+set, the RAG ablation case set, the evaluation rules, and the verification
+artefacts.
+
+\section{Held-out assessment set}
+
+The held-out assessment consists of 337 cases distributed across the three
+supported tools.
+
+\begin{center}
+\begin{tabular}{@{}lcc@{}}
+  \toprule
+  \textbf{Tool} & \textbf{Cases} & \textbf{Share}\\
+  \midrule
+  Nmap & 113 & 33.5\\
+  Nikto & 116 & 34.4\\
+  Gobuster & 108 & 32.1\\
+  \midrule
+  Total & 337 & 100.0\\
+  \bottomrule
+\end{tabular}
+\end{center}
+
+Each case carries a structured intent and a stored reference command. Results
+are reported as strict exact-match rates (string identity against the reference
+command), computed from the collected prediction files, and tool-selection
+accuracy (whether the model selected the requested tool).
+
+\section{RAG ablation case set}
+
+A separate set of 25 cases compares the base model without retrieval against
+the base model with retrieval. For this set, semantic command accuracy is
+scored with the component's semantic evaluator, which measures whether a
+prediction reflects the requested operation even when the exact option spelling
+differs; normalised exact-match and tool-selection accuracy are also reported.
+The two experiments use different case sets and must not be merged into one
+figure.
+
+\section{Evaluation rules}
+
+\begin{enumerate}
+  \item Strict exact match requires the predicted command to equal the stored
+  reference command. Alternative-but-equivalent syntax is not credited under
+  this rule, which is a deliberate lower bound.
+  \item Tool-selection accuracy is the share of assessed predictions that name
+  the requested tool.
+  \item Semantic accuracy is reported only for the 25-case ablation, using the
+  semantic evaluator.
+  \item Safety behaviour is recorded as the outcome (accept / reject) of the
+  implemented validation and safety checks on the tested request categories.
+\end{enumerate}
+
+\section{Verification artefacts}
+
+The selected backend verification run (Windows, Python 3.11.9, pytest 8.2.0)
+passed 42 tests with one deprecation warning in 71.28 seconds. Test areas:
+Planning API integration (14), Command evaluator (15), Intent interpreter (6),
+Safety filter (4), Command validator (3). Saved prediction files and the
+semantic evaluator configuration accompany the component report.

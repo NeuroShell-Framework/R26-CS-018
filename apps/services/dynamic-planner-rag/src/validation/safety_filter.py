@@ -1,6 +1,7 @@
 import re
+import urllib.parse
+import ipaddress
 from typing import Tuple, List
-from urllib.parse import urlparse
 
 BLOCKED_PATTERNS = [
     r"rm\s+-rf",
@@ -15,12 +16,11 @@ BLOCKED_PATTERNS = [
     r"bash\s+-i\s+>&",
 ]
 
-ALLOWED_TARGETS = [
-    r"^192\.168\.",
-    r"^10\.",
-    r"^172\.(1[6-9]|2[0-9]|3[01])\.",
-    r"^127\.",
-    r"localhost",
+ALLOWED_NETWORKS_V4 = [
+    ipaddress.ip_network("192.168.0.0/16"),
+    ipaddress.ip_network("10.0.0.0/8"),
+    ipaddress.ip_network("172.16.0.0/12"),
+    ipaddress.ip_network("127.0.0.0/8"),
 ]
 
 ALLOWED_TOOLS = [
@@ -28,6 +28,7 @@ ALLOWED_TOOLS = [
     "hydra", "metasploit", "whois",
     "dig", "curl", "wget"
 ]
+
 
 class SafetyFilter:
 
@@ -50,16 +51,90 @@ class SafetyFilter:
         return True, flags
 
     def _is_allowed_target(self, target: str) -> bool:
-        normalized = self._normalize_target(target)
-        for pattern in ALLOWED_TARGETS:
-            if re.search(pattern, normalized):
-                return True
-        return False
+        if not target or not isinstance(target, str):
+            return False
 
-    @staticmethod
-    def _normalize_target(target: str) -> str:
-        parsed = urlparse(target.strip())
-        return parsed.hostname or parsed.path or target.strip()
+        raw_target = target.strip()
+        if not raw_target:
+            return False
+
+        if raw_target.count('"') % 2 != 0 or raw_target.count("'") % 2 != 0:
+            return False
+
+        raw_target = raw_target.strip("\"'")
+
+        # Explicit plain localhost check
+        if raw_target.lower() in ["localhost", "127.0.0.1"]:
+            return True
+
+        # 1. Pure IPv4 single address check
+        try:
+            ip_obj = ipaddress.ip_address(raw_target)
+            if ip_obj.version == 4:
+                return any(ip_obj in net for net in ALLOWED_NETWORKS_V4)
+            return False
+        except ValueError:
+            pass
+
+        # 2. Perform URL & Host:Port checks BEFORE CIDR parsing
+        is_url_or_hostport = (
+            "://" in raw_target
+            or raw_target.startswith("http://")
+            or raw_target.startswith("https://")
+            or "/" in raw_target
+            or ":" in raw_target
+        )
+
+        is_cidr_syntax = bool(re.match(r"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/\d{1,2}$", raw_target))
+
+        if is_url_or_hostport and not is_cidr_syntax:
+            try:
+                url_to_parse = raw_target
+                if not (url_to_parse.startswith("http://") or url_to_parse.startswith("https://")):
+                    if "://" in url_to_parse:
+                        scheme_part = url_to_parse.split("://")[0].lower()
+                        if scheme_part not in ["http", "https"]:
+                            return False
+                    url_to_parse = f"http://{url_to_parse}"
+
+                parsed = urllib.parse.urlsplit(url_to_parse)
+                if parsed.scheme and parsed.scheme.lower() not in ["http", "https"]:
+                    return False
+
+                host = parsed.hostname
+                if not host:
+                    return False
+
+                port = parsed.port  # urlsplit.port raises ValueError on malformed ports
+                if port is not None and (port < 1 or port > 65535):
+                    return False
+
+            except ValueError:
+                return False
+
+            if host.lower() in ["localhost", "127.0.0.1"]:
+                return True
+
+            try:
+                ip_obj = ipaddress.ip_address(host)
+                if ip_obj.version == 4:
+                    return any(ip_obj in net for net in ALLOWED_NETWORKS_V4)
+                return False
+            except ValueError:
+                pass
+
+            return False
+
+        # 3. CIDR network parsing
+        try:
+            net_obj = ipaddress.ip_network(raw_target, strict=False)
+            if net_obj.version == 4:
+                return any(net_obj.subnet_of(net) for net in ALLOWED_NETWORKS_V4)
+            return False
+        except ValueError:
+            pass
+
+        return False
 
 
 if __name__ == "__main__":

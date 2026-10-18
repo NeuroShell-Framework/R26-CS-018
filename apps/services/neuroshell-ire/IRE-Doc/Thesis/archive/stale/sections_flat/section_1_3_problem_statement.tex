@@ -1,0 +1,33 @@
+\section{Problem Statement}\label{sec:problem-statement}
+
+Security operations are bottlenecked by the manual translation of operator intent
+into tool actions. A penetration tester or analyst must map free-form
+instructions---``scan the internal network for EternalBlue'', ``check this host
+for CVE-2021-44228''---onto commands, targets and constraints while respecting
+authorisation boundaries. Recent work shows that Large Language Models (LLMs) can
+act as capable copilots for parts of this work, producing realistic attack plans
+and driving tools in controlled environments \parencite{deng2024pentestgpt,
+happe2023pwned}. Using an LLM for this translation step is attractive precisely
+because natural language is the operator's native interface.
+
+The problem is that a language model is not a reliable translator. Its output can
+be malformed, misclassified, or wholly fabricated: LLMs hallucinate identifiers
+and parameters \parencite{ji2023hallucination}, and they can be diverted by
+adversarially crafted utterances \parencite{greshake2023indirect,
+liu2023promptinjection}. In a purely conversational copilot these errors are
+display text that a human can vet. In an \emph{automated} security pipeline,
+where intent is converted directly into actions, each such error becomes a
+candidate machine-dispatched action: a fabricated CVE is looked up, a wrong
+target is scanned, or an injected instruction is obeyed. Acting on unvalidated
+model output therefore transfers every residual error of the model into the
+security toolchain it drives.
+
+The intent-recognition step concentrates this risk. A copilot that pipelines raw
+LLM output into a planner and executor must, at minimum, emit a well-formed,
+schema-conformant, authorised intent structure before any downstream component
+acts on it. Unless that structured output is validated deterministically, the
+entire framework inherits the model's failure modes. This dissertation addresses
+the resulting problem: \emph{how can a small, offline, CPU-only language model be
+made sufficiently reliable to serve as the intent-recognition head of an
+automated security pipeline, when its raw output is constrained by deterministic
+validation rather than by a human reviewer or a cloud back-end?}

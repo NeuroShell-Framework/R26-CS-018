@@ -1,0 +1,33 @@
+\section{Overall Project Context}\label{sec:overall-project-context}
+
+Modern security operations depend on specialised tooling to discover, assess and
+remediate faults across networks and applications. As the scale of this work
+grows, the manual translation of an operator's intent into safe, well-scoped tool
+actions becomes a significant bottleneck, and mistakes made at this point---an
+incorrect target, a malformed instruction, or an out-of-scope action---can affect
+production infrastructure. Large Language Models (LLMs) are attractive for this
+translation step because they can interpret natural language and emit structured,
+machine-readable instructions that drive security tooling
+\parencite{deng2024pentestgpt}. Yet a model is a stochastic component: its output
+may be malformed, misclassified, hallucinated, or the product of injected
+instructions, and a security pipeline that acts on such output without further
+checking transfers every one of these errors into the actions it executes.
+
+NeuroShell is an autonomous, natural-language-driven security orchestration
+framework developed as a four-component research chain: the Intent Recognition
+Engine (IRE), a Dynamic Planner, an Adaptive Execution and Error Recovery engine,
+and an AI-driven Vulnerability Analysis engine (project reference R26-CS-018).
+The framework is designed to let an analyst express offline security tasks in
+natural language and have the resulting validated, structured contracts drive
+downstream automation, within an explicitly configured engagement scope. It
+therefore sits at the intersection of cybersecurity automation, software
+engineering and applied machine learning. Its central concern is the first step
+of that chain: the point at which human intent is converted into a
+machine-executable form, because an error introduced there propagates through
+every stage that follows and must be detected before it takes effect.
+
+This dissertation concentrates on a single component of the framework and asks
+whether, in an offline CPU-only deployment, a small instruction-tuned language
+model can be made sufficiently reliable to serve as the head of an automated
+security pipeline when its raw output is constrained by deterministic
+validation.

@@ -1,0 +1,69 @@
+\section{Asian and scope of the instrument}
+
+This appendix reproduces the research instruments of the AI-Driven Vulnerability
+Analysis Engine (AVAE, Component~4): the prepared data set, the feature set, the
+model configuration, the evaluation metrics, and the component artefacts.
+
+\section{Prepared data set}
+
+The primary data set is a curated collection of 155,852 vulnerability records
+derived from public vulnerability sources. Class~0 (no recorded CISA KEV
+membership) contains 154,889 records and class~1 (recorded KEV membership)
+contains 963 records, which is a heavily imbalanced distribution. The class
+labels identify recorded KEV membership and are used as the binary target for
+the classifier. Supporting intelligence is drawn from the National
+Vulnerability Database (NVD), the CISA Known Exploited Vulnerabilities (KEV)
+catalogue, and the Exploit Prediction Scoring System (EPSS).
+
+\section{Feature engineering}
+
+The classifier uses five numerical features:
+
+\begin{enumerate}
+  \item CVSS v3 score -- severity of the vulnerability;
+  \item EPSS score -- probability of exploitation as estimated by EPSS;
+  \item EPSS percentile -- rank of the EPSS score within the distribution;
+  \item vulnerability age -- time since the vulnerability was published;
+  \item CVSS--EPSS interaction -- the product of the CVSS v3 score and the EPSS
+  score, capturing the joint effect of severity and exploitation likelihood.
+\end{enumerate}
+
+Data cleaning removed duplicates, handled invalid values, converted attributes
+to numerical formats, and computed vulnerability age from publication dates.
+
+\section{Model configuration and evaluation}
+
+XGBoost was selected for its support of nonlinear relationships and efficient
+learning from structured numerical data. Candidate models were compared through
+hyperparameter tuning (number of estimators, maximum depth, learning rate,
+minimum child weight, and training-weight configuration) supporting model
+selection on validation performance, with PR-AUC given particular attention
+because of the class imbalance.
+
+Evaluation uses accuracy, precision, recall, F1-score, ROC-AUC, and PR-AUC,
+together with a confusion matrix for error analysis. SHAP is used to generate
+both local explanations (for individual predictions) and global feature-importance
+analysis.
+
+\section{Provision and confirmation of the results}
+
+The component report states that the current results are provisional:
+93.00\% accuracy, 86.00\% precision, 89.00\% recall, 87.47\% F1-score, 97.20\%
+ROC-AUC, and 90.30\% PR-AUC. These figures were placed in the draft before the
+confirmed, verified evaluation of the final model configuration was earned.
+They are reproduced in \cref{ch:results} with the same caveat: final
+conclusions require the confirmed evaluation results.
+
+\section{Component artefacts}
+
+\begin{description}
+  \item[Scanner-output parsers] -- for Nmap, Nikto, and Gobuster execution
+  results.
+  \item[Intelligence enricher] -- applies NVD, KEV, and EPSS enrichment.
+  \item[Trained classifier] -- the XGBoost model over the five features.
+  \item[SHAP explainer] -- local and global explanations.
+  \item[Neo4j graph] -- persistence of sessions, hosts, services, and
+  vulnerabilities.
+  \item[FastAPI interface] -- the \texttt{/analyze} endpoint that consumes
+  structured execution results and returns the analysis output.
+\end{description}

@@ -1,0 +1,44 @@
+\section{Research Gap}\label{sec:research-gap}
+
+Three related gaps motivate this work.
+
+First, LLM copilots for security tooling validate their output informally, if at
+all. PENTESTGPT decomposes penetration-testing tasks across a reasoning,
+generation and guidance chain and does not subject its output to deterministic schema, scope
+or authorisation validation before machine consumption
+\parencite{deng2024pentestgpt}; the sparring-partner systems demonstrated by
+Happe and Cito produce plausible next actions consumed by a human
+\parencite{happe2023pwned}. When a copilot's output is fed to an
+\emph{automated} toolchain---the natural integration point for intent
+recognition---the requirement changes from plausibility to correctness: a
+hallucinated CVE, malformed structure, or injected text becomes a
+machine-dispatched action rather than display text. The OWASP Top 10 for LLM
+applications catalogues prompt injection, insecure output handling and related
+risks as first-class application concerns \parencite{owasp2025}, yet the
+systematic defence of machine-consumed intent remains largely unaddressed in the
+surveyed copilot work.
+
+Second, the defence literature either assumes interactive, cloud-hosted
+generation or takes the retrieval-augmented route. Sampling-based methods for
+detecting fabricated output, such as SelfCheckGPT \parencite{manakul2023selfcheckgpt},
+semantic uncertainty \parencite{kuhn2023semantic} and semantic entropy
+\parencite{farquhar2024semantic}, and the self-consistency decoding strategy
+\parencite{wang2023selfconsistency}, all assume repeated or interactive
+generation with generous compute. Retrieval-augmented generation
+\parencite{lewis2020rag} grounds answers externally, but introduces retrieved
+data as a prompt-injection surface \parencite{greshake2023indirect} and requires
+corpora and embeddings infrastructure at inference time. The operational setting
+targeted here---a small offline model running unattended on an operator's
+laptop, with latency budget that rules out a retry loop or a verifier LLM---is
+therefore not covered by direct prior measurements.
+
+Third, to the best of the review conducted here, no existing
+autonomous penetration-testing framework ships a dedicated, isolated
+natural-language understanding layer that reliably converts free-form
+offensive-security instructions into validated, schema-constrained machine contracts; tools either accept structured input or
+rely on general-purpose LLMs without domain-specific validation. Leaving this
+step to a general chat model without a purpose-built validation layer is exactly
+the unsafe pattern identified above. The research gap this dissertation fills is
+therefore the design and \emph{measurement} of a guarded, retrieval-free intent
+recognition engine---an isolated NLU component with deterministic validation---
+for offline, single-device security deployments.

@@ -13,7 +13,7 @@ SERVICES = [
     "apps/services/adaptive-execution-error-recovery",
     "apps/services/ai-vulnerability-analysis",
     "apps/services/dynamic-planner-rag",
-    "apps/services/intent-recognition",
+    "apps/services/neuroshell-ire",
 ]
 
 def run_command(command: list[str], cwd: Path) -> bool:

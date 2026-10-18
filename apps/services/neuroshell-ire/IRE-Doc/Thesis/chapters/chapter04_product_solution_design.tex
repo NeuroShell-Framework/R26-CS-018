@@ -1,0 +1,356 @@
+%% Chapter 4 - Product and Solution Design
+%% Planned sections (master structure): 4.1 Requirements; 4.2 Component
+%% architecture within the complete solution; 4.3 Design alternatives and
+%% decisions; 4.4 Detailed design; 4.5 Standards and professional practice.
+\chapter{Product and Solution Design}\label{ch:product-design}
+
+\section{Requirements}\label{sec:requirements}
+
+\subsection*{Product context}
+
+NeuroShell IRE (the Intent Recognition Engine) is Component~1 of the
+NeuroShell Core Framework, a language-driven security-automation stack. The
+product is a domain-specific natural-language understanding gateway: it
+converts a free-text offensive-security command into a validated,
+schema-constrained intent contract that downstream components can consume
+without ever seeing free-form model output (Section~\ref{sec:requirements}).
+The contract-first boundary is the central requirement of the product: every
+output exposed to the toolchain must be machine-validated, and no unvalidated
+LLM text may reach it (Chapters~\ref{ch:introduction} and~\ref{ch:methodology}).
+
+The IRE runs as a local daemon on the operator's device, serving other
+components and human operators over HTTP. The complete NeuroShell framework
+places two further safety gates downstream of the IRE—a planner that enforces
+its own RFC~1918 and dangerous-pattern checks, and an executor that runs
+recovery-driven command execution—so the IRE is designed as the first, but not
+the only, enforcement point.
+
+\subsection*{User classes}
+
+The product serves four human role classes in a strict privilege hierarchy
+(viewer, analyst, operator and admin) and two classes of machine consumer
+(downstream services and human-in-the-loop reviewers). Table~\ref{tab:req-roles}
+summarises the roles; the full intent-permission matrix and behavioural rules
+are given in Section~\ref{sec:detailed-design}.
+
+\begin{table}[h]
+\centering
+\caption{Role model for the IRE. The default role is analyst; unknown roles
+coerce to viewer (least privilege).}\label{tab:req-roles}
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{Role} & \textbf{Hierarchy} & \textbf{Privilege character}\\
+\midrule
+viewer & 0 (least) & Observation only; pre-inference fast-fail for any intent\\
+analyst & 1 (default) & Passive recon, network scan and vulnerability audit\\
+operator & 2 & All intents, including the three sensitive classes\\
+admin & 3 (most) & All intents plus model, policy and feature management\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection*{Functional requirements}
+
+The functional requirements are grouped under the product functions verified
+in the implementation (Section~\ref{sec:component-architecture}):
+\begin{itemize}
+\item \textbf{Core understanding.} Normalise the input utterance; resolve
+offensive-security aliases (for example \texttt{EternalBlue} to
+CVE-2017-0144) to canonical identifiers; classify the request into one of nine
+top-level intents; and refine it into a hierarchical sub-intent that drives
+downstream tool selection.
+\item \textbf{Safety and security.} Detect adversarial input before inference;
+enforce role-based access control both before and after inference; validate
+the model's output against typed schema, regular-expression, network and
+engagement-scope rules; classify every failed validation into one of six
+hallucination classes; and emit an audit record for every parse.
+\item \textbf{Intelligence and quality.} Maintain per-session context across
+turns; serve identical intents from a semantic cache; gate low-confidence
+decisions through a self-consistency stage; and expose an optional
+XAI attribution path.
+\item \textbf{System and integration.} Expose a REST API for parsing, execution
+and administration; push validated contracts to downstream components on a
+feature-flagged basis; persist an append-only audit trail; and make every
+guard individually disable-able through configuration.
+\end{itemize}
+
+\subsection*{Non-functional requirements}
+
+\begin{itemize}
+\item \textbf{Performance.} Adversarial detection (M1) must complete in low
+milliseconds; the pre-inference RBAC fast-fail runs before any model cost; and
+cache hits must short-circuit the pipeline (Section~\ref{sec:measures}).
+\item \textbf{Reliability.} A failure in non-critical middleware (session
+context, cache, adversarial detection) must degrade gracefully, not abort the
+request.
+\item \textbf{Security.} The service holds no credentials beyond an operator
+API key; rate limiting protects the model backend; and no free-form model
+output is ever returned to a caller (Section~\ref{sec:scope-limitations-assumptions}).
+\item \textbf{Operability.} Every stage and middleware is individually
+configurable via feature flags; the model family and engagement scope are
+administratively reconfigurable at runtime; and the whole evaluation is
+reproducible from a single manifest (Section~\ref{sec:reproducibility}).
+\end{itemize}
+
+
+\section{Component Architecture within the Complete Solution}\label{sec:component-architecture}
+
+\subsection*{Position in the NeuroShell framework}
+
+The IRE is Component~1 of a four-component stack. Component~2 (the Dynamic
+Planner) consumes \texttt{PlannerContract} objects to synthesise an execution
+plan; Component~3 (AEERE) executes the plan with adaptive error recovery; and
+Component~4 (AVAE) performs post-execution vulnerability analysis. Downstream
+integration is optional and feature-flagged
+(\texttt{planner\_enabled}, \texttt{component3\_enabled},
+\texttt{component4\_enabled}), so the IRE is a complete product on its own and
+a drop-in first stage of the framework. Machine consumers are authenticated by
+a shared API key and receive only validated schemas; they never receive
+free-form LLM output.
+
+\subsection*{Top-level architecture}
+
+Table~\ref{tab:stage-modules} maps the verified pipeline stages to their
+implementing modules under \texttt{src/}. A deterministic core of seven
+serialised stages (S1--S7, where S6B is the network sub-validator of S6 rather
+than an eighth stage) transforms the raw utterance into a validated intent,
+while five middleware modules enforce mandatory safety and quality properties
+around the core. The guarded decision function and safety invariant
+(Equations~\ref{eq:guarded-decision} and~\ref{eq:safety-invariant},
+Chapter~\ref{ch:methodology}) are realised by exactly these components.
+
+\begin{table}[h]
+\centering
+\small
+\caption{Verified pipeline stages and middleware under \texttt{src/}.}\label{tab:stage-modules}
+\begin{tabular}{@{}p{2.9cm}>{\raggedright\arraybackslash}p{4.7cm}>{\raggedright\arraybackslash}p{5.8cm}@{}}
+\toprule
+\textbf{Component} & \textbf{Module} & \textbf{Primary responsibility}\\
+\midrule
+S1 InputNormalizer & \texttt{preprocessing/}\allowbreak\texttt{input\_}\allowbreak\texttt{normalizer.py} & NFKC normalisation, case folding, jargon standardisation\\
+S2 AliasResolver & \texttt{preprocessing/}\allowbreak\texttt{alias\_}\allowbreak\texttt{resolver.py} & Alias-to-canonical (CVE, tool, action) resolution\\
+S3 OllamaInference & \texttt{inference/}\allowbreak\texttt{ollama\_}\allowbreak\texttt{inference\_}\allowbreak\texttt{engine.py} & Local LLM inference with strict-JSON directive\\
+S4 JSONParser & \texttt{validation/}\allowbreak\texttt{json\_}\allowbreak\texttt{parser.py} & JSON extraction; strips fences and thinking tags\\
+S5 SchemaValidator & \texttt{validation/}\allowbreak\texttt{schema\_}\allowbreak\texttt{validator.py} & Typed \texttt{IntentSchema} enforcement\\
+S6 RegexValidator & \texttt{validation/}\allowbreak\texttt{regex\_}\allowbreak\texttt{validator.py} & IP / CIDR / CVE / port pattern verification\\
+S6B NetworkValidator & \texttt{validation/}\allowbreak\texttt{network\_}\allowbreak\texttt{validator.py} & Scope containment, CIDR sanity, target-type consistency\\
+S7 ScopeGuard & \texttt{validation/}\allowbreak\texttt{scope\_}\allowbreak\texttt{guard.py} & RFC~1918 enforcement and injection re-scan\\
+M1 AdversarialDetector & \texttt{middleware/}\allowbreak\texttt{adversarial\_}\allowbreak\texttt{detector.py} & Three-layer threat scoring, block/flag before inference\\
+M2/M5 RbacGuard & \texttt{middleware/}\allowbreak\texttt{rbac\_}\allowbreak\texttt{guard.py} & Pre-inference fast-fail and post-inference intent check\\
+M3 SessionContext & \texttt{middleware/}\allowbreak\texttt{session\_}\allowbreak\texttt{context.py} & Multi-turn context, last-target carry-over, TTL expiry\\
+M4 SemanticCache & \texttt{middleware/}\allowbreak\texttt{semantic\_}\allowbreak\texttt{cache.py} & Exact-hash and embedding-similarity cache hit\\
+Sub-intent classifier & \texttt{middleware/}\allowbreak\texttt{sub\_}\allowbreak\texttt{intent\_}\allowbreak\texttt{classifier.py} & Refines intent into hierarchical sub-intents\\
+ContractBuilder & \texttt{pipeline/}\allowbreak\texttt{contract\_}\allowbreak\texttt{builder.py} & Synthesises the downstream \texttt{PlannerContract}\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection*{Processing order}
+
+Middleware runs around the core: M1 classifies the raw input, M2 fast-fails
+restricted roles before any model cost, M3 injects session context, M4 serves
+cache hits that short-circuit the LLM entirely, and the core (S1--S7, S6B) then
+runs in strict sequence. Following the core, M5 re-validates the detected
+intent against the role matrix, and the ContractBuilder produces the
+downstream contract. The appendix and the threat model
+(Sections~\ref{sec:gap-synthesis} and~\ref{sec:research-design}) treat the
+downstream boundary: the IRE renders no free-form content and retrieves
+nothing, closing the indirect-injection and tool-injection channels.
+
+
+\section{Design Alternatives and Decisions}\label{sec:design-alternatives}
+
+\subsection*{Local, offline decoding versus a hosted model}
+
+The first architectural decision is the decoder. A cloud-hosted model offers
+higher raw accuracy and easier scaling, but contradicts the product
+requirement that no request leaves the device and no credentials be held
+(Sections~\ref{sec:requirements} and~\ref{sec:ethics}). The chosen design runs
+a small model locally through Ollama in CPU-only mode, which reflects the
+intended field deployment and keeps the trust boundary on a single device. Two
+backends are kept configurable so generality can be measured
+(Chapter~\ref{ch:methodology}).
+
+\subsection*{Structured contract versus free-form prose}
+
+Raw LLM output is plausible prose and a machine-dispatched action must not be
+built from prose. The chosen design forces the model to emit a fixed JSON
+schema (S3) and then validates it through S4--S7 before anything is returned.
+Only an output that survives these stages is exposed; otherwise a
+stage-specific classified error is returned. This converts a plausibility claim
+into a verifiable one and is the decision behind
+Equations~\ref{eq:guarded-decision} and~\ref{eq:safety-invariant}.
+
+\subsection*{Deterministic rules versus model self-checking}
+
+Two validation philosophies are available: ask the model to review its own
+output, or recompute the checks with deterministic rules. Self-checking is
+drift-prone and reuses the same faulty estimator. The chosen design recomputes
+every syntactic, network and scope check with deterministic code (S5--S7,
+S6B) that depends on no further LLM calls. This is why the deterministic guard
+path is bit-exact and auditable (Section~\ref{sec:reproducibility}).
+
+\subsection*{No retrieval versus retrieval-augmented generation}
+
+Retrieval-augmented generation is a popular way to ground answers, but
+retrieved text is itself a prompt-injection vector~\cite{greshake2023indirect},
+and a retrieval channel expands the offline trust boundary. The chosen design
+performs no retrieval at inference time; offline CVE grounding is loaded at
+startup only. This decision is what makes the threat model closed
+(Section~\ref{sec:deployment-properties}).
+
+\subsection*{Two-phase RBAC versus a single check}
+
+Role enforcement can be a single post-hoc check or a repeated invariant. The
+chosen design enforces RBAC twice: a pre-inference fast-fail (M2) that rejects
+restricted roles before any model cost, and a post-inference check (M5) that
+validates the final intent against the role matrix. A single bypassed guard is
+therefore not sufficient to manufacture an authorised action.
+
+\subsection*{Self-consistency versus single-pass confidence}
+
+The model supplies a confidence score, but calibrated scores are unreliable for
+small offline models. The chosen design gates low-confidence decisions through
+a self-consistency stage that samples further responses and measures agreement,
+accepting the bounded latency cost only when triggered. This is the
+sampling-based disagreement intuition applied to a single structured
+classification rather than to free-form text~\cite{wang2023selfconsistency}.
+
+\subsection*{Semantic caching}
+
+Identical intents recur in operator workflows. The chosen design adds a
+two-channel semantic cache (exact hash and embedding similarity) that
+short-circuits the LLM on hits, cut latency from seconds to tens of
+milliseconds per hit, and improves determinism; the cache is invalidated when
+the offline CVE-grounding database is reindexed. The latency figures are not
+quoted here pending author confirmation (Section~\ref{sec:measures}).
+
+
+\section{Detailed Design}\label{sec:detailed-design}
+
+\subsection*{Core stages (S1--S7, S6B)}
+
+S1 normalises casing, whitespace and Unicode (NFKC) and standardises jargon
+terms into canonical phrases. S2 resolves aliases such as \texttt{nmap -sS}
+to a SCAN action and exploit surnames to canonical CVE identifiers via
+\texttt{data/alias\_map.json}. S3 instructs the model to emit a fixed JSON
+schema, at the sampling configuration pinned in the evaluation manifest
+(Section~\ref{sec:reproducibility}). S4 recovers the JSON payload, stripping
+code fences, markdown artefacts and thinking tags. S5 enforces the typed
+\texttt{IntentSchema} contract: exactly one of nine \texttt{IntentType} values,
+a matched target type, ports in 1--65535, CVE syntax \texttt{CVE-YYYY-NNNN},
+confidence in \lbrack 0,1\rbrack, and the invariant that \texttt{AMBIGUOUS}
+requires confidence below 0.5 while \texttt{REJECTED} requires a
+\texttt{rejection\_reason}. S6 deterministically re-verifies every entity the
+model produced (IPv4/IPv6, CIDR, CVE, port, URL) and the absence of shell
+metacharacters. S6B applies engagement-scope and topology rules: targets must
+fall inside the configured engagement CIDR (default 192.168.0.0/16), the
+widest permitted scan prefix is 30 and the narrowest 32, and type/value
+mismatches fail here, generating \texttt{ARCH\_WARNING} and
+\texttt{SCOPE\_WARNING} entries. S7 is the final enforcement gate: it rejects
+out-of-scope targets in strict mode, warns in research mode, applies RFC~1918
+membership~\cite{rfc1918}, and re-scans the raw input as an injection gate.
+
+\subsection*{Middleware}
+
+M1 is a three-layer adversarial detector operating before inference: a lexical
+layer scores known injection phrases and control tokens (weights 0.8--1.0), a
+structural layer scores encoded payloads, script-like constructs and
+imperative-but-unclassifiable phrasing (0.3--0.9), and a scoring layer fuses
+the signals; a cumulative score at or above 0.95 auto-blocks immediately, and
+0.7 flags the request for downstream treatment (Section~\ref{sec:procedure}).
+M2/M5 implement RBAC in two phases around the core as described in
+Section~\ref{sec:design-alternatives}; the policy lives in
+\texttt{config/rbac\_policy.py} and rules that unknown roles coerce to
+\texttt{viewer}, the least-privileged class. M3 maintains per-session turn
+history with a TTL, injects the recent memory window into the prompt and
+supports anaphoric follow-ups such as ``the same target''. M4 serves exact-hash
+and cosine-similarity cache hits, evicts LRU-style, and is invalidated with the
+CVE-grounding hash. The sub-intent classifier refines the top-level intent into
+a hierarchical sub-intent (for example \texttt{NETWORK\_SCAN.SYN\_STEALTH}),
+which the ContractBuilder maps to a suggested tool and flags
+(Section~\ref{sec:contract-generation}).
+
+\subsection*{Hallucination taxonomy and enforcement}
+
+Every failed validation is classified into one of six hallucination classes via
+the enforcement-policy configuration module
+(\texttt{config/enforcement\_policy.py}) and becomes an audit-grade
+\texttt{ValidationFinding}. The policy maps classes to
+BLOCK/WARN/ESCALATE outcomes: fabricated parameters, contradictory
+action-target pairings, target-type mismatches and malformed fabricated CVEs
+hard-block; ungrounded confidence (syntactically valid but unindexed CVEs)
+warns; and out-of-scope targets warn in research mode but block in strict
+production mode. Escalations route through the admin escalation queue for
+explicit human approval.
+
+\subsection*{Contract generation and administration}\label{sec:contract-generation}
+
+The ContractBuilder synthesises a downstream-ready \texttt{PlannerContract}
+with a strict, fully validated field set (intent, sub-intent, validated target,
+ports, modifiers, CVE IDs, tool hint, schedule, confidence, rejection reason
+and session ID), a human-readable description, a priority level (scheduled,
+critical for exploitation, high for CVE audits, medium otherwise) and a
+generated suggested command. Exploitation and password-attack flows are marked
+as requiring explicit human approval. Management is exposed through the REST
+API: parsing, execution, metrics, sessions, and admin views for RBAC, feature
+flags, models, enforcement policy, escalations, audit summary and the
+engagement scope. An append-only audit logger persists a SHA-256 hashed form
+of operator content with the intent, role, latency and outcome as structured
+fields.
+
+\subsection*{Deployment properties}\label{sec:deployment-properties}
+
+The service runs headless, CPU-only, retrieving nothing at inference time and
+holding no credentials beyond the operator API key; its only persistent assets
+are the model weights, the authorization policy, the session context and the
+audit database. Because nothing is retrieved and no free-form output is
+rendered downstream, the two principal remote attack classes (indirect prompt
+injection via retrieved data~\cite{greshake2023indirect} and tool injection via
+unfiltered text) are structurally reduced to classifying a single user
+utterance.
+
+\subsection*{Boundaries of the design record}
+
+The audit rule for this chapter is that components are described only when
+their implementing module is present under \texttt{src/}. Four capabilities that
+appear in the project documentation are therefore flagged rather than
+described as implemented: \texttt{spaCy} text pipelining is referenced in the
+SRS dependencies but has no module in \texttt{src/}; the \texttt{jsonschema}
+runtime is a documented dependency while the actual validator in
+\texttt{src/} uses Pydantic models; LoRA fine-tuning exists as a configuration
+file (\texttt{config/lora\_config.yaml}) but is planned Phase~2 work, not an
+implemented execution path; Mahalanobis anomaly detection and XAI token
+attribution appear as configuration (feature-flag \texttt{xai: false}) and
+tuning parameters, not as wired components. Where these names recur in
+discussion, they are treated as unimplemented design candidates.
+
+
+\section{Standards and Professional Practice}\label{sec:standards}
+
+The design follows established standards where they apply. The SRS was written
+against the IEEE~830 recommended practice for software requirements
+specifications, and the architecture's private-address enforcement is grounded
+in RFC~1918~\cite{rfc1918}. The threat catalogue that motivates the guard
+stack follows the OWASP Top~10 for LLM applications~\cite{owasp2025}, and
+offline CVE grounding draws on the National Vulnerability Database as a
+canonical identifier source~\cite{nistnvd}. Security tooling references, such
+as the suggested scanning tools and the exploitation framework, follow the
+documented syntax of the respective vendors~\cite{lyon2009nmap,metasploit} so
+that generated contracts are executable by the downstream components as
+intended.
+
+Professional practice in this domain is primarily the ethics of dual use
+(Section~\ref{sec:ethics}): the system can drive offensive tooling, so the
+design gates every such action behind role authorisation, declared engagement
+scope and explicit human approval for the most sensitive flows, and restricts
+targets to operator-declared private ranges~\cite{rfc1918}. Responsible-AI
+practice is observed by treating the model as an untrusted proposition
+generator whose output is validated deterministically and reported honestly
+(Sections~\ref{sec:data-analysis} and~\ref{sec:ethics}); capability, limitation
+and residual failure modes are published rather than suppressed. Accessibility
+is respected at the interface level (clear, structured API responses rather
+than prose), and because the product processes no personal data, it falls
+outside personal-data protection regimes; the applicable disclosures and
+declarations are collated in Chapter~\ref{sec:ethics} and
+Appendix~\ref{app:b}.

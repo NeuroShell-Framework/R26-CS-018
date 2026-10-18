@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="NeuroShell AEERE — Adaptive Execution and Error Recovery Engine Dashboard">
+  <title>NeuroShell AEERE — Dashboard</title>
+  <link rel="stylesheet" href="/static/styles.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛡️</text></svg>">
+</head>
+<body>
+
+  <!-- ═══ Header ═══ -->
+  <header class="header">
+    <div class="header-left">
+      <div class="logo-icon">🛡️</div>
+      <h1>NeuroShell <span>AEERE</span></h1>
+    </div>
+    <div class="health-badges" id="healthBadges">
+      <div class="health-badge" id="badgeDocker"><span class="health-dot"></span> Docker</div>
+      <div class="health-badge" id="badgeRedis"><span class="health-dot"></span> Redis</div>
+      <div class="health-badge" id="badgeDataset"><span class="health-dot"></span> Dataset: <span id="datasetCount">—</span></div>
+      <div class="health-badge" id="badgeModel"><span class="health-dot"></span> <span id="modelName">—</span></div>
+    </div>
+  </header>
+
+  <!-- ═══ Main Content ═══ -->
+  <main class="main" id="mainContent">
+
+    <!-- ── Command Input Card ── -->
+    <section class="card command-section" id="commandSection">
+      <div class="card-header">
+        <div class="card-icon blue">⌨️</div>
+        <div>
+          <div class="card-title">Command Execution</div>
+          <div class="card-subtitle">Enter a Kali Linux command — errors will be auto-detected and corrected</div>
+        </div>
+      </div>
+
+      <div class="command-input-wrapper">
+        <span class="command-prefix">root@kali:~$</span>
+        <input type="text" class="command-input" id="commandInput"
+               placeholder="e.g. nmap --invalidflag 192.168.1.1"
+               autocomplete="off" spellcheck="false">
+      </div>
+
+      <div class="input-row">
+        <div class="field-group">
+          <label class="field-label">Tool</label>
+          <input type="text" class="field-input" id="toolInput" placeholder="nmap" value="nmap">
+        </div>
+        <div class="field-group">
+          <label class="field-label">Session ID</label>
+          <input type="text" class="field-input" id="sessionInput" placeholder="auto-generated" value="">
+        </div>
+        <div class="field-group">
+          <label class="field-label">Intent</label>
+          <input type="text" class="field-input" id="intentInput" placeholder="NETWORK_SCAN" value="NETWORK_SCAN">
+        </div>
+        <div class="field-group">
+          <label class="field-label">Duration</label>
+          <select class="field-input" id="durationInput">
+            <option value="short">Short</option>
+            <option value="medium" selected>Medium</option>
+            <option value="long">Long</option>
+          </select>
+        </div>
+        <button class="btn-execute" id="btnExecute" onclick="executeCommand()">
+          <span class="btn-text">▶ Execute</span>
+          <span class="spinner"></span>
+        </button>
+      </div>
+    </section>
+
+    <!-- ── Empty State ── -->
+    <div class="empty-state" id="emptyState">
+      <div class="empty-icon">🔍</div>
+      <h3>Ready to Execute</h3>
+      <p>Enter a command above and click Execute. The system will auto-detect and correct any errors.</p>
+    </div>
+
+    <!-- ── Status Banner (hidden initially) ── -->
+    <div class="status-banner" id="statusBanner"></div>
+
+    <!-- ── Result Summary (hidden initially) ── -->
+    <section class="card result-summary hidden" id="resultSummary">
+      <div class="card-header">
+        <div class="card-icon blue">📊</div>
+        <div>
+          <div class="card-title">Execution Summary</div>
+          <div class="card-subtitle" id="summarySubtitle"></div>
+        </div>
+      </div>
+      <div class="summary-grid">
+        <div class="summary-stat">
+          <div class="stat-value blue" id="statStatus">—</div>
+          <div class="stat-label">Status</div>
+        </div>
+        <div class="summary-stat">
+          <div class="stat-value amber" id="statAttempts">—</div>
+          <div class="stat-label">Attempts</div>
+        </div>
+        <div class="summary-stat">
+          <div class="stat-value green" id="statExitCode">—</div>
+          <div class="stat-label">Exit Code</div>
+        </div>
+        <div class="summary-stat">
+          <div class="stat-value blue" id="statLatency">—</div>
+          <div class="stat-label">Latency</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Correction Timeline (hidden initially) ── -->
+    <section class="card correction-timeline hidden" id="correctionTimeline">
+      <div class="card-header">
+        <div class="card-icon amber">🔄</div>
+        <div>
+          <div class="card-title">Correction Timeline</div>
+          <div class="card-subtitle">Each correction attempt with original → corrected command</div>
+        </div>
+      </div>
+      <div class="timeline" id="timelineContainer"></div>
+    </section>
+
+    <!-- ── STDOUT Output ── -->
+    <section class="card output-panel hidden" id="stdoutPanel">
+      <div class="card-header">
+        <div class="card-icon green">📤</div>
+        <div>
+          <div class="card-title">Standard Output</div>
+          <div class="card-subtitle">Command stdout</div>
+        </div>
+      </div>
+      <div class="output-box" id="stdoutBox"></div>
+    </section>
+
+    <!-- ── STDERR Output ── -->
+    <section class="card output-panel hidden" id="stderrPanel">
+      <div class="card-header">
+        <div class="card-icon red">⚠️</div>
+        <div>
+          <div class="card-title">Standard Error</div>
+          <div class="card-subtitle">Command stderr</div>
+        </div>
+      </div>
+      <div class="output-box stderr" id="stderrBox"></div>
+    </section>
+
+    <!-- ── Failure Report (hidden initially) ── -->
+    <section class="card failure-report hidden" id="failureReport">
+      <div class="card-header">
+        <div class="card-icon red">🚨</div>
+        <div>
+          <div class="card-title">Failure Report</div>
+          <div class="card-subtitle">Recovery was unsuccessful</div>
+        </div>
+      </div>
+      <div class="failure-content" id="failureContent"></div>
+    </section>
+
+  </main>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

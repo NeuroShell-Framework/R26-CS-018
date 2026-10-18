@@ -1,0 +1,291 @@
+%% Chapter 5 - Implementation, Integration and Testing
+%% Planned sections (master structure): 5.1 Development environment and
+%% technology stack; 5.2 Component implementation; 5.3 Integration with the
+%% other components; 5.4 Verification and software testing; 5.5 Deployment and
+%% operation.
+\chapter{Implementation, Integration and Testing}\label{ch:implementation-testing}
+
+\section{Development Environment and Technology Stack}\label{sec:dev-environment}
+
+The IRE is implemented as a modular Python service with a FastAPI interface
+and a clean internal separation between the core stages (S1--S7), the guard
+middleware (M1--M5) and the language-model adapter (Chapter~\ref{ch:product-design}).
+This section records the verified technology stack and the development
+environment in which the system was built and measured.
+
+\subsection*{Runtime and deployment platform}
+
+The service is written in Python~3 and runs as a local daemon under Uvicorn on
+port 8001. The development launcher (\texttt{scripts/run\_dev.py}) targets
+Python 3.11+ and performs pre-flight checks for the \texttt{.env} file, Ollama
+connectivity on port 11434, the configured model's availability and the
+development server. The evaluation and QA environments for this dissertation
+were exercised under Python 3.9.13 (the retained virtual environment), which
+is below the recommended version but within the declared compatibility window.
+Table~\ref{tab:stack} lists the verified stack, pinned where a version is
+recorded in \texttt{requirements.txt}.
+
+\begin{table}[h]
+\centering
+\small
+\caption{Verified technology stack.}\label{tab:stack}
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{Layer} & \textbf{Technology} & \textbf{Purpose}\\
+\midrule
+Language & Python 3.11 (3.9.13 used) & Implementation platform\\
+API framework & FastAPI 0.115.0, Uvicorn 0.30.6 & HTTP surface, ASGI server\\
+Configuration & pydantic-settings 2.4.0, python-dotenv & \texttt{.env}-driven settings\\
+Schemas & Pydantic v2 ($\ge 2.9$, $<3$) & Typed model validation\\
+Inference client & ollama 0.3.3, httpx 0.27.2 & Local Ollama decoding\\
+Rate limiting & slowapi 0.1.9 & 30 requests/min per caller\\
+Logging & structlog 24.4.0 & Structured JSON audit\\
+Embeddings & sentence-transformers 3.0.1 & Cache similarity, consistency\\
+Testing & pytest 8.3.2, pytest-asyncio 0.23.8 & Unit + async integration\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Two declared dependencies are flagged for accuracy: \texttt{spacy} 3.7.6 is
+listed in \texttt{requirements.txt} and probed by the launcher, and
+\texttt{jsonschema} 4.23.0 is listed in the SRS, but the implemented validation
+paths in \texttt{src/} use the Pydantic runtime, not these packages. They are
+treated in this dissertation as declared-but-unused rather than as part of the
+runtime (Chapter~\ref{ch:product-design}).
+
+\subsection*{Source layout and configuration}
+
+\begin{sloppypar}
+The service is organised under
+\texttt{src/}: \texttt{api}, \texttt{audit}, \texttt{inference},
+\texttt{integration}, \texttt{middleware}, \texttt{pipeline},
+\texttt{preprocessing}, \texttt{schemas}, \texttt{utils} and
+\texttt{validation}. Central configuration lives in \texttt{config/}\hspace{0pt}\texttt{settings.py}
+with the feature, RBAC, and enforcement policies in \texttt{features.yaml},
+\texttt{feature\_}\hspace{0pt}\texttt{flags.py}, \texttt{rbac\_}\hspace{0pt}\texttt{policy.py} and
+\texttt{enforcement\_}\hspace{0pt}\texttt{policy.py}. Runtime constants are not decided by the
+code: they are loaded from the environment and the YAML feature flags at
+startup, so every experimental constant is reproducible from the committed
+configuration (Section~\ref{sec:reproducibility}).
+\end{sloppypar}
+
+
+\section{Component Implementation}\label{sec:component-implementation}
+
+This section describes how the design of Chapter~\ref{ch:product-design} is
+realised in code. The descriptions are based on the implementing modules under
+\texttt{src/} and \texttt{config/} as committed.
+
+\subsection*{Pipeline orchestration}
+
+\texttt{src/pipeline/ire\_pipeline.py} instantiates every stage and middleware
+and defines their execution order. Each middleware and stage is wrapped in its
+own exception boundary so that a failure in non-critical middleware degrades
+gracefully instead of aborting the request (Section~\ref{sec:requirements}).
+The order is: M1 adversarial scan, M2 pre-inference RBAC, M3 session-context
+injection, M4 semantic-cache lookup, then the core S1--S7 with S6B, then M5
+post-inference RBAC, cache store, v2-response assembly, sub-intent enrichment,
+session update and session-info enrichment. Every stage and middleware that
+can reject a request does so with a classified error carrying the stage name,
+the divergence field and its accumulated \texttt{ValidationFinding} entries.
+
+\subsection*{Core stages}
+
+\begin{itemize}
+\item \textbf{S1 InputNormalizer} (\texttt{preprocessing/input\allowbreak\_normalizer.py})
+applies NFKC Unicode normalisation, strips control characters and thinking
+tags, collapses whitespace and standardises a jargon table (for example
+\texttt{syn scan} $\rightarrow$ \texttt{SYN stealth scan},
+\texttt{pwn} $\rightarrow$ \texttt{exploit}).
+\item \textbf{S2 AliasResolver} (\texttt{preprocessing/alias\allowbreak\_resolver.py})
+resolves a 22-entry \texttt{data/alias\_map.json} of exploit surnames, slang
+and tool terms to canonical identifiers before inference.
+\item \textbf{S3 OllamaInferenceEngine} calls the local model with a few-shot,
+strict-JSON directive, a per-stage timeout (60 s), a 2048-token cap and a
+small response cache
+(\texttt{inference/ollama\_inference\_engine.py}).
+\item \textbf{S4 JSONParser} (\texttt{validation/json\_parser.py}) recovers the
+JSON payload, stripping code fences, markdown artefacts and hard bounds on
+extraction.
+\item \textbf{S5 SchemaValidator} (\texttt{validation/schema\allowbreak\_validator.py})
+enforces the typed \texttt{IntentSchema} with Pydantic and maps failures to
+hallucination classes (fabricated CVE, target-type mismatch, ungrounded
+confidence, fabricated parameter).
+\item \textbf{S6 RegexValidator} re-verifies IP/CIDR/CVE/port/URL entities and
+rejects shell metacharacters (\texttt{validation/regex\_validator.py}).
+\item \textbf{S6B NetworkArchitectureValidator} checks engagement-scope
+containment, CIDR sanity (widest prefix 30, narrowest-32 scan targets) and
+target-type consistency (\texttt{validation/network\_validator.py}).
+\item \textbf{S7 ScopeGuard} (\texttt{validation/scope\_guard.py}) enforces
+RFC~1918 membership~\cite{rfc1918}, the engagement mode (strict/warn/disabled)
+and re-scans the raw input as a final injection gate.
+\end{itemize}
+
+\subsection*{Guard middleware}
+
+\begin{itemize}
+\item \textbf{M1 AdversarialDetector}
+(\texttt{middleware/adversarial\_detector.py}) implements the three-layer
+detector of the design: a lexical layer scoring known injection phrases and
+control tokens, a structural layer scoring encoded payloads and script-like
+constructs, and a scoring layer that auto-blocks at a cumulative score of at
+least 0.95 and flags at 0.7.
+\item \textbf{M2/M5 RbacGuard} is driven by \texttt{config/rbac\_policy.py},
+which declares the role hierarchy (viewer, analyst, operator, admin), the
+intent-permission matrix, the three sensitive intents and the restricted-role
+set (\texttt{viewer}); unknown roles coerce to \texttt{viewer}.
+\item \textbf{M3 SessionContextStore}
+(\texttt{middleware/session\_context.py}) tracks per-session turn history with
+a TTL, injects a memory window and carries the last target forward.
+\item \textbf{M4 SemanticCache} (\texttt{middleware/semantic\_cache.py}) serves
+exact-hash and embedding-similarity hits and is invalidated with the CVE
+grounding.
+\item \textbf{sub-intent classifier}
+(\texttt{middleware/sub\_intent\_classifier.py}) enriches a valid response with
+a hierarchical sub-intent that drives tool selection.
+\end{itemize}
+
+\subsection*{Contract generation, audit and metrics}
+
+\begin{sloppypar}
+The downstream \texttt{PlannerContract} is synthesised by
+\texttt{src/pipeline/contract\_builder.py}: sub-intent selects the tool (for
+example \texttt{NETWORK\_SCAN.SYN\_STEALTH} $\rightarrow$ \texttt{nmap -sS}),
+modifiers map to flags, priorities are assigned, and exploitation flows are
+marked for human approval. The audit trail in
+\texttt{audit/}\hspace{0pt}\texttt{audit\_logger.py} persists every finding to
+an append-only SQLite database (\texttt{data/audit\_log.db}), hashing operator
+content (SHA-256) while keeping intent, role, latency and outcome as
+structured fields. \texttt{utils/}\hspace{0pt}\texttt{metrics\_collector.py}
+records latency percentiles, per-stage error counts and intent distribution
+for the \texttt{/metrics} endpoint.
+\end{sloppypar}
+
+
+\section{Integration with the Other Components}\label{sec:integration}
+
+The IRE is Component~1 of the NeuroShell framework and integrates with
+Components 2--4 under feature flags, so the framework can be turned on without
+changing the parsing behaviour. \texttt{src/}\hspace{0pt}\texttt{integration/}\hspace{0pt}\texttt{planner\_client.py}
+forwards validated contracts to the Dynamic Planner (Component~2, port 8002)
+when \texttt{planner\_enabled} is true;
+\texttt{src/}\hspace{0pt}\texttt{integration/}\hspace{0pt}\texttt{executor\_client.py}
+targets the AEERE executor (Component~3, port 8003) and the AVAE vulnerability
+analysis (Component~4, port 8004) under their respective flags. Clients
+authenticate with a shared API key over HTTP and a bounded timeout.
+
+Two integration modes are implemented in the API surface. \texttt{POST /parse}
+returns the validated intent and pushes a background task to the planner when a
+contract is actionable; \texttt{POST /execute} runs the synchronous C1-to-C2
+chain and returns both outputs, persisted in
+\texttt{utils/}\hspace{0pt}\texttt{chain\_cache.py} so
+an identical input short-circuits both services. \texttt{POST /parse/plan}
+returns the planner-ready contract directly. Downstream consumers receive
+\texttt{PlannerContract} objects only, never free-form model output; the
+Component~2 safety gates (RFC~1918, dangerous-pattern checks) remain a second,
+independent enforcement point (Section~\ref{sec:component-architecture}).
+
+The full API surface, implemented in \texttt{src/api/main.py}, is:
+\begin{itemize}
+\item GET \texttt{/health};
+\item GET \texttt{/metrics};
+\item POST \texttt{/parse};
+\item POST \texttt{/parse/plan};
+\item POST \texttt{/execute};
+\item GET \texttt{/session/}\texttt{\{id\}} and DELETE \texttt{/session/}\texttt{\{id\}};
+\item GET \texttt{/admin/rbac/}\texttt{\{role\}};
+\item GET \texttt{/admin/features} and POST \texttt{/admin/features/reload};
+\item GET \texttt{/admin/models} and POST \texttt{/admin/models/switch};
+\item GET \texttt{/admin/enforcement-policy};
+\item GET \texttt{/admin/escalations} and POST
+\texttt{/admin/escalations/}\hspace{0pt}\texttt{\{id\}/}\hspace{0pt}\texttt{resolve};
+\item GET \texttt{/admin/audit/summary};
+\item GET \texttt{/admin/chain-cache} and DELETE \texttt{/admin/chain-cache};
+\item GET \texttt{/engagement/scope}.
+\end{itemize}
+Requests are authenticated with an API key and rate-limited to 30 per minute
+per caller; command length is capped in the API.
+
+
+\section{Verification and Software Testing}\label{sec:testing}
+
+\subsection*{Strategy}
+
+The verification strategy distinguishes unit-level determinism from
+integration-level wiring. Unit tests exercise every guard path, every cell of
+the RBAC matrix, both semantic-cache hit and miss paths, all six hallucination
+classes, and the metrics calculations, using a live-free harness in which the
+LLM is mocked so the suite is deterministic (no live model dependency in the
+unit or integration paths). Integration tests exercise the HTTP surface with
+an \texttt{httpx.AsyncClient}: the asynchronous parse flow, the adversarial-to-
+alias sequence, the full-stack guarded pipeline, and the audit and escalation
+queue lifecycle. The suite is the gate that must pass before any measurement
+in the results chapter is accepted (Section~\ref{sec:reproducibility}).
+
+\subsection*{Re-derived results}
+
+The figures in this section were re-derived by running the committed suite
+directly for this dissertation (session 2026-10-07), because the retained
+coverage artefact was internally inconsistent with the current source
+(Chapter~\ref{ch:methodology}).
+
+\begin{itemize}
+\item \textbf{Suite.} 506 collected tests, 506 passed, 0 failed in the full
+run (111.76\,s; 49.7--55.3\,s across runs). The split is 434 unit tests and 72
+integration/async tests, an increase from the 482 tests (434 unit + 48
+integration) documented on 2026-08-26 because additional integration cases were
+added to the API, full-stack and audit suites.
+\item \textbf{Coverage.} 76\% statement coverage across \texttt{src/} (2421
+statements, 582 missed), with 17 modules at 100\%. The safety-critical core is
+well covered: adversarial detection 99\%, schema validation 99\%, session
+context 96\%, audit logger 94\%, semantic cache 94\%, sub-intent classifier
+89\%. The weakest areas are the integration clients (planner 30\%, executor
+16\%), \texttt{contract\_builder.py} (30\%) and \texttt{chain\_cache.py}
+(24\%), which are orchestration paths rather than safety invariants.
+\item \textbf{Static analysis.} \texttt{ruff} reports 593 findings, 100\%
+style and modernisation, with no correctness-level (E9) errors and no fatal
+findings.
+\end{itemize}
+
+\subsection*{Evaluation harness}
+
+The evaluation harness applies the procedure of
+Section~\ref{sec:procedure} to the golden data set, computes the metrics of
+Section~\ref{sec:measures}, and regenerates every table used in
+Chapter~\ref{ch:results} from a single, manifest-pinned command
+(Section~\ref{sec:reproducibility}). The harness records per-record decisions
+so the reported figures can be reproduced without re-invoking the model, and
+it asserts the gate condition (suite green) before accepting a measurement.
+
+
+\section{Deployment and Operation}\label{sec:deployment-operation}
+
+\subsection*{Development deployment}
+
+A single command (\texttt{python scripts/run\_dev.py}) performs the pre-flight
+checks and starts Uvicorn on port 8001 with hot-reload for development. The
+service binds to 0.0.0.0 for the downstream components on the device; no
+external service is contacted. Health and readiness are exposed at
+\texttt{/health}, which reports Ollama connectivity, the active model, the
+seven-stage pipeline and the middleware enablement map.
+
+\subsection*{Containerised deployment}
+
+A \texttt{Dockerfile} provides a reproducible deployment on Python 3.11-slim,
+installing the pinned requirements and packaging \texttt{src/}, \texttt{config/}
+and the alias map; a \texttt{docker-compose.yml} (documented in the SRS)
+orchestrates the service alongside the Ollama runtime, and the image exposes a
+health check against \texttt{/health}. The container runs a single worker by
+design, because the in-memory cache and session store are per-process state
+(Section~\ref{sec:component-architecture}).
+
+\subsection*{Operational administration}
+
+The admin surface supports runtime reconfiguration without redeploys: model
+listing and switching, feature-flag inspection and hot reload, live
+enforcement-policy summaries, escalation resolution, audit-trail summaries and
+engagement-scope inspection. Rate limiting and command-length caps protect the
+model backend, and session/cache storage can be inspected and flushed through
+the API. Deployment properties are traceable to the trust boundary described
+in Chapter~\ref{ch:product-design} and the threat-model treatment of
+Chapter~\ref{ch:methodology}.

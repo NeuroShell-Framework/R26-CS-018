@@ -1,0 +1,28 @@
+\section{Individual Component Context}\label{sec:individual-component-context}
+
+The Intent Recognition Engine (IRE) is the first component of the chain
+(Component 01). It acts as a domain-specific Natural Language Understanding (NLU)
+gateway: it receives natural-language security commands---for example a request
+to perform a targeted network discovery scan---and returns a structured,
+validated intent contract that downstream components consume without
+re-interpreting prose.
+
+The component boundary is deliberately narrow. The IRE is concerned with
+understanding and validating \emph{intent}; it does not decide how a task is
+scheduled, across which hosts it runs, or how execution failures are recovered.
+Those responsibilities belong to the Dynamic Planner (Component 02) and to the
+Adaptive Execution and Error Recovery engine (Component 03), which consume the
+IRE's output. The handoff is designed to be safe by construction: the output
+contract carries an explicit intent type, a resolved target, the recognised
+options and any validation findings, and the downstream contract requires that
+actions derived for rejected intents must not be executed.
+
+Because the IRE sits at the head of the chain, its reliability bounds the
+reliability of the components that follow. A target that is mislabeled, an
+intent that is misclassified, or a hallucinated identifier that is accepted would
+be inherited by every downstream action. The component therefore couples an
+instruction-tuned language model with deterministic validation and guard stages
+whose purpose is to contain model error before it can propagate to a planner or
+executor. This dissertation evaluates whether that guarded design achieves
+sufficiently accurate and error-resilient intent recognition to justify acting on
+model-produced security instructions in a controlled, offline setting.

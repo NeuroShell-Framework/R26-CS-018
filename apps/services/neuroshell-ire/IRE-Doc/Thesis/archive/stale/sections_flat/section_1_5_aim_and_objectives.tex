@@ -1,0 +1,34 @@
+\section{Aim and Objectives}\label{sec:aim-and-objectives}
+
+The aim of this dissertation is to design, implement and evaluate a guarded
+intent-recognition engine that constrains the raw output of a small, offline,
+instruction-tuned language model with deterministic validation, so that the
+combined system can act as a reliable head of an automated security pipeline in a
+CPU-only, single-device deployment. To achieve this aim the following objectives
+are pursued:
+
+\begin{enumerate}
+\item To design and implement the Intent Recognition Engine (IRE): a component
+that receives free-text security requests and emits strictly
+schema-conformant, authorised intent contracts, consuming a small offline
+language model as a proposition generator whose output is validated
+deterministically before it is handed onward.
+\item To construct a purpose-built evaluation data set of security prompts,
+covering well-formed requests and deliberately flawed prompts across the flaw
+categories that matter in practice (adversarial phrasing, out-of-scope targets,
+ambiguous or contradictory requests, fabricated parameters and identifiers, and
+role violations), each annotated with gold labels.
+\item To establish an evaluation protocol that quantifies, on the committed
+experiment record, how much the guarded pipeline improves structured intent
+recognition and flaw catching over raw model output, and that abates each guard
+layer independently to estimate its individual contribution.
+\item To compare two offline language-model backends under the identical
+guardrail stack, in order to measure how much of the achieved safety is
+backend-independent rather than an artefact of one model.
+\end{enumerate}
+
+Each objective is addressed by a corresponding chapter of this dissertation:
+the design is developed in Chapter~\ref{ch:product-design}, the data set and protocol in
+Chapter~\ref{ch:methodology}, the implementation in
+Chapter~\ref{ch:implementation-testing}, and the evaluation and backend comparison in
+Chapter~\ref{ch:results}.

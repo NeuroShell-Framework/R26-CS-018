@@ -1,0 +1,830 @@
+%% ============================================================================
+%%  SLIIT UNDERGRADUATE DISSERTATION - LaTeX TEMPLATE                  (v1.0)
+%%  Implements: "Guidelines on Documentation and Submission of Dissertations"
+%%              Sri Lanka Institute of Information Technology (SLIIT)
+%% ============================================================================
+%%
+%%  BUILD
+%%    pdfLaTeX (Times-clone fonts):   latexmk -pdf     SLIIT_Dissertation_Template.tex
+%%    True Times New Roman (needs the font installed):
+%%                                    latexmk -xelatex SLIIT_Dissertation_Template.tex
+%%                                    latexmk -lualatex SLIIT_Dissertation_Template.tex
+%%    Bibliography uses biblatex + biber (latexmk runs biber automatically).
+%%
+%%  FILE MAP  (search for these section markers)
+%%    §A  AI operating instructions
+%%    §B  Standards register   (rule ID -> requirement -> where implemented)
+%%    §C  Ambiguities / conflicts in the source guideline + resolution used
+%%    §D  What LaTeX cannot enforce (manual checks) + violation -> fix recipes
+%%    §E  USER CONFIGURATION   <- the ONLY block of macros meant to be edited
+%%    §F  STANDARDS ENFORCEMENT (preamble + helper macros)  <- DO NOT EDIT
+%%    §G  DOCUMENT BODY        <- replace sample content, keep the structure
+%%    §H  Final compliance checklist
+%%
+%% ============================================================================
+%%  §A  AI OPERATING INSTRUCTIONS
+%% ============================================================================
+%%  PURPOSE
+%%    This file is both a working template AND a machine-readable specification.
+%%    Given a dissertation draft (LaTeX, Word text, Markdown or plain text), an AI
+%%    should be able to re-flow it into this template so that it complies with the
+%%    SLIIT guideline, and to audit/repair an existing document against §B.
+%%
+%%  WORKFLOW
+%%    1. Read §B, §C, §D completely before changing anything.
+%%    2. Work on a COPY. Keep §F byte-for-byte unchanged. (If a rule in §B seems to
+%%       require a change in §F, re-read §C first; the choice is probably deliberate.)
+%%    3. Fill §E from the draft: title, candidate names + IDs, supervisor, degree,
+%%       submission date, switches. Never leave sample values in a deliverable.
+%%    4. Map the draft's content onto §G in the REQUIRED COMPONENT ORDER (rule DOC-03).
+%%       Keep the author's wording. Change structure and formatting only.
+%%       Do NOT invent content, citations, data, names or signatures.
+%%       If a mandatory element is missing (abstract, keywords, supervisor, declaration
+%%       text, references...) insert  \TODO{what is missing}  and report it.
+%%    5. Apply the heading-case rules by hand (see M1 in §D).
+%%    6. Replace ad-hoc formatting with the template constructs (see recipes V1-V22 in §D).
+%%    7. Compile (latexmk). Resolve every error, "undefined reference", "Citation
+%%       undefined" and leftover \TODO warning.
+%%    8. Walk through §H. Report to the user: (a) what you changed, (b) what could not
+%%       be verified automatically (word counts, page budgets...), (c) remaining TODOs.
+%%
+%%  HARD CONSTRAINTS FOR THE AI
+%%    - Never override margins, fonts, font sizes, line spacing, page-number style or
+%%      heading formats in the body. If the draft does so, strip it (recipes in §D).
+%%    - Never type numbers by hand ("Figure 3", "Chapter 2", "Table 1.2", page refs).
+%%      Use \label / \cref. Never write "the following table/figure".
+%%    - Never fake structure with \textbf, \Large, \vspace, \newpage or blank lines.
+%%      Use \chapter, \section, \subsection, floats and the macros in §F.
+%%    - Never change the meaning of the text while "fixing" it.
+%%
+%%  RULE TAGS
+%%    Code in §F/§G carries tags like  %% [FNT-01]  that point to the rule in §B it
+%%    enforces. Searching a tag shows exactly where a rule is implemented.
+%%
+%% ============================================================================
+%%  §B  STANDARDS REGISTER
+%% ============================================================================
+%%  Source section numbers refer to the SLIIT guideline PDF ("Common Instructions" = 2,
+%%  "Components" = 3). Status: AUTO = enforced by this template, MANUAL = see §D,
+%%  CHOICE = guideline ambiguous, resolved in §C.
+%%
+%%  --- DOCUMENT ---------------------------------------------------------------
+%%  DOC-01 AUTO    A4 paper, 12 pt base size, single-sided (2.2, 3).
+%%  DOC-02 MANUAL  Whole document >= 50 A4 pages (3: "Document Size: Min 50 A4 Pages").
+%%  DOC-03 AUTO    Component order (3): [Cover - hard copy only] Title page, Declaration,
+%%                 [Dedication], Abstract, Acknowledgement, Table of Contents, List of
+%%                 Figures, List of Tables, List of Abbreviations, [List of Appendices],
+%%                 1 Introduction, 2 Methodology, 3 Results and Discussion,
+%%                 4 Conclusions and Recommendations, Reference List, [Bibliography],
+%%                 [Glossary], Appendices.   ("if any" items are switches in §E.)
+%%  DOC-04 MANUAL  Page budgets (3): Title 1, Declaration 1, Abstract 1, Acknowledgement 1,
+%%                 ToC 1-2, Introduction 10-15, Methodology 15-25, Results & Discussion
+%%                 5-10, Conclusion 2-4, References >= 2, Glossary 1-2, Appendices unlimited.
+%%  DOC-05 MANUAL  Submission set (2.01): Draft = soft bound, to supervisor for corrections;
+%%                 Final = soft copy uploaded to the cloud folder (1 group report +
+%%                 4 individual summary reports); hard-bound copy only if wanted.
+%%                 Each individual summary report uses this same template and rules.
+%%
+%%  --- PAGE LAYOUT ------------------------------------------------------------
+%%  LAY-01 AUTO    Margins: LEFT 40 mm, BOTTOM 40 mm, TOP 25 mm, RIGHT 25 mm (2.3).
+%%  LAY-02 AUTO    Line spacing 1.5 for body text (2.1). SINGLE spacing only for: abstract,
+%%                 tables, indented quotations (2.1); reference entries (1.12);
+%%                 captions/sources and declaration signature blocks (derived).
+%%  LAY-03 AUTO    Every chapter starts on a new page (1.11).
+%%
+%%  --- FONTS & HEADINGS -------------------------------------------------------
+%%  FNT-01 AUTO    Times New Roman everywhere (2.2). pdfLaTeX uses a metric-compatible clone;
+%%                 XeLaTeX/LuaLaTeX use the real font when installed (see §F fonts).
+%%  FNT-02 AUTO    Chapter heading: ALL CAPITALS, 14 pt, bold (2.2). Type the title normally;
+%%                 the template upper-cases it. ToC keeps the typed case.
+%%  FNT-03 AUTO*   Section heading: Title Case, 12 pt, bold (2.2).   *size/weight auto,
+%%                 case = MANUAL (M1).
+%%  FNT-04 AUTO*   Sub-section heading: Sentence case, 12 pt, bold (2.2). *case = MANUAL (M1).
+%%  FNT-05 AUTO    Body text 12 pt, sentence case (2.2).
+%%  FNT-06 AUTO    Tables/illustrations may use smaller type if legible (2.2): tables use
+%%                 \small, single spacing.
+%%  FNT-07 AUTO    Numbering depth: chapter (1), section (1.1), sub-section (1.1.1) only.
+%%                 Deeper levels are NOT in the guideline - avoid \subsubsection.
+%%
+%%  --- PAGINATION -------------------------------------------------------------
+%%  PAG-01 AUTO    No page number on the cover or the title page (2.03).
+%%  PAG-02 AUTO    Preliminary pages: lower-case Roman numerals, centred at bottom; the
+%%                 title page is not counted, so Declaration = i (2.03, Appendix II).
+%%  PAG-03 AUTO    Body + appendices: Arabic numerals; start at 1 on the first page of
+%%                 chapter 1 and continue through the appendices (2.03). Position CHOICE C1.
+%%
+%%  --- TABLES & ILLUSTRATIONS ------------------------------------------------
+%%  ILL-01 AUTO    Tables and figures are centred (2.04).
+%%  ILL-02 MANUAL  Every table/figure is cited in the text by NUMBER via \cref (2.04).
+%%  ILL-03 AUTO    Numbered with the chapter number: Figure 1.1, Table 2.3 (1.8, 1.9; C5).
+%%  ILL-04 AUTO    Figure caption BELOW the figure; table caption ABOVE the table; optional
+%%                 "Source:" line below (\sliitsource) (2.04 sample).
+%%  ILL-05 MANUAL  Charts/graphs/maps/tables larger than a page go to an appendix (2.04).
+%%  ILL-06 MANUAL  Photographs: high quality, colour or B/W; avoid glossy finish and dark
+%%                 backgrounds; write "Original in Color" in the caption when colour is
+%%                 used -> \OriginalInColor (2.05).
+%%
+%%  --- FRONT MATTER -----------------------------------------------------------
+%%  COV-01 AUTO    Hard cover (FINAL HARD COPY ONLY): black background, gold text; layout per
+%%                 Appendix I (\HardCovertrue). Draft/soft copies: no cover.
+%%  COV-02 MANUAL  Spine lettering (physical, hard copy): short degree name 80 mm from the
+%%                 bottom, year 40 mm from the bottom, candidate name with initials 20 mm
+%%                 from the top; all in GOLD (6.3).
+%%  TIT-01 AUTO    Title page contents (1.2, Appendix III): title (+subtitle), candidate full
+%%                 name(s), student ID(s), "Dissertation submitted in partial fulfillment of
+%%                 the requirements for the <official degree name>", department, institute,
+%%                 country, month + year. Title ALL CAPS bold 16 pt; other lines 14 pt
+%%                 (statement 12 pt); centred; vertical gaps 6/1/3/3/1 lines of 16 pt @1.5.
+%%  DEC-01 AUTO    Declaration page (1.3): verbatim candidate declaration + copyright grant,
+%%                 signature + date; supervisor certification, signature + date. One page.
+%%  ABS-01 AUTO/MANUAL  Abstract (1.4): one page; heading "Abstract" Title Case 12 pt bold;
+%%                 text 11 pt single-spaced; <= 300 words (MANUAL); covers intro, method, tests,
+%%                 results, conclusions, recommendations (MANUAL); 3-5 keywords (MANUAL).
+%%  DED-01 AUTO    Dedication optional (1.5) -> \IncludeDedicationtrue.
+%%  ACK-01 MANUAL  Acknowledgement (1.6): help from staff/peers/external bodies (data,
+%%                 apparatus, analysis, writing), sponsor/funder name + details, supervisor.
+%%  TOC-01 AUTO    Table of Contents (1.7): all chapters + all sub-sections + preliminary
+%%                 pages (incl. Abstract, Acknowledgement, the ToC itself, lists) + appendices
+%%                 + reference list, each with page number. Depth = sub-section.
+%%  LOF-01 AUTO    List of Figures (1.8, App. IV): "Figure 1.1  Title ...... page", header "Page".
+%%  LOT-01 AUTO    List of Tables  (1.9, App. V):  "Table 1.1  Title ...... page", header "Page".
+%%  ABB-01 AUTO/MANUAL  List of Abbreviations (1.10, App. VI): two columns (Abbreviation |
+%%                 Description), ALPHABETICAL order (MANUAL), international standard
+%%                 abbreviations, each explained at first use in the text (MANUAL).
+%%  LOA-01 AUTO    List of Appendices (App. VII): Appendix | Description | Page.
+%%
+%%  --- BODY -------------------------------------------------------------------
+%%  BDY-01 AUTO    Starts with Introduction; ends with Conclusions and Recommendations;
+%%                 every chapter has a number and a title (1.11). Chapter numbers "1." etc.
+%%  BDY-02 AUTO    Chapter 1 sub-sections: Background and Literature Survey; Research Gap;
+%%                 Research Problem; Research Objectives (3).
+%%  BDY-03 AUTO    Chapter 2 sub-sections: Methodology; Commercialization Aspects of the
+%%                 Product; Testing and Implementation (3).
+%%  BDY-04 AUTO    Chapter 3 sub-sections: Results; Research Findings; Discussion; Summary of
+%%                 Each Student's Contribution (3; C3).
+%%
+%%  --- BACK MATTER ------------------------------------------------------------
+%%  REF-01 AUTO/MANUAL  Reference List (1.12): APA or IEEE only (\CitationStyle); lists exactly
+%%                 the sources cited in the text (MANUAL); entries single-spaced with ONE
+%%                 BLANK LINE between entries; heading has NO chapter number but appears in
+%%                 the ToC.
+%%  BIB-01 AUTO    Bibliography optional (1.13) -> \IncludeBibliographytrue.
+%%  GLO-01 AUTO    Glossary optional, 1-2 pages (3) -> \IncludeGlossarytrue.
+%%  APP-01 AUTO    Appendices (1.14): heading "APPENDIX A: TITLE", ToC entry "Appendix A: Title",
+%%                 page numbers continue in the same typeface/size; figures/tables numbered
+%%                 A.1, B.1...; photocopied material must be letter quality (MANUAL).
+%%
+%% ============================================================================
+%%  §C  AMBIGUITIES & CONFLICTS IN THE SOURCE GUIDELINE  (and the resolution used)
+%% ============================================================================
+%%  C1  Arabic page-number position. 2.03 says "centered at the right bottom"; the
+%%      guideline's own pages show it centred. CHOSEN: bottom RIGHT (Roman numerals stay
+%%      centred, which is the contrast the text draws). FLIP: \ArabicNumberCenteredtrue.
+%%  C2  Order of preliminary pages differs between the two component lists and the sample
+%%      ToC (Abstract vs Acknowledgement; Tables vs Figures). CHOSEN: Declaration,
+%%      [Dedication], Abstract, Acknowledgement, ToC, Figures, Tables, Abbreviations,
+%%      Appendices list (both numbered lists agree on Declaration/Abstract/Acknowledgement;
+%%      Figures-before-Tables follows 1.7/1.8 and Appendices IV/V). FLIP: reorder blocks in §G.
+%%  C3  "Summary of Each Student's Contribution" is a sub-section of Results & Discussion
+%%      in list 1 (xii.4) but a stand-alone item (1.13) in list 2. CHOSEN: last sub-section
+%%      of chapter 3 (3.4). FLIP: move it to its own \chapter before the conclusions.
+%%  C4  Last chapter is called "Conclusion", "Conclusions" and "Conclusions and
+%%      Recommendations" in different places. CHOSEN: "Conclusions and Recommendations"
+%%      (matches the sample ToC and 1.11).
+%%  C5  Sample captions read "Figure 1", but 1.8/1.9 require the chapter number and the
+%%      sample lists show 1.1. CHOSEN: chapter-based "Figure 1.1" with a colon in captions.
+%%  C6  "One and a half line spacing". CHOSEN: setspace \onehalfspacing (= 1.5 x font size,
+%%      18 pt leading at 12 pt). Word's "1.5 lines" with Times New Roman is ~20.7 pt; for a
+%%      Word-identical look replace \onehalfspacing with \setstretch{1.43} in §F.
+%%  C7  "Times New Roman 11-point Light" (abstract). Times has no Light weight -> regular.
+%%  C8  Abstract heading is Title Case 12 pt bold (1.4) while other front-matter headings
+%%      follow the chapter style (ALL CAPS 14 pt bold, as in Appendices II, IV-VII).
+%%  C9  NOT specified by the guideline, so chosen to match the sample pages: heading
+%%      alignment = left; paragraphs = block style (no indent, 6 pt gap); caption alignment =
+%%      centred; ToC dot leaders; ToC spacing = 1.5 (literal reading; if the ToC then exceeds
+%%      2 pages set \TocSingleSpacedtrue); list/figure/table entry layout per Appendices IV-VII.
+%%  C10 Margin diagrams in Appendices I/II are labelled inconsistently. Text rule 2.3 used.
+%%  C11 Cover (App. I) and Title page (App. III) differ; cover = hard copy only (3.i).
+%%  C12 Appendix I/III print "Sri Lanka Institute of" (truncated) -> full institute name.
+%%  C13 Title page is not numbered AND not counted (Declaration = i, App. II).
+%%  C14 "background literature" (3 list 1) vs "Background & Literature Survey" (1.10) ->
+%%      "Background and Literature Survey".
+%%  C15 Back-matter order: Reference List -> Bibliography -> Glossary -> Appendices.
+%%  C16 Heading "References" (3) vs "Reference List" (1.12, App. II) -> "Reference List".
+%%  C17 "Document Size: Min 50 A4 Pages" sits beside the Glossary line; interpreted as the
+%%      size of the whole document.
+%%
+%% ============================================================================
+%%  §D  WHAT LaTeX CANNOT ENFORCE  +  VIOLATION -> FIX RECIPES
+%% ============================================================================
+%%  MANUAL CHECKS (the AI must do these itself)
+%%  M1  Heading case. \chapter{Title}: type normal Title Case (template upper-cases).
+%%      \section{Title Case Like This}; \subsection{Sentence case like this}.
+%%      Keep acronyms and proper nouns capitalised (e.g. "IoT", "Sri Lanka").
+%%  M2  Abstract: count words (<= 300), check it states intro, method, tests, results,
+%%      conclusions, recommendations; 3-5 keywords; fits one page.
+%%  M3  Page budgets per chapter (DOC-04) and total >= 50 pages:  pdfinfo out.pdf | grep Pages
+%%  M4  Each float is cited by number with \cref in the text before/near it; no "the
+%%      following table/figure/above diagram".
+%%  M5  Oversized tables/figures moved to appendices.
+%%  M6  Photographs: sufficient resolution; no glossy/dark-background images where avoidable;
+%%      add \OriginalInColor to the caption when in colour.
+%%  M7  Abbreviations: spelled out at first use; list alphabetical; no abbreviation in the list
+%%      that is unused (and vice-versa).
+%%  M8  References: every \parencite key appears in the list, every listed work is cited; one
+%%      style only (APA or IEEE). Use \parencite{key} for both styles.
+%%  M9  Declaration: names/IDs match the title page; supervisor name filled; signatures are
+%%      left blank for the humans to sign. Never fabricate signatures or dates.
+%%  M10 Final copy free of typographical/grammatical errors (6.3).
+%%  M11 Hard-bound copy: black cover, gold lettering, spine details (COV-02).
+%%  M12 Embargo (1.3): if requested by candidate + supervisor, add a short embargo statement
+%%      to the Declaration page.
+%%  M13 Output verification:  pdffonts out.pdf  (Times-like fonts only);  pdfinfo out.pdf
+%%      (page size 595 x 842 pt = A4);  pdftotext -layout out.pdf  and scan for "??"
+%%      (unresolved references), "[TODO", "Sample".
+%%
+%%  VIOLATION -> FIX RECIPES   (V = "if you see ...", Fix = "do ...")
+%%  V1  \documentclass[11pt|10pt|article|book|memoir|twoside]  -> report, a4paper,12pt,oneside.
+%%  V2  \usepackage{geometry} / \geometry / \setlength{\oddsidemargin...} / fullpage / vmargin
+%%      -> delete; margins are fixed in §F.
+%%  V3  \linespread, \doublespacing, \singlespacing for body, \setstretch globally
+%%      -> delete; spacing is fixed in §F. (Local \singlespacing is only legal inside quotes,
+%%      tables, abstract, references - these are already automatic.)
+%%  V4  \usepackage{times|palatino|helvet|lmodern|libertine|...}, \renewcommand{\rmdefault},
+%%      \sffamily/\ttfamily for prose, \setmainfont  -> delete; fonts fixed in §F.
+%%  V5  \usepackage{titlesec|sectsty|tocloft|fancyhdr|setspace|caption|hyperref|biblatex}
+%%      configured differently -> delete the draft's copy; §F already configures them.
+%%  V6  Fake headings (\textbf{Introduction}, \Large, \section*) -> real \chapter/\section/
+%%      \subsection. Typed-in numbers ("1.2 Aims") -> remove the number.
+%%  V7  \chapter{INTRODUCTION} (typed caps) -> \chapter{Introduction}.
+%%  V8  \newpage / \clearpage / \pagebreak before chapters -> delete (automatic).
+%%  V9  \maketitle, titlepage env, \author/\date/\title -> use §E macros (\sliitmaketitlepage).
+%%  V10 \begin{abstract} (report class) -> sliitabstract environment + \sliitkeywords.
+%%  V11 \tableofcontents / \listoffigures / \listoftables used directly, or hand-typed lists
+%%      -> use \sliittoc, \sliitlistoffigures, \sliitlistoftables (they add ToC entries, the
+%%      "Page" header and the correct formatting).
+%%  V12 \pagestyle{headings|myheadings|plain}, \thispagestyle{plain}, \pagenumbering{...}
+%%      in the body, \setcounter{page}{...} -> delete (automatic: §G switches at the right
+%%      places).
+%%  V13 \includegraphics outside a float, \begin{center}...\end{center} around figures ->
+%%      figure env (see sample); caption below. Table caption ABOVE the tabular.
+%%  V14 Hand-typed "Figure 3:", "Table 2", "see above/below" -> \caption + \label + \cref.
+%%  V15 "the following table", "the figure below" -> \cref{...} citing the number.
+%%  V16 \begin{table} with \linespread/double spacing or \Large -> remove; table style is automatic.
+%%  V17 \begin{thebibliography}, natbib/\bibliographystyle, \cite -> .bib file + \addbibresource,
+%%      \parencite; heading via \sliitprintreferences.  "References" chapter with a number
+%%      -> \sliitprintreferences (unnumbered, "Reference List").
+%%  V18 Appendices written as \chapter{Appendix A...} or \section{Appendix ...} ->
+%%      \sliitbeginappendices once, then \sliitappendix{Title} per appendix.
+%%  V19 \begin{quote} with double spacing / font changes -> plain quote env (spacing automatic).
+%%  V20 Coloured text/links (colorlinks, \textcolor) -> remove (print document); gold is
+%%      reserved for the hard cover.
+%%  V21 \vspace / \\\\ / empty lines used to create vertical space between paragraphs ->
+%%      delete (paragraph spacing is automatic).
+%%  V22 \footnote-heavy or \subsubsection structure -> flatten to the three allowed levels
+%%      (FNT-07) or convert to run-in text / lists.
+%%
+%% ============================================================================
+%%  §E  USER CONFIGURATION   (edit ONLY this block, then §G content)
+%% ============================================================================
+\documentclass[a4paper,12pt,oneside]{report}                         % [DOC-01]
+
+%% --- Candidate list (title page, cover, declaration). One line per student. ---
+%%     Individual dissertation: one line.  Group report: one line per member.
+\newcounter{sliitcand}
+\newcommand{\addcandidate}[2]{%
+  \stepcounter{sliitcand}%
+  \expandafter\gdef\csname sliitcn\arabic{sliitcand}\endcsname{#1}%
+  \expandafter\gdef\csname sliitci\arabic{sliitcand}\endcsname{#2}}
+
+\addcandidate{Kankanamlage Saman Sujith Kumara}{IT12018630}   % full name (Title Case), student ID
+
+%% --- Document metadata -------------------------------------------------------
+\newcommand{\DissertationTitle}{Lighting Performance of Sri Lankan Transmission Lines: A Case Study}
+\newcommand{\DissertationSubtitle}{}          % optional; leave EMPTY if the subtitle is already in the title
+\newcommand{\DegreeFull}{Bachelor of Science (Hons) in Information Technology}  % official name -> title page
+\newcommand{\DegreeShort}{BSc (Hons) Degree in Information Technology}          % cover page
+\newcommand{\Specialization}{Information Technology}                             % cover page
+\newcommand{\DepartmentName}{Department of Information Technology}
+\newcommand{\InstituteName}{Sri Lanka Institute of Information Technology}
+\newcommand{\CountryName}{Sri Lanka}
+\newcommand{\SubmissionDate}{August 2025}      % Month YYYY of submission
+\newcommand{\SupervisorName}{Supervisor Name}  % printed on the declaration page
+\newcommand{\CitationStyle}{apa}               % apa | ieee   (REF-01)
+\newcommand{\BibResource}{sample-references.bib} % your .bib file (the sample below is generated)
+
+%% --- Switches (true/false) ---------------------------------------------------
+\newif\ifHardCover            \HardCoverfalse            % true ONLY for final hard-bound copy  [COV-01]
+\newif\ifIncludeDedication    \IncludeDedicationfalse    % optional                              [DED-01]
+\newif\ifIncludeListOfFigures \IncludeListOfFigurestrue  % "if any"                              [LOF-01]
+\newif\ifIncludeListOfTables  \IncludeListOfTablestrue   % "if any"                              [LOT-01]
+\newif\ifIncludeAbbreviations \IncludeAbbreviationstrue  % "if any"                              [ABB-01]
+\newif\ifIncludeAppendices    \IncludeAppendicestrue     % "if any"                              [APP-01]
+\newif\ifIncludeBibliography  \IncludeBibliographyfalse  % separate from the Reference List      [BIB-01]
+\newif\ifIncludeGlossary      \IncludeGlossaryfalse      % "if any", 1-2 pages                   [GLO-01]
+\newif\ifArabicNumberCentered \ArabicNumberCenteredfalse % false = bottom RIGHT (see C1)         [PAG-03]
+\newif\ifTocSingleSpaced      \TocSingleSpacedfalse      % true if ToC would exceed 2 pages (see C9)
+
+%% ============================================================================
+%%  §F  STANDARDS ENFORCEMENT   >>> DO NOT EDIT BELOW THIS LINE (until §G) <<<
+%% ============================================================================
+
+%% --- Fonts: Times New Roman (or closest metric-compatible clone) -------------   [FNT-01]
+\usepackage{iftex}
+\ifPDFTeX
+  \usepackage[T1]{fontenc}
+  \usepackage{amsmath}
+  \IfFileExists{newtxtext.sty}{\usepackage{newtxtext,newtxmath}}{\usepackage{mathptmx}}
+  \renewcommand{\ttdefault}{pcr}                  % Courier for \texttt (avoids bitmap Type-3 fonts)
+\else
+  \usepackage{amsmath}
+  \usepackage{fontspec}
+  \IfFontExistsTF{Times New Roman}{\setmainfont{Times New Roman}}{%
+    \IfFontExistsTF{Liberation Serif}{\setmainfont{Liberation Serif}}{%
+      \IfFontExistsTF{TeX Gyre Termes}{\setmainfont{TeX Gyre Termes}}{%
+        \IfFontExistsTF{Nimbus Roman}{\setmainfont{Nimbus Roman}}{}}}}
+  \IfFontExistsTF{Courier New}{\setmonofont{Courier New}}{%
+    \IfFontExistsTF{Liberation Mono}{\setmonofont{Liberation Mono}}{%
+      \IfFontExistsTF{TeX Gyre Cursor}{\setmonofont{TeX Gyre Cursor}}{}}}
+\fi
+\usepackage{microtype}
+
+%% --- Page geometry                                                              [LAY-01]
+\usepackage[a4paper,left=40mm,right=25mm,top=25mm,bottom=40mm,
+            headheight=14.5pt,headsep=5mm,footskip=15mm]{geometry}
+
+%% --- Helper packages ---------------------------------------------------------
+\usepackage{etoolbox}
+\usepackage{setspace}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{array}
+\usepackage{longtable}
+\usepackage{booktabs}
+\usepackage{enumitem}
+\usepackage{csquotes}
+\usepackage{pagecolor}
+\definecolor{sliitgold}{RGB}{212,175,55}
+
+%% --- Line spacing + paragraphs                                                  [LAY-02]
+\onehalfspacing                                   % body = 1.5 spacing (see C6)
+\setlength{\parindent}{0pt}                       % block paragraphs (see C9)
+\setlength{\parskip}{6pt plus 1pt}
+\clubpenalty=10000 \widowpenalty=10000
+\setlist{topsep=3pt,itemsep=0pt,parsep=0pt}
+%% single spacing for indented quotations                                          [LAY-02]
+\renewenvironment{quote}{\list{}{\leftmargin=10mm\rightmargin=10mm}\item\relax\singlespacing}{\endlist}
+\AtBeginEnvironment{quotation}{\singlespacing}
+
+%% --- Heading numbering depth                                                    [FNT-07]
+\setcounter{secnumdepth}{2}
+\setcounter{tocdepth}{2}
+
+%% --- Headings: chapter ALL CAPS 14 pt bold; section/sub-section 12 pt bold      [FNT-02..04]
+%%     Chapter headings are set by redefining the class hooks (NOT titlesec): titlesec's
+%%     \vspace* + 1.5 spacing pushed chapter titles ~25 pt below the 25 mm top margin.
+\usepackage{titlesec}
+\newcommand{\sliitheadalign}{\raggedright}
+\newcommand{\sliitUC}[1]{\MakeUppercase{#1}}
+\newcommand{\sliitchapfont}{\bfseries\fontsize{14}{16.8}\selectfont}
+\newcommand{\sliitsecfont}{\bfseries\fontsize{12}{14.4}\selectfont}
+\newcommand{\sliitchaplabel}{\thechapter.}          % switched to "APPENDIX A:" by \sliitbeginappendices
+\makeatletter
+\def\@makechapterhead#1{{\parindent\z@\sliitheadalign\sliitchapfont
+  \sliitchaplabel\hspace{0.6em}\sliitUC{#1}\par\nobreak\vskip 24\p@}}
+\def\@makeschapterhead#1{{\parindent\z@\sliitheadalign\sliitchapfont
+  \sliitUC{#1}\par\nobreak\vskip 24\p@}}
+\makeatother
+\titleformat{\section}{\sliitheadalign\sliitsecfont}{\thesection}{0.6em}{}
+\titleformat{\subsection}{\sliitheadalign\sliitsecfont}{\thesubsection}{0.6em}{}
+\titleformat{\subsubsection}{\sliitheadalign\sliitsecfont\itshape}{\thesubsubsection}{0.6em}{}% not in spec (FNT-07)
+\titlespacing*{\section}{0pt}{18pt plus 2pt minus 2pt}{6pt}
+\titlespacing*{\subsection}{0pt}{12pt plus 2pt minus 2pt}{4pt}
+\titlespacing*{\subsubsection}{0pt}{12pt plus 2pt minus 2pt}{4pt}
+
+%% --- Contents / lists layout (tocloft)                                          [TOC-01, LOF-01, LOT-01]
+\usepackage{tocloft}
+\renewcommand{\cftdotsep}{2}
+\renewcommand{\cftchapfont}{\normalfont}
+\renewcommand{\cftchappagefont}{\normalfont}
+\renewcommand{\cftchapleader}{\cftdotfill{\cftdotsep}}
+\renewcommand{\cftchapaftersnum}{.}
+\setlength{\cftbeforechapskip}{0pt}
+\setlength{\cftbeforesecskip}{0pt}
+\setlength{\cftbeforesubsecskip}{0pt}
+\setlength{\cftchapindent}{0pt}   \setlength{\cftchapnumwidth}{2em}
+\setlength{\cftsecindent}{2em}    \setlength{\cftsecnumwidth}{2.5em}
+\setlength{\cftsubsecindent}{4.5em}\setlength{\cftsubsecnumwidth}{3.2em}
+\renewcommand{\cftfigpresnum}{Figure~}  \setlength{\cftfigindent}{0pt}\setlength{\cftfignumwidth}{5.5em}
+\renewcommand{\cfttabpresnum}{Table~}   \setlength{\cfttabindent}{0pt}\setlength{\cfttabnumwidth}{5em}
+\setlength{\cftbeforefigskip}{0pt}
+\setlength{\cftbeforetabskip}{0pt}
+
+%% --- Page numbering / footers                                                   [PAG-01..03]
+\usepackage{fancyhdr}
+\newcommand{\sliitsetfooter}[1]{%
+  \fancypagestyle{plain}{\fancyhf{}\fancyfoot[#1]{\thepage}%
+    \renewcommand{\headrulewidth}{0pt}\renewcommand{\footrulewidth}{0pt}}%
+  \fancypagestyle{sliit}{\fancyhf{}\fancyfoot[#1]{\thepage}%
+    \renewcommand{\headrulewidth}{0pt}\renewcommand{\footrulewidth}{0pt}}%
+  \pagestyle{sliit}}
+\newcommand{\sliitsetbodyfooter}{%
+  \ifArabicNumberCentered\sliitsetfooter{C}\else\sliitsetfooter{R}\fi}
+%% call once at the start of chapter 1: Arabic numerals restart at 1                [PAG-03]
+\newcommand{\sliitstartbody}{\clearpage\pagenumbering{arabic}\sliitsetbodyfooter}
+
+%% --- Captions, floats, tables                                                   [ILL-01..04, FNT-06]
+\usepackage{caption}
+\captionsetup{labelsep=colon,justification=centering,font={normalsize,singlespacing}}
+\captionsetup[figure]{position=bottom,skip=8pt}
+\captionsetup[table]{position=top,skip=6pt}
+\newcommand{\sliittablestyle}{\singlespacing\small\renewcommand{\arraystretch}{1.25}\selectfont}
+\AtBeginEnvironment{figure}{\centering}                      % figures centred
+\AtBeginEnvironment{table}{\centering\sliittablestyle}       % tables centred, small, single-spaced
+\AtBeginEnvironment{longtable}{\singlespacing\renewcommand{\arraystretch}{1.25}\selectfont}
+\setlength{\LTpre}{4pt}\setlength{\LTpost}{4pt}
+\newcommand{\sliitsource}[1]{\par\vspace{3pt}{\centering\singlespacing\small\textit{Source:} #1\par}}
+\newcommand{\OriginalInColor}{(Original in Color)}           % add to captions of colour photographs [ILL-06]
+
+%% --- Bibliography: APA or IEEE via biblatex/biber                               [REF-01]
+\ifdefstring{\CitationStyle}{ieee}
+  {\usepackage[backend=biber,style=ieee,defernumbers=true]{biblatex}}
+  {\usepackage[backend=biber,style=apa,defernumbers=true]{biblatex}}
+
+%% --- Hyperlinks + cross references (print document: no coloured links)          [ILL-02]
+\usepackage[hidelinks,bookmarksnumbered,pdfpagelabels=true,plainpages=false]{hyperref}
+\AtBeginDocument{\hypersetup{pdftitle={\DissertationTitle},pdfauthor={\csname sliitcn1\endcsname}}}
+\usepackage[capitalise,noabbrev]{cleveref}   % \cref{fig:x} -> "Figure 1.1"  (must be loaded last)
+\crefname{figure}{Figure}{Figures}\Crefname{figure}{Figure}{Figures}
+\crefname{table}{Table}{Tables}\Crefname{table}{Table}{Tables}
+\crefname{chapter}{Chapter}{Chapters}\Crefname{chapter}{Chapter}{Chapters}
+\crefname{section}{Section}{Sections}\Crefname{section}{Section}{Sections}
+\crefname{appendix}{Appendix}{Appendices}\Crefname{appendix}{Appendix}{Appendices}
+
+%% --- Helper macros -------------------------------------------------------------
+\newcommand{\TODO}[1]{\textbf{[TODO: #1]}\PackageWarning{sliit}{TODO: #1}}
+\newlength{\sliitline}\setlength{\sliitline}{24pt}   % "1 line" in cover/title-page specs = 16 pt @ 1.5
+%% Top gap above the title = 6 lines (App. I/III), reduced by 2 lines per extra candidate so that a
+%% group title page still fits on ONE A4 page (3: "Title page (1 A4 page)").
+\newlength{\sliittopgap}
+
+%% iterate over candidates:  \sliitforcands{ ... \sliitcn ... \sliitci ... }
+\newcounter{sliitcandi}
+\newcommand{\sliitforcands}[1]{%
+  \setcounter{sliitcandi}{0}%
+  \whileboolexpr{test{\ifnumcomp{\value{sliitcandi}}{<}{\value{sliitcand}}}}{%
+    \stepcounter{sliitcandi}%
+    \expandafter\let\expandafter\sliitcn\csname sliitcn\arabic{sliitcandi}\endcsname
+    \expandafter\let\expandafter\sliitci\csname sliitci\arabic{sliitcandi}\endcsname
+    #1}}
+
+%% unnumbered chapter-style page that IS listed in the ToC (Declaration, Acknowledgement...)  [TOC-01]
+\newcommand{\sliitprelimchapter}[1]{%
+  \chapter*{#1}\phantomsection\addcontentsline{toc}{chapter}{#1}}
+
+\newcommand{\sliitcomputetopgap}{%
+  \setlength{\sliittopgap}{8\sliitline}%                 % 6 + 2 ...
+  \sliitforcands{\addtolength{\sliittopgap}{-2\sliitline}}% % ... minus 2 lines per candidate = 6 for one
+  \ifdim\sliittopgap<0pt \setlength{\sliittopgap}{0pt}\fi}
+
+%% --- Cover page (hard-bound final copy only)                                    [COV-01]
+\newcommand{\sliitmakecover}{%
+  \begingroup\sliitcomputetopgap
+  \pagecolor{black}\color{sliitgold}%
+  \thispagestyle{empty}\centering\singlespacing\setlength{\parskip}{0pt}
+  \vbox to \dimexpr 9in-25mm\relax{%                 % date line sits 9.0 in from the top (App. I)
+    \vskip\sliittopgap
+    {\bfseries\fontsize{16}{24}\selectfont\MakeUppercase{\DissertationTitle}\par}%
+    \vskip 1\sliitline
+    \sliitforcands{{\fontsize{14}{21}\selectfont\sliitcn\par}{\fontsize{14}{21}\selectfont(\sliitci)\par}}%
+    \vskip 2\sliitline
+    {\fontsize{14}{21}\selectfont \DegreeShort\par Specializing in \Specialization\par
+     \DepartmentName\par \InstituteName\par \CountryName\par}%
+    \vss}%
+  {\fontsize{14}{21}\selectfont\SubmissionDate\par}%
+  \clearpage
+  \endgroup
+  \nopagecolor}
+
+%% --- Title page                                                                 [TIT-01]
+\newcommand{\sliitmaketitlepage}{%
+  \begingroup\sliitcomputetopgap
+  \thispagestyle{empty}\centering\singlespacing\setlength{\parskip}{0pt}
+  \vspace*{\sliittopgap}%
+  {\bfseries\fontsize{16}{24}\selectfont\MakeUppercase{\DissertationTitle}\par}%
+  \ifdefempty{\DissertationSubtitle}{}{\vskip .5\sliitline
+    {\bfseries\fontsize{14}{21}\selectfont\DissertationSubtitle\par}}%
+  \vskip 1\sliitline
+  \sliitforcands{{\fontsize{14}{21}\selectfont\sliitcn\par}{\fontsize{14}{21}\selectfont(\sliitci)\par}}%
+  \vskip 3\sliitline
+  {\fontsize{12}{18}\selectfont Dissertation submitted in partial fulfillment of the requirements\\
+   for the \DegreeFull\par}%
+  \vskip 3\sliitline
+  {\fontsize{14}{21}\selectfont \DepartmentName\par \InstituteName\par \CountryName\par}%
+  \vskip 1\sliitline
+  {\fontsize{14}{21}\selectfont\SubmissionDate\par}%
+  \clearpage
+  \endgroup}
+
+%% --- Declaration page (text is fixed by the guideline)                          [DEC-01]
+\newcommand{\sliitdeclaration}{%
+  \sliitprelimchapter{Declaration of the Candidate \& Supervisor}%
+  I declare that this is my own work and this dissertation does not incorporate without
+  acknowledgement any material previously submitted for a Degree or Diploma in any other
+  University or institute of higher learning and to the best of my knowledge and belief it
+  does not contain any material previously published or written by another person except
+  where the acknowledgement is made in the text.
+
+  Also, I hereby grant to \InstituteName, the nonexclusive right to reproduce and distribute
+  my dissertation, in whole or in part in print, electronic or other medium. I retain the
+  right to use this content in whole or part in future works (such as articles or books).
+
+  \begingroup\singlespacing\vspace{6pt}%
+  \sliitforcands{%
+    \noindent\textbf{\sliitcn} (\sliitci)\par\vspace{14pt}
+    \noindent Signature:\ \underline{\hspace{6cm}}\hfill Date:\ \underline{\hspace{3.5cm}}\par
+    \vspace{12pt}}%
+  \endgroup
+
+  \vspace{1\sliitline}
+  \textbf{Statement of the supervisor}
+
+  The above \ifnum\value{sliitcand}>1 candidates have\else candidate has\fi\ carried out
+  research for the bachelor's degree dissertation under my supervision.
+
+  \begingroup\singlespacing\vspace{14pt}%
+  \noindent Signature of the supervisor:\ \underline{\hspace{5cm}}\hfill Date:\ \underline{\hspace{3.5cm}}\par
+  \noindent\SupervisorName\par
+  \endgroup}
+
+%% --- Dedication (optional)                                                      [DED-01]
+\newcommand{\sliitdedication}[1]{%
+  \sliitprelimchapter{Dedication}\vspace*{\fill}\begin{center}\textit{#1}\end{center}\vspace*{\fill}}
+
+%% --- Abstract: Title Case 12 pt bold heading, 11 pt single-spaced text          [ABS-01]
+\newenvironment{sliitabstract}
+  {\clearpage\phantomsection\addcontentsline{toc}{chapter}{Abstract}%
+   {\sliitheadalign\bfseries\fontsize{12}{14.4}\selectfont Abstract\par}\vspace{12pt}%
+   \begingroup\singlespacing\fontsize{11}{13.2}\selectfont}
+  {\par\endgroup\clearpage}
+\newcommand{\sliitkeywords}[1]{\par\vspace{6pt}\noindent\textbf{Keywords:} #1\par}   % 3-5 keywords
+
+%% --- Table of contents + lists (each also gets its own ToC entry)               [TOC-01, LOF-01, LOT-01, LOA-01]
+\makeatletter
+\newcommand{\sliittocspacing}{\ifTocSingleSpaced\singlespacing\fi}
+\newcommand{\sliittoc}{%
+  \clearpage\phantomsection\addcontentsline{toc}{chapter}{Table of Contents}%
+  \chapter*{Table of Contents}%
+  \begingroup\sliittocspacing\@starttoc{toc}\endgroup}
+\newcommand{\sliitlistoffigures}{%
+  \clearpage\phantomsection\addcontentsline{toc}{chapter}{List of Figures}%
+  \chapter*{List of Figures}{\noindent\hfill\textbf{Page}\par}%
+  \begingroup\sliittocspacing\@starttoc{lof}\endgroup}
+\newcommand{\sliitlistoftables}{%
+  \clearpage\phantomsection\addcontentsline{toc}{chapter}{List of Tables}%
+  \chapter*{List of Tables}{\noindent\hfill\textbf{Page}\par}%
+  \begingroup\sliittocspacing\@starttoc{lot}\endgroup}
+\newcommand{\l@appendix}{\@dottedtocline{1}{0em}{7.5em}}
+\newcommand{\sliitlistofappendices}{%
+  \clearpage\phantomsection\addcontentsline{toc}{chapter}{List of Appendices}%
+  \chapter*{List of Appendices}%
+  {\noindent\makebox[7.5em][l]{\bfseries Appendix}\bfseries Description\hfill\bfseries Page\par}%
+  \begingroup\sliittocspacing\@starttoc{loa}\endgroup}
+\makeatother
+
+%% --- Abbreviations / glossary helpers                                           [ABB-01, GLO-01]
+\newcommand{\abbrevrow}[2]{#1 & #2\\[3pt]}      % keep rows in ALPHABETICAL order
+\newcommand{\glossentry}[2]{\noindent\textbf{#1} --- #2\par}
+
+%% --- Appendices                                                                 [APP-01]
+\newcommand{\sliitbeginappendices}{%
+  \clearpage
+  \appendix
+  \renewcommand{\sliitchaplabel}{\MakeUppercase{Appendix}~\thechapter:}%
+  \addtocontents{toc}{\protect\renewcommand{\protect\cftchappresnum}{Appendix~}%
+    \protect\renewcommand{\protect\cftchapaftersnum}{:}%
+    \protect\setlength{\protect\cftchapnumwidth}{6.5em}}}
+\newcommand{\sliitappendix}[1]{%
+  \chapter{#1}\addcontentsline{loa}{appendix}{\protect\numberline{Appendix \thechapter}#1}}
+
+%% --- Reference list: unnumbered chapter heading, listed in ToC; entries single-spaced
+%%     with one blank line between entries                                        [REF-01]
+\defbibheading{sliitbib}{\clearpage\phantomsection\addcontentsline{toc}{chapter}{Reference List}%
+  \chapter*{Reference List}}
+\defbibheading{sliitbibliography}{\clearpage\phantomsection\addcontentsline{toc}{chapter}{Bibliography}%
+  \chapter*{Bibliography}}
+\newcommand{\sliitprintreferences}{%
+  \begingroup\singlespacing\selectfont\setlength{\bibitemsep}{\baselineskip}%
+  \printbibliography[heading=sliitbib,notkeyword=bibliographyonly]%
+  \endgroup}
+\newcommand{\sliitprintbibliography}{%     % items to list here need  keywords = {bibliographyonly}  in the .bib
+  \begingroup\singlespacing\selectfont\setlength{\bibitemsep}{\baselineskip}%
+  \nocite{*}\printbibliography[heading=sliitbibliography,keyword=bibliographyonly]%
+  \endgroup}
+
+%% --- SAMPLE .bib (generated on first compile). Replace with your own file and \BibResource.
+\begin{filecontents*}[overwrite]{sample-references.bib}
+@article{sample-article,
+  author       = {Author, Anna and Writer, Bruno},
+  title        = {Placeholder article title},
+  journaltitle = {Placeholder Journal of Examples},
+  year         = {2024},
+  volume       = {12},
+  number       = {3},
+  pages        = {45--67},
+}
+@book{sample-book,
+  author    = {Example, Chandra},
+  title     = {Placeholder Book Title},
+  publisher = {Placeholder Press},
+  location  = {Colombo},
+  year      = {2022},
+}
+\end{filecontents*}
+\addbibresource{\BibResource}
+
+%% ============================================================================
+%%  §G  DOCUMENT BODY   (replace the sample text; keep the order and the macros)
+%% ============================================================================
+\begin{document}
+
+%% ---- Cover (hard copy) + Title page: no page numbers, not counted -------------  [PAG-01, COV-01, TIT-01]
+\pagenumbering{gobble}\pagestyle{empty}
+\ifHardCover\sliitmakecover\fi
+\sliitmaketitlepage
+
+%% ---- Preliminary pages: i, ii, iii ... centred at bottom -----------------------  [PAG-02, DOC-03]
+\pagenumbering{roman}\sliitsetfooter{C}
+
+\sliitdeclaration                                                                     % [DEC-01] (1 page)
+
+\ifIncludeDedication
+  \sliitdedication{\TODO{dedication text}}                                            % [DED-01]
+\fi
+
+\begin{sliitabstract}                                                                 % [ABS-01] <= 300 words
+  \TODO{Replace with the abstract (max 300 words): a brief introduction to the subject, then a
+  concise summary of the methodology, tests, results, conclusions and recommendations.}
+  \sliitkeywords{keyword one, keyword two, keyword three}                             % 3-5 keywords
+\end{sliitabstract}
+
+\sliitprelimchapter{Acknowledgement}                                                  % [ACK-01] (1 page)
+\TODO{Thank staff, fellow students and external bodies who helped with materials, data, design,
+analysis and writing; name the sponsor/funding organisation if any; acknowledge the supervisor.}
+
+\sliittoc                                                                             % [TOC-01] (1-2 pages)
+\ifIncludeListOfFigures\sliitlistoffigures\fi                                         % [LOF-01]
+\ifIncludeListOfTables\sliitlistoftables\fi                                           % [LOT-01]
+
+\ifIncludeAbbreviations                                                               % [ABB-01]
+  \sliitprelimchapter{List of Abbreviations}
+  \begin{longtable}{@{}p{0.28\textwidth}p{0.68\textwidth}@{}}
+    \textbf{Abbreviation} & \textbf{Description}\\[3pt]
+    \abbrevrow{ACM}{Association for Computing Machinery}
+    \abbrevrow{IEEE}{Institute of Electrical and Electronics Engineers}
+    \abbrevrow{OPAC}{Online Public Access Catalogue}
+  \end{longtable}
+\fi
+
+\ifIncludeAppendices\sliitlistofappendices\fi                                         % [LOA-01]
+
+%% ---- Body: Arabic numerals restart at 1 -------------------------------------  [PAG-03, BDY-01]
+\sliitstartbody
+
+\chapter{Introduction}\label{ch:intro}                                                % 10-15 pages
+\section{Background and Literature Survey}
+Replace this text with the draft's content. Cite sources with \verb|\parencite|, for example
+\parencite{sample-article}, and refer to floats by number, for example \cref{fig:sample} and
+\cref{tab:sample}.
+
+\subsection{Sentence case for sub-section headings}
+Chapter titles are typed in normal case and shown in capitals automatically; section titles use
+Title Case; sub-section titles use sentence case.
+
+\section{Research Gap}
+\TODO{research gap}
+
+\section{Research Problem}
+\TODO{research problem}
+
+\section{Research Objectives}
+\TODO{research objectives}
+
+\chapter{Methodology}\label{ch:method}                                                % 15-25 pages
+\section{Methodology}
+\TODO{methodology}
+
+\begin{figure}[htbp]                                                                  % [ILL-01..04]
+  \fbox{\parbox[c][45mm][c]{0.7\textwidth}{\centering\small
+    Placeholder: replace with \texttt{\textbackslash includegraphics[width=0.8\textbackslash textwidth]\{file\}}}}
+  \caption{Sample figure caption (below the figure)}
+  \label{fig:sample}
+  \sliitsource{Author, 2025.}                                                         % remove if no source
+\end{figure}
+
+\section{Commercialization Aspects of the Product}
+\TODO{commercialization aspects}
+
+\section{Testing and Implementation}
+\TODO{testing and implementation}
+
+\begin{table}[htbp]                                                                   % caption ABOVE the table
+  \caption{Kruskal-Wallis test results for the Internet experience vs. user category}
+  \label{tab:sample}
+  \begin{tabular}{|l|r|r|r|r|}
+    \hline
+    \textbf{User Category} & \textbf{N} & \textbf{Median} & \textbf{Ave Rank} & \textbf{Z}\\
+    \hline
+    Academics      &  73 & 5.000 & 233.5 &  6.90\\
+    Postgraduates  &  87 & 5.000 & 189.9 &  2.78\\
+    Undergraduates & 139 & 4.000 & 130.1 & -5.75\\
+    ITUM Students  &  31 & 4.000 &  95.5 & -4.29\\
+    Overall        & 330 &       & 165.5 &      \\
+    \hline
+  \end{tabular}
+  \sliitsource{Guideline sample data.}
+\end{table}
+
+\chapter{Results and Discussion}\label{ch:results}                                    % 5-10 pages
+\section{Results}
+\TODO{results}
+
+\section{Research Findings}
+\TODO{research findings}
+
+\section{Discussion}
+\TODO{discussion}
+
+\section{Summary of Each Student's Contribution}
+\begingroup\singlespacing\small
+\begin{longtable}{|p{0.15\textwidth}|p{0.25\textwidth}|p{0.50\textwidth}|}
+  \hline
+  \textbf{Student ID} & \textbf{Name} & \textbf{Contribution}\\\hline
+  \TODO{ID} & \TODO{name} & \TODO{contribution}\\\hline
+\end{longtable}
+\endgroup
+
+\chapter{Conclusions and Recommendations}\label{ch:concl}                             % 2-4 pages
+\TODO{conclusions and recommendations}
+
+%% ---- Back matter ----------------------------------------------------------------  [REF-01, BIB-01, GLO-01, APP-01]
+\sliitprintreferences                                                                 % unnumbered "Reference List" (>= 2 pages)
+
+\ifIncludeBibliography\sliitprintbibliography\fi
+
+\ifIncludeGlossary
+  \sliitprelimchapter{Glossary}
+  \glossentry{Term}{Definition of the term.}
+\fi
+
+\ifIncludeAppendices
+  \sliitbeginappendices
+  \sliitappendix{Sample Questionnaire}\label{app:questionnaire}
+  \TODO{questionnaire, raw data, code listings, oversized tables/figures...}
+  \sliitappendix{Online Journal Interfaces}
+  \TODO{second appendix}
+\fi
+
+\end{document}
+
+%% ============================================================================
+%%  §H  FINAL COMPLIANCE CHECKLIST   (tick every item; report any that fail)
+%% ============================================================================
+%%  LAYOUT & TYPE
+%%  [ ] A4, 12 pt, one-sided; margins L 40 / B 40 / T 25 / R 25 mm        (DOC-01, LAY-01)
+%%  [ ] Times New Roman or clone only (pdffonts)                           (FNT-01)
+%%  [ ] Body 1.5 spacing; single only in abstract, tables, quotes, refs    (LAY-02)
+%%  [ ] Chapters: CAPS 14 pt bold, new page, numbered "n."                 (FNT-02, LAY-03)
+%%  [ ] Sections Title Case 12 bold; sub-sections Sentence case 12 bold    (FNT-03/04, M1)
+%%  [ ] No heading deeper than 1.1.1                                       (FNT-07)
+%%  PAGINATION
+%%  [ ] No number on cover/title page; Declaration is page i               (PAG-01/02)
+%%  [ ] Roman centred in front matter; Arabic from chapter 1 = page 1,
+%%      continuing through appendices                                      (PAG-02/03)
+%%  FRONT MATTER
+%%  [ ] Title page has all 7 required items                                (TIT-01)
+%%  [ ] Declaration verbatim + supervisor statement; names/IDs consistent  (DEC-01, M9)
+%%  [ ] Abstract <= 300 words, 3-5 keywords, one page, 11 pt single        (ABS-01, M2)
+%%  [ ] Acknowledgement present and complete                               (ACK-01)
+%%  [ ] ToC lists prelim pages, chapters, sections, sub-sections, refs,
+%%      appendices with page numbers; no "??"                              (TOC-01)
+%%  [ ] Lists of figures/tables/abbreviations/appendices present if needed;
+%%      abbreviations alphabetical                                         (LOF/LOT/ABB/LOA)
+%%  BODY
+%%  [ ] Component order and chapter/section names as in DOC-03, BDY-02..04
+%%  [ ] Page budgets and >= 50 A4 pages                                    (DOC-02/04, M3)
+%%  [ ] Every figure/table: centred, numbered by chapter, caption in right
+%%      position, cited by number, none by "the following..."              (ILL-01..04, M4)
+%%  [ ] Photographs: quality OK; "Original in Color" where applicable      (ILL-06, M6)
+%%  [ ] Oversize items moved to appendices                                 (ILL-05)
+%%  [ ] Abbreviations defined at first use                                 (M7)
+%%  BACK MATTER
+%%  [ ] "Reference List": unnumbered, in ToC, APA or IEEE, single-spaced
+%%      with blank line between entries, cited <=> listed                  (REF-01, M8)
+%%  [ ] Appendices: "Appendix A: Title" headings/ToC, numbering continues  (APP-01)
+%%  FINAL
+%%  [ ] No leftover \TODO, "Sample", placeholder text; no LaTeX warnings
+%%      about undefined references/citations                               (M13)
+%%  [ ] Typographical/grammatical proofreading done                        (M10)
+%%  [ ] Hard copy only: \HardCovertrue, black/gold cover, spine specs      (COV-01/02, M11)
+%% ============================================================================

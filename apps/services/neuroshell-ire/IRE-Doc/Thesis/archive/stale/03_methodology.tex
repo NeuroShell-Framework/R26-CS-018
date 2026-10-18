@@ -1,0 +1,153 @@
+\chapter{Methodology}\label{ch:methodology}
+
+\section{Research Design}\label{sec:method-design}
+
+This dissertation adopts an applied research design combining software engineering and empirical evaluation. The approach is evidence-driven: the system is implemented first (based on requirements derived from the problem statement and literature review), then evaluated through controlled experiments. The evaluation follows a quantitative methodology with systematic ablation to isolate the contribution of each guardrail component.
+
+The research is structured around three research questions (RQ1--RQ3, \cref{sec:intro-rq}) and eight objectives (\cref{sec:intro-aim}). Four experiments (Exp1--Exp4) are conducted to address these questions, measuring intent recognition accuracy, flaw catch rate and false positive rate under controlled conditions.
+
+\section{System Architecture Overview}\label{sec:method-arch}
+
+The NeuroShell Intent Recognition Engine is implemented as a modular FastAPI microservice. As shown conceptually in the pipeline design, the system treats the local LLM as an unreliable proposition generator whose outputs are validated deterministically before being returned to downstream consumers. The architecture separates concerns into three layers: (1) \textit{core pipeline} (stages S1--S7) responsible for transformation and validation; (2) \textit{middleware} (M1--M5) responsible for cross-cutting safety, authorisation and performance concerns; and (3) \textit{API/infrastructure} (endpoints, audit logging, metrics collection, configuration).
+
+The service runs entirely offline with no retrieval at inference time. All configuration is managed via environment variables through Pydantic Settings (\texttt{config/settings.py}), and feature flags control middleware activation (\texttt{config/features.yaml}).
+
+\section{Core Pipeline Stages (S1--S7)}\label{sec:method-pipeline}
+
+The pipeline transforms raw natural-language input into a validated intent contract through seven sequential stages. The implementation is in \texttt{src/pipeline/ire\_pipeline.py}.
+
+\subsection{S1: Input Normalisation}
+
+Input normalisation standardises the raw command text (whitespace normalisation, Unicode NFKC normalisation, case handling and basic cleanup). This reduces lexical variance before alias resolution and inference, improving consistency across inputs. The normaliser is implemented in \texttt{src/preprocessing/input\_normalizer.py}.
+
+\subsection{S2: Alias Resolution}
+
+Alias resolution maps domain-specific slang and common tool aliases to canonical forms (e.g. mapping offensive security tool/technique aliases to standard terminology). The alias map is loaded from \texttt{data/alias\_map.json} (22 mappings covering CVE aliases such as EternalBlue$\rightarrow$CVE-2017-0144, Log4Shell$\rightarrow$CVE-2021-44228, and slang like \texttt{brute}$\rightarrow$\texttt{brute force}, \texttt{recon}$\rightarrow$\texttt{reconnaissance}). This reduces ambiguity and improves classification consistency. Implementation: \texttt{src/preprocessing/alias\_resolver.py}.
+
+\subsection{S3: LLM Inference}
+
+Stage 3 performs inference against a locally hosted Ollama model. The inference engine (\texttt{src/inference/ollama\_inference\_engine.py}) issues requests to the Ollama REST API (\texttt{http://localhost:11434}) with the normalised/alias-resolved prompt. Models evaluated are \texttt{gemma4:e4b} and \texttt{qwen2.5-coder:7b}. Inference parameters (temperature, timeout, max tokens) are controlled via settings (\texttt{inference\_temperature}, \texttt{ollama\_timeout\_seconds}, \texttt{inference\_max\_tokens}). The model is instructed to emit a strict JSON structure conforming to the expected schema; no free-form prose is accepted downstream.
+
+\subsection{S4: JSON Parsing}
+
+Stage 4 extracts and parses JSON from the model response (\texttt{src/validation/json\_parser.py}). It handles common LLM formatting artifacts (e.g. markdown code fences, \texttt{```json} blocks, think/chain-of-thought markers) and fails fast with a classified \texttt{JSONParseError} if the response cannot be parsed into valid JSON. This prevents downstream validation from receiving malformed structures.
+
+\subsection{S5: Schema Validation}
+
+Stage 5 enforces structural correctness against the Pydantic schema definitions (\texttt{src/schemas/intent\_schema.py}). The \texttt{IntentSchema} model defines required fields (\texttt{intent}, \texttt{target}, \texttt{confidence}), optional fields (\texttt{ports}, \texttt{modifiers}, \texttt{cve\_ids}, \texttt{tool\_hint}, \texttt{schedule}, \texttt{rejection\_reason}), and validation rules including port range (1--65535), CVE format (\texttt{CVE-YYYY-NNNNN}), and cross-field constraints (e.g. \texttt{REJECTED} requires \texttt{rejection\_reason}; \texttt{AMBIGUOUS} requires \texttt{confidence < 0.5}). Extra fields are forbidden (\texttt{extra="forbid"}) to ensure strict conformance. Implementation: \texttt{src/validation/schema\_validator.py}.
+
+\subsection{S6: Regex Validation}
+
+Stage 6 performs entity-level format verification (\texttt{src/validation/regex\_validator.py}). It validates IP addresses, CIDR notation, hostnames/domains, URLs, CVE identifiers and port lists against strict regular expressions. This catches fabricated or malformed entities that satisfy JSON structure but violate expected formats.
+
+\subsection{S6B: Network Architecture Validation}
+
+Network architecture validation (\texttt{src/validation/network\_validator.py}) checks targets against the configured engagement scope. The engagement scope is defined in settings (\texttt{engagement\_scope}, default \texttt{192.168.0.0/16}; \texttt{engagement\_mode} in \{\texttt{strict}, \texttt{warn}, \texttt{disabled}\}; \texttt{max\_cidr\_prefix}, \texttt{min\_cidr\_prefix}). Targets must fall within the authorised network range; violations are handled according to engagement mode (reject in strict, warn in warn mode). This enforces authorisation boundaries at the network level.
+
+\subsection{S7: Scope Guard}
+
+The scope guard (\texttt{src/validation/scope\_guard.py}) applies final policy enforcement on the validated intent and input. It checks intent class, target properties and techniques against the configured scope mode (\texttt{scope\_mode}: \texttt{research}, \texttt{strict}, or \texttt{production}) and engagement policy. Scope violations result in classified errors (\texttt{ScopeError}) with appropriate detail messages. The scope guard also incorporates settings from \texttt{config/settings.py} for enforcement policy.
+
+\section{Middleware Components (M1--M5)}\label{sec:method-middleware}
+
+Five middleware components enforce cross-cutting properties. They are invoked at specific points in the pipeline (\texttt{src/pipeline/ire\_pipeline.py}, see \cref{fig:arch} in the research paper and code structure).
+
+\subsection{M1: Adversarial Detector (Three-Layer)}
+
+The adversarial detector (\texttt{src/middleware/adversarial\_detector.py}) implements a three-layer defence: (1) \textit{lexical layer} scores suspicious tokens/patterns (weights 0.8--1.0); (2) \textit{structural layer} analyses sentence topology and imperative/unclassifiable phrasing (0.3--0.9); (3) \textit{scoring/fusion layer} combines scores cumulatively. A cumulative score above 0.7 flags the request; scores $\ge 0.95$ trigger auto-block before inference. This provides defence-in-depth against prompt injection and adversarial deflection.
+
+\subsection{M2: RBAC Pre-Inference}
+
+Role-based access control is enforced before incurring inference cost (\texttt{src/middleware/rbac\_guard.py}). The RBAC model defines four roles: \texttt{viewer}, \texttt{analyst}, \texttt{operator}, \texttt{admin}. Sensitive intents (\texttt{EXPLOITATION}, \texttt{PASSWORD\_ATTACK}, \texttt{DIRECTORY\_BRUTEFORCE}) require at least \texttt{operator} role. Unknown callers default to \texttt{viewer}. Pre-inference checks short-circuit expensive LLM calls for unauthorised requests.
+
+\subsection{M3: Session Context Injection}
+
+Session context (\texttt{src/middleware/session\_context.py}) maintains per-session state (user, role, target history). It can inject relevant context into the command before inference to improve disambiguation while preserving isolation between sessions. Context injection failures are logged but do not block processing (fallback to original command).
+
+\subsection{M4: Semantic Cache}
+
+The semantic cache (\texttt{src/middleware/semantic\_cache.py}) provides performance optimisation and consistency benefits by caching prior results. Lookups use semantic similarity (via embeddings) to return exact or semantically similar cached responses when appropriate, avoiding redundant LLM inference. Cache hits are recorded in metrics.
+
+\subsection{M5: RBAC Post-Validation}
+
+Post-validation RBAC enforcement (\texttt{src/middleware/rbac\_guard.py}) re-checks authorisation against the final validated intent. This defence-in-depth ensures that authorisation is enforced on the actual classified intent, not just the request context, reducing the risk of bypass through any single guard path.
+
+\section{Additional Components}\label{sec:method-additional}
+
+\subsection{Sub-Intent Classification}
+
+The sub-intent classifier (\texttt{src/middleware/sub\_intent\_classifier.py}) enriches validated responses with finer-grained classification where applicable, supporting downstream components that require more granular intent structure.
+
+\subsection{Hallucination Taxonomy and Validation}
+
+Hallucination handling is supported by a taxonomy (\texttt{src/validation/hallucination\_taxonomy.py}) that classifies hallucination types and informs enforcement actions (BLOCK, WARN, ESCALATE). The hallucination validator works in conjunction with self-consistency signals to determine appropriate responses when inconsistencies are detected.
+
+\subsection{Audit Logging and Metrics}
+
+Audit logging (\texttt{src/audit/audit\_logger.py}) provides durable, structured audit trails of requests, findings and enforcement actions. Metrics collection (\texttt{src/utils/metrics\_collector.py}) tracks request counts, success/error rates by stage, intent distributions, cache hit rates and latency percentiles (p50/p95/p99). These support observability and evaluation.
+
+\subsection{API Surface}
+
+The FastAPI application (\texttt{src/api/main.py}) exposes endpoints: \texttt{GET /health} (health check, no auth), \texttt{POST /parse} (core intent recognition, requires API key header \texttt{X-API-Key} except in dev mode, rate-limited), and \texttt{GET /metrics} (metrics, requires API key). Request/response models use Pydantic (\texttt{ParseRequest}, \texttt{ParseRequestV2}, \texttt{IREResponse}, \texttt{IREResponseV2}).
+
+\section{RBAC Model}\label{sec:method-rbac}
+
+The RBAC model enforces least privilege across four roles:
+\begin{itemize}
+  \item \texttt{viewer}: read-only access; cannot invoke intent classification that produces actionable intents beyond minimal cases (defaults to restrictive)
+  \item \texttt{analyst}: standard analysis intents (e.g. passive recon, vulnerability audit, network scan within policy)
+  \item \texttt{operator}: elevated access including sensitive intents (\texttt{EXPLOITATION}, \texttt{PASSWORD\_ATTACK}, \texttt{DIRECTORY\_BRUTEFORCE})
+  \item \texttt{admin}: full access
+\end{itemize}
+
+Enforcement occurs at M2 (pre-inference) and M5 (post-validation). The default role is \texttt{analyst} if not specified; unknown roles are downgraded to \texttt{viewer}. The RBAC policy is loaded via configuration (\texttt{config/rbac\_policy.yaml}).
+
+\section{Threat Model}\label{sec:method-threat}
+
+The threat model assumes deployment on a single trusted device with no external network calls during inference (offline operation). Assets include the operator's toolchain and system state. The trust boundary is the local device; prompts, policies and model weights are not attacker-controlled. Attacker capability is limited to crafting user utterances.
+
+In-scope threats: direct adversarial utterances (prompt injection, task deflection), attempts to generate unauthorised intents (privilege escalation via intent class), malformed/fabricated entities (hallucinations), and out-of-scope targets/techniques.
+
+Out-of-scope: physical compromise of the device, backdoors in model weights, indirect prompt injection via retrieved external content (no retrieval occurs), and tool injection via rendered shell output (the system emits structured JSON only). These boundaries align with the design choice to avoid retrieval at inference time.
+
+\section{Dataset Construction}\label{sec:method-dataset}
+
+A purpose-built dataset of 900 records was constructed for evaluation (\cref{tab:dataset} in the research paper). The dataset comprises:
+\begin{itemize}
+  \item $D^+$ (well-formed): 400 prompts representing legitimate requests across the nine intent classes, with varied phrasings and realistic parameters.
+  \item $D^-$ (flawed): 500 prompts spanning eight flaw categories: adversarial injection (100), out-of-scope target/technique (90), ambiguous/under-specified (30), contradictory request (64), fabricated parameter (64), fabricated CVE (64), type mismatch (64), RBAC violation (24).
+\end{itemize}
+
+Each record includes gold intent label ($y^*$) and gold flaw label ($c^*$) as appropriate. Category sizes are non-uniform due to authoring feasibility; per-class metrics are reported against category denominators. The dataset and evaluation harness are versioned with the source under \texttt{eval/}.
+
+\section{Evaluation Metrics}\label{sec:method-metrics}
+
+Three primary metrics are used:
+\begin{align}
+\mathrm{DAcc} &= \frac{1}{|D^+|}\sum_{x\in D^+}\mathbf{1}\!\big[\hat{y}(x)=y^\ast(x)\big]\times 100\quad (\text{decision accuracy on well-formed}),\\[4pt]
+\mathrm{Catch} &= \frac{1}{|D^-|}\sum_{x\in D^-}\mathbf{1}\!\big[\hat{c}(x)=c^\ast(x)\big]\times 100\quad (\text{flaw detection/catch rate}),\\[4pt]
+\mathrm{FP} &= \frac{1}{|D^+|}\sum_{x\in D^+}\mathbf{1}\!\big[\text{any guard flags }x\big]\times 100\quad (\text{false positive rate on legitimate}).
+\end{align}
+
+These metrics jointly capture safety (Catch) and usability (DAcc, FP). Latency percentiles (p50/p95/p99) are also collected via the metrics collector for performance characterisation.
+
+\section{Experimental Procedures}\label{sec:method-experiments}
+
+Four experiments are conducted as defined in the research design:
+
+\begin{itemize}
+  \item \textbf{Exp1 (Pipeline value):} Compare raw single-shot LLM output against the full guarded pipeline on a 200-prompt stratified holdout (100 $D^+$, 100 $D^-$) for both backends (Gemma 4 e4b, Qwen2.5-Coder 7B).
+  \item \textbf{Exp2 (Backend head-to-head):} Fix the full guardrail stack; compare Gemma vs Qwen on the same holdout under identical conditions.
+  \item \textbf{Exp3 (Ablation):} On the Qwen backend, evaluate the full 900-record set under eight configurations: all guards enabled (baseline) and each guard disabled in turn: scope guard off, RBAC off, network validator off, hallucination validator off, validation stack off (S5 schema + S6 regex + S6B network + S7 scope combined), self-consistency off, semantic cache off. This quantifies per-layer contribution ($\Delta$Catch).
+  \item \textbf{Exp4 (Per-class catch):} Report catch rate per flaw category on the Qwen backend with full guards enabled to identify category-specific strengths and weaknesses.
+\end{itemize}
+
+All experiments run on the same hardware (ASUS VivoBook X513EA, Intel i5-1135G7, 24 GB RAM, Windows 11) with Ollama in CPU-only mode. Backend swap is configuration-only. The evaluation harness (\texttt{eval/}) produces reproducible results; evaluation is a single-pass per configuration as documented in the research paper (with single-run point estimates noted as a limitation).
+
+\section{Self-Consistency and Semantic Agreement}\label{sec:method-selfconsistency}
+
+When confidence falls below the configured threshold (\texttt{self\_consistency\_trigger\_threshold}, default 0.7), Tier 2 self-consistency is triggered. The system draws $N=\texttt{self\_consistency\_samples}$ (default 5) candidate responses at \texttt{self\_consistency\_temperature} (default 0.7). Responses are embedded (Sentence-BERT~\cite{reimers2019sbert}) and clustered by semantic similarity; agreement $\alpha(x)$ is computed over pairwise similarities (\cref{eq:agreement} in the research paper). Disagreement above threshold informs the hallucination validator, which applies the six-class error taxonomy and selects an enforcement action (BLOCK/WARN/ESCALATE). This sampling-based consistency check complements deterministic validation.
+
+\section{Summary}\label{sec:method-summary}
+
+This chapter described the research design, system architecture, pipeline stages (S1--S7), middleware components (M1--M5), RBAC model, threat model, dataset, evaluation metrics and experimental procedures. The methodology combines deterministic validation with sampling-based consistency checks and explicit safety controls, enabling systematic empirical evaluation of each guardrail's contribution. The next chapter details the implementation of these components with evidence from the codebase.

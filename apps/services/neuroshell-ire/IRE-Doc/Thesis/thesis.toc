@@ -1,0 +1,79 @@
+\contentsline {chapter}{Declaration of the Candidate \& Supervisor}{i}{section*.2}%
+\contentsline {chapter}{Abstract}{ii}{section*.3}%
+\contentsline {chapter}{Acknowledgement}{iii}{section*.5}%
+\contentsline {chapter}{Table of Contents}{iv}{section*.6}%
+\contentsline {chapter}{List of Figures}{vii}{section*.8}%
+\contentsline {chapter}{List of Tables}{viii}{section*.10}%
+\contentsline {chapter}{List of Abbreviations}{ix}{section*.13}%
+\contentsline {chapter}{List of Appendices}{x}{section*.14}%
+\contentsline {chapter}{\numberline {1}Introduction}{1}{chapter.1}%
+\contentsline {section}{\numberline {1.1}Overall Project Context}{1}{section.1.1}%
+\contentsline {section}{\numberline {1.2}Individual Component Context}{1}{section.1.2}%
+\contentsline {section}{\numberline {1.3}Problem Statement}{2}{section.1.3}%
+\contentsline {section}{\numberline {1.4}Research Gap}{3}{section.1.4}%
+\contentsline {section}{\numberline {1.5}Aim and Objectives}{4}{section.1.5}%
+\contentsline {section}{\numberline {1.6}Research Questions}{5}{section.1.6}%
+\contentsline {section}{\numberline {1.7}Scope, Limitations and Assumptions}{5}{section.1.7}%
+\contentsline {section}{\numberline {1.8}Individual Contribution}{6}{section.1.8}%
+\contentsline {section}{\numberline {1.9}Thesis Structure}{7}{section.1.9}%
+\contentsline {chapter}{\numberline {2}Literature Review and Related Work}{9}{chapter.2}%
+\contentsline {section}{\numberline {2.1}Review Method and Scope}{9}{section.2.1}%
+\contentsline {section}{\numberline {2.2}Domain and Theoretical Foundations}{10}{section.2.2}%
+\contentsline {section}{\numberline {2.3}Related Research}{13}{section.2.3}%
+\contentsline {section}{\numberline {2.4}Existing Systems, Products and Techniques}{16}{section.2.4}%
+\contentsline {section}{\numberline {2.5}Gap Synthesis and Conceptual Framework}{19}{section.2.5}%
+\contentsline {chapter}{\numberline {3}Research Methodology}{22}{chapter.3}%
+\contentsline {section}{\numberline {3.1}Research Design}{22}{section.3.1}%
+\contentsline {section}{\numberline {3.2}Data and Study Materials}{25}{section.3.2}%
+\contentsline {section}{\numberline {3.3}Experimental Procedure}{27}{section.3.3}%
+\contentsline {section}{\numberline {3.4}Measures and Evaluation Metrics}{29}{section.3.4}%
+\contentsline {section}{\numberline {3.5}Data Analysis}{31}{section.3.5}%
+\contentsline {section}{\numberline {3.6}Ethics, Privacy, Security and Responsible AI}{33}{section.3.6}%
+\contentsline {section}{\numberline {3.7}Reproducibility and Research Artefacts}{35}{section.3.7}%
+\contentsline {chapter}{\numberline {4}Product and Solution Design}{38}{chapter.4}%
+\contentsline {section}{\numberline {4.1}Requirements}{38}{section.4.1}%
+\contentsline {section}{\numberline {4.2}Component Architecture within the Complete Solution}{40}{section.4.2}%
+\contentsline {section}{\numberline {4.3}Design Alternatives and Decisions}{40}{section.4.3}%
+\contentsline {section}{\numberline {4.4}Detailed Design}{42}{section.4.4}%
+\contentsline {section}{\numberline {4.5}Standards and Professional Practice}{44}{section.4.5}%
+\contentsline {chapter}{\numberline {5}Implementation, Integration and Testing}{47}{chapter.5}%
+\contentsline {section}{\numberline {5.1}Development Environment and Technology Stack}{47}{section.5.1}%
+\contentsline {section}{\numberline {5.2}Component Implementation}{48}{section.5.2}%
+\contentsline {section}{\numberline {5.3}Integration with the Other Components}{50}{section.5.3}%
+\contentsline {section}{\numberline {5.4}Verification and Software Testing}{51}{section.5.4}%
+\contentsline {section}{\numberline {5.5}Deployment and Operation}{52}{section.5.5}%
+\contentsline {chapter}{\numberline {6}Results and Validation}{54}{chapter.6}%
+\contentsline {section}{\numberline {6.1}Research Results}{54}{section.6.1}%
+\contentsline {subsection}{\numberline {6.1.1}Experiment 1: Pipeline Value (RQ1)}{54}{subsection.6.1.1}%
+\contentsline {subsection}{\numberline {6.1.2}Experiment 2: Backend Head-to-Head (RQ3)}{55}{subsection.6.1.2}%
+\contentsline {subsection}{\numberline {6.1.3}Experiment 3: Layer Ablation (RQ2 and RQ3)}{55}{subsection.6.1.3}%
+\contentsline {subsection}{\numberline {6.1.4}Experiment 4: Per-Class Catch (RQ2)}{55}{subsection.6.1.4}%
+\contentsline {section}{\numberline {6.2}Product and Technical Results}{57}{section.6.2}%
+\contentsline {subsection}{\numberline {6.2.1}Verification and testing}{57}{subsection.6.2.1}%
+\contentsline {subsection}{\numberline {6.2.2}Known limitation achieved}{57}{subsection.6.2.2}%
+\contentsline {section}{\numberline {6.3}User or Stakeholder Validation}{57}{section.6.3}%
+\contentsline {section}{\numberline {6.4}Integration Results}{57}{section.6.4}%
+\contentsline {section}{\numberline {6.5}Summary of Findings}{58}{section.6.5}%
+\contentsline {chapter}{\numberline {7}Discussion}{59}{chapter.7}%
+\contentsline {section}{\numberline {7.1}Interpretation of Findings}{59}{section.7.1}%
+\contentsline {section}{\numberline {7.2}Comparison with Literature Baselines and Existing Solutions}{60}{section.7.2}%
+\contentsline {section}{\numberline {7.3}Research Contribution}{61}{section.7.3}%
+\contentsline {section}{\numberline {7.4}Product Contribution}{62}{section.7.4}%
+\contentsline {section}{\numberline {7.5}Limitations and Threats to Validity}{63}{section.7.5}%
+\contentsline {section}{\numberline {7.6}Implications}{64}{section.7.6}%
+\contentsline {chapter}{\numberline {8}Commercialisation and Sustainability}{66}{chapter.8}%
+\contentsline {section}{\numberline {8.1}Value Proposition and Target Users}{66}{section.8.1}%
+\contentsline {section}{\numberline {8.2}Market and Competitive Position}{67}{section.8.2}%
+\contentsline {section}{\numberline {8.3}Business and Sustainability Model}{68}{section.8.3}%
+\contentsline {section}{\numberline {8.4}Scalability, Intellectual Property and Compliance}{69}{section.8.4}%
+\contentsline {section}{\numberline {8.5}Contribution to the Sustainable Development Goals}{70}{section.8.5}%
+\contentsline {chapter}{\numberline {9}Conclusion and Future Directions}{72}{chapter.9}%
+\contentsline {section}{\numberline {9.1}Conclusion}{72}{section.9.1}%
+\contentsline {section}{\numberline {9.2}Achievement of Objectives}{73}{section.9.2}%
+\contentsline {section}{\numberline {9.3}Individual Research and Product Contributions}{74}{section.9.3}%
+\contentsline {section}{\numberline {9.4}Future Directions}{74}{section.9.4}%
+\contentsline {chapter}{Reference List}{76}{section*.25}%
+\contentsline {chapter}{Glossary}{78}{section*.28}%
+\renewcommand {\cftchappresnum }{Appendix~}\renewcommand {\cftchapaftersnum }{:}\setlength {\cftchapnumwidth }{6.5em}
+\contentsline {chapter}{\numberline {A}Research Instruments or Extended Results}{79}{appendix.A}%
+\contentsline {chapter}{\numberline {B}Academic Integrity and AI Use Disclosure}{80}{appendix.B}%

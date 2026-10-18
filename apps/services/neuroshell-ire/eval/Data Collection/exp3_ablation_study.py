@@ -325,7 +325,7 @@ def evaluate_record(pipeline, record: Dict[str, Any], idx: int, config_name: str
 
     req = ParseRequestV2(
         command=record["input"],
-        role="analyst",
+        role=record.get("expected_role", "analyst"),
         session_id=f"exp3-{config_name_safe(config_name)}-{idx}",
     )
     start = time.time()

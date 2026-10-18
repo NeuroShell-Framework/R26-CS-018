@@ -6,8 +6,8 @@
 .DESCRIPTION
     C1  = NeuroShell IRE            (port 8001)  venv: .venv,            app: src.api.main
     C2  = Dynamic Planner & RAG     (port 8002)  venv: c2venv,           app: src.api.main
-    C3  = AEERE                     (port 8003)  venv: app/.venv,        app: src.api.main  (cwd = app)
-    C4  = AVAE                      (port 8004)  venv: app/.venv,        app: src.api.main  (cwd = app)
+    C3  = AEERE                     (port 8003)  venv: .venv,            app: src.api.main  (cwd = service root)
+    C4  = AVAE                      (port 8004)  venv: .venv,            app: src.api.main  (cwd = service root)
     Web = NeuroShell Console UI     (port 5173)  Vite dev server         (apps\web)
     Kali= Docker readiness: ensures the Docker daemon is up, the 'neuroshell-kali'
           image is built from the C3 Dockerfile, and keeps a persistent warm
@@ -16,14 +16,17 @@
     Redis= Docker readiness: ensures the 'redis:7-alpine' image is pulled and a
           'neuroshell-redis' container runs on 6379 (C3's session state store,
           started automatically whenever C3 is part of the target set).
+    Neo4j= Docker readiness: ensures the 'neo4j:5.20' image is pulled and a
+          'neuroshell-neo4j' container runs on 7687 (C4's attack-graph store,
+          started automatically whenever C4 is part of the target set).
 
     By default starts ALL. Use -Service C1|C2|C3|C4|Web|Kali|Redis|Both to select.
     Each service gets its own PID file so neuroshell_stop.ps1 can kill the
     whole process tree:
         ./.uvicorn.pid                      (C1)
         ../dynamic-planner-rag/.c2.pid      (C2)
-        ../adaptive-execution-error-recovery/app/.c3.pid  (C3)
-        ../ai-vulnerability-analysis/app/.c4.pid          (C4)
+        ../adaptive-execution-error-recovery/.c3.pid  (C3)
+        ../ai-vulnerability-analysis/.c4.pid          (C4)
         ../../web/.web.pid                  (Web)
 
 .EXAMPLE
@@ -41,7 +44,7 @@
 #>
 [CmdletBinding()]
 param(
-    [ValidateSet('C1', 'C2', 'C3', 'C4', 'Web', 'Kali', 'Redis', 'Both', 'All')]
+    [ValidateSet('C1', 'C2', 'C3', 'C4', 'Web', 'Kali', 'Redis', 'Neo4j', 'Both', 'All')]
     [string]$Service = 'All',
     [int]$Port = 8001,
     [switch]$Reload,
@@ -76,8 +79,8 @@ $Root     = Join-Path $ProjectRoot 'apps\services\neuroshell-ire'
 $C2Root   = Join-Path $ProjectRoot 'apps\services\dynamic-planner-rag'
 $C3Root   = Join-Path $ProjectRoot 'apps\services\adaptive-execution-error-recovery'
 $C4Root   = Join-Path $ProjectRoot 'apps\services\ai-vulnerability-analysis'
-$C3App    = Join-Path $C3Root 'app'
-$C4App    = Join-Path $C4Root 'app'
+$C3App    = $C3Root
+$C4App    = $C4Root
 $WebRoot  = Join-Path $ProjectRoot 'apps\web'
 
 
@@ -237,6 +240,53 @@ function Start-Redis {
 }
 
 
+function Start-Neo4j {
+
+    Write-Host "[..] Ensuring Docker daemon + Neo4j container..."
+    if (-not (Ensure-DockerEngine)) { return $false }
+
+    $Neo4jImage = 'neo4j:5.20'
+    $Neo4jName  = 'neuroshell-neo4j'
+    $Neo4jAuth  = 'neo4j/neuroshell2026'
+
+    # ── Ensure the image exists ──
+    & docker image inspect $Neo4jImage *> $null
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "[..] Pulling $Neo4jImage ..." -ForegroundColor Yellow
+        & docker pull $Neo4jImage *> $null
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host "[ERROR] docker pull failed for $Neo4jImage" -ForegroundColor Red
+            return $false
+        }
+    }
+
+    # ── Keep a persistent container running on 7474/7687 ──
+    $running = (& docker ps -q -f "name=$Neo4jName")
+    if ($running) {
+        Write-Host "[OK] Neo4j container already active ($($running.Trim()))" -ForegroundColor Green
+        return $true
+    }
+
+    $existing = (& docker ps -aq -f "name=$Neo4jName")
+    if ($existing) {
+        & docker start $Neo4jName *> $null
+        if ($LASTEXITCODE -eq 0) {
+            Write-Host "[OK] Neo4j container restarted" -ForegroundColor Green
+            return $true
+        }
+    }
+
+    & docker run -d --name $Neo4jName -p 7474:7474 -p 7687:7687 `
+        -e "NEO4J_AUTH=$Neo4jAuth" --restart unless-stopped $Neo4jImage *> $null
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "[ERROR] failed to start Neo4j container" -ForegroundColor Red
+        return $false
+    }
+    Write-Host "[OK] Neo4j container active ($Neo4jName)" -ForegroundColor Green
+    return $true
+}
+
+
 function Start-C1 {
     param([int]$PortNo, [switch]$UseReload)
 
@@ -278,7 +328,7 @@ function Start-C1 {
 
 function Start-C2 {
 
-    $Py      = Join-Path $C2Root 'c2venv\Scripts\python.exe'
+    $Py      = Join-Path $C2Root '.venv\Scripts\python.exe'
     $OutLog  = Join-Path $C2Root 'c2_server.log'
     $ErrLog  = Join-Path $C2Root 'c2_server.err'
     $PidFile = Join-Path $C2Root '.c2.pid'
@@ -457,6 +507,7 @@ switch ($Service) {
     'Web'    { $startTargets += 'Web' }
     'Kali'   { $startTargets += 'Kali' }
     'Redis'  { $startTargets += 'Redis' }
+    'Neo4j'  { $startTargets += 'Neo4j' }
     'Both'   { $startTargets += 'C1'; $startTargets += 'C2' }
     'All'    { $startTargets += 'C1'; $startTargets += 'C2'; $startTargets += 'C3'; $startTargets += 'C4'; $startTargets += 'Web' }
 }
@@ -470,6 +521,9 @@ if ('C3' -in $startTargets -or 'Kali' -in $startTargets) {
 }
 if ('C3' -in $startTargets -or 'Redis' -in $startTargets) {
     $redisOk = Start-Redis
+}
+if ('C4' -in $startTargets -or 'Neo4j' -in $startTargets) {
+    Start-Neo4j | Out-Null
 }
 
 if ('C3' -in $startTargets -and (-not $kaliOk -or -not $redisOk)) {

@@ -1,0 +1,33 @@
+﻿\chapter{Conclusions and Recommendations}\label{ch:conclusion}
+
+\section{Introduction}\label{sec:concl-intro}
+
+This chapter summarises the key findings of the dissertation, addresses each research question, states the contributions, acknowledges limitations, and presents recommendations for future work.
+
+\section{Conclusions}\label{sec:concl-conclusions}
+
+The NeuroShell IRE successfully implements a guarded, schema-constrained intent recognition pipeline that treats a local LLM as an unreliable proposition generator. The seven-stage pipeline (S1--S7 with S6B) combined with five middleware components (M1--M5) provides defence-in-depth through deterministic validation, adversarial detection, RBAC enforcement, session context, semantic caching and consistency checks.
+
+Empirical evaluation (Exp1--Exp4) demonstrates that the guarded pipeline significantly outperforms raw LLM output. On the holdout set, Catch improved from 0\% to 72\% (Gemma) and 0\% to 64\% (Qwen), while FP reduced from ~32\% to ~14--15\% and DAcc increased by 8--13 percentage points. Both backends benefit from the guardrail stack, confirming generalisability (RQ3). Ablation analysis confirms that layered deterministic validation (schema/regex/network/scope) provides the largest joint contribution to flaw detection, and no single layer is sufficient (RQ2). Overall, the stacked approach is effective for improving both safety and usability (RQ1).
+
+The implementation is fully evidence-based: all components exist in the codebase (\texttt{src/}), are configured via \texttt{config/}, and are validated by unit/integration tests. The system operates entirely offline with no retrieval at inference time, matching the design goals.
+
+\section{Research Questions Addressed}\label{sec:concl-rq}
+
+\begin{itemize}
+  \item \textbf{RQ1:} The stacked validation pipeline improves DAcc by +8--13 pp, Catch by +64--72 pp, and reduces FP by -16--18 pp compared to raw LLM output.
+  \item \textbf{RQ2:} The combined deterministic validation stack (S5 schema, S6 regex, S6B network, S7 scope) contributes most to catch rate; other layers (adversarial detection M1, RBAC M2/M5, self-consistency, semantic cache M4) provide complementary coverage.
+  \item \textbf{RQ3:} Guardrails generalise across Gemma 4 e4b and Qwen2.5-Coder 7B under identical CPU-only configuration, with Gemma achieving higher absolute performance.
+\end{itemize}
+
+\section{Contributions}\label{sec:concl-contrib}
+
+Key contributions of this work include: (1) implementation of a seven-stage guarded pipeline with five middleware components for offline intent recognition in a security context; (2) deterministic validation enforcing schema, entity formats, network architecture constraints, and scope policy; (3) defence-in-depth via three-layer adversarial detection and pre/post RBAC enforcement; (4) empirical evaluation using a 900-record dataset with ablation across guardrail layers and backend comparison; (5) evidence-based documentation grounded strictly in the implemented codebase.
+
+\section{Limitations}\label{sec:concl-limitations}
+
+Results are single-run point estimates without statistical confidence intervals. Dataset category sizes are non-uniform. Evaluation was conducted on specific hardware and model versions (CPU-only). The threat model excludes physical compromise and indirect injection via retrieved content (by design, no retrieval). These limitations are acknowledged and qualify the reported results.
+
+\section{Recommendations for Future Work}\label{sec:concl-recommendations}
+
+Future work should include: (1) repeated runs with multiple seeds and reporting of confidence intervals/standard deviations; (2) expansion and balancing of the evaluation dataset across flaw categories; (3) evaluation on additional hardware configurations and newer model versions; (4) exploration of lightweight local verification methods to further reduce FP while maintaining high Catch; (5) integration testing with downstream planner/executor components under controlled laboratory conditions; (6) systematic red-teaming against the implemented guards to identify residual attack vectors.

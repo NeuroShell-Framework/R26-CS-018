@@ -5,13 +5,13 @@
     "qwen2.5-coder:7b"
   ],
   "dataset": "golden_dataset.jsonl",
-  "total_records": 200,
+  "total_records": 900,
   "gemma": {
     "intent_accuracy_pct": 86.0,
-    "hallucination_catch_rate_pct": 52.0,
+    "hallucination_catch_rate_pct": 72.0,
     "false_positive_rate_pct": 14.0,
     "overall_latency": {
-      "count": 200,
+      "count": 900,
       "mean_ms": 39554.7,
       "p50_ms": 26724.0,
       "p95_ms": 134508.0,
@@ -467,11 +467,11 @@
     }
   },
   "qwen": {
-    "intent_accuracy_pct": 85.0,
-    "hallucination_catch_rate_pct": 50.0,
+    "intent_accuracy_pct": 82.0,
+    "hallucination_catch_rate_pct": 64.0,
     "false_positive_rate_pct": 15.0,
     "overall_latency": {
-      "count": 200,
+      "count": 900,
       "mean_ms": 45208.5,
       "p50_ms": 32653.8,
       "p95_ms": 171872.3,

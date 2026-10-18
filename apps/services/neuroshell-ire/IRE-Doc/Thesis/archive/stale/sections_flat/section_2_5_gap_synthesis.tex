@@ -1,0 +1,92 @@
+\section{Gap Synthesis and Conceptual Framework}\label{sec:gap-synthesis}
+
+The review in this chapter converges on three findings. First, the
+language-model copilots surveyed \parencite{deng2024pentestgpt,happe2023pwned}
+generate plausible security actions but do not validate them for machine
+consumption: their output is produced for a human reviewer, and correctness is
+handled informally (Section~\ref{sec:related-research}). Second, applications
+that integrate a model with tooling are exploitable through adversarial and
+indirect-injection utterances, the surveyed defences are individually
+insufficient \parencite{liu2023promptinjection,greshake2023indirect}, and the
+existing-systems survey shows that current guardrail techniques act as
+post-hoc application-layer checks rather than as a deterministic validation
+stage between generation and dispatch (Section~\ref{sec:existing-systems}).
+Third, fabrication-detection and agreement methods
+\parencite{manakul2023selfcheckgpt,kuhn2023semantic,farquhar2024semantic,wang2023selfconsistency}
+are available in principle, but they assume sampling or interactive generation
+whose cost collides with the offline, CPU-only, single-inference budget adopted
+here (Section~\ref{sec:domain-foundations}).
+
+The gap that follows from these three findings is the combination that the
+existing-systems survey leaves open: no surveyed system delivers a dedicated,
+isolated natural-language understanding layer that converts free-form
+offensive-security instructions into validated, schema-constrained, authorised
+machine contracts while running offline, retrieval-free, on a single inference
+budget. This dissertation addresses exactly that combination by designing and
+\emph{measuring} a guarded intent-recognition engine.
+
+\subsection*{Conceptual framework}
+
+The design chapters build on three principles established in
+Section~\ref{sec:domain-foundations}.
+
+\emph{First}, the language model is treated as a \emph{stochastic proposition
+generator}: a single generated response is a sample weighted by the model's
+beliefs rather than a deterministic verdict
+(Section~\ref{sec:domain-foundations}). Nothing the model emits is trusted until
+it satisfies checkable predicates; sampling-based agreement
+\parencite{wang2023selfconsistency} provides a confidence signal, but the
+generation itself is always a candidate rather than a decision.
+
+\emph{Second}, responsibility is divided along the decidability boundary
+identified in Section~\ref{sec:domain-foundations}: syntax, format and
+authorisation are decidable predicates (schema, host and CIDR syntax, port
+ranges, network and scope policy, role permission), while only meaning is
+delegated to the model. The guarded pipeline therefore couples a small
+instruction-tuned model with deterministic stages---schema validation, regex and
+network validation, scope enforcement, role-based access control---whose purpose
+is to contain model error before it can propagate to a planner or executor
+(Chapter~\ref{ch:product-design}).
+
+\emph{Third}, the design enforces a \emph{safety invariant}: an intent contract
+is accepted only when it satisfies the conjunction of the deterministic security
+predicates---schema-valid, network-authorized, in-scope, role-permitted and
+non-adversarial. The model may propose any candidate, but it cannot force
+acceptance of a candidate that violates any predicate in the conjunction. This
+converts the open problem of making a single language model trustworthy into the
+closed problem of classifying a single utterance under a known policy---the
+reduction that justifies acting on model-produced security instructions in an
+automated toolchain.
+
+On top of these principles the framework adopts the bounded-sampling resolution
+of the cost tension from Section~\ref{sec:domain-foundations}: a small, bounded
+number of responses, a cheap embedding-based agreement gate, and a deterministic
+escalation path (the hallucination validator) that does not depend on a large
+verifier model (Section~\ref{sec:related-research}).
+
+\subsection*{From framework to measurement}
+
+The framework yields three measurable claims, each mapped to the corresponding
+research question (Section~\ref{sec:research-questions}):
+\begin{itemize}
+\item \textbf{Pipeline value (RQ1).} The guarded pipeline raises the
+probability that model output satisfies the full conjunction of security
+predicates relative to raw generation; this is quantified by comparing intent
+accuracy, flaw-catch rate and false-positive rate with and without the guards.
+\item \textbf{Layer contribution (RQ2).} The contribution of each guard layer is
+quantified by ablating layers in turn against a constant baseline, isolating the
+largest safety contributor and the layers that trade safety for usability.
+\item \textbf{Generality (RQ3).} The identical guardrail stack is applied to two
+distinct offline backends to determine how much of the measured safety is
+backend-independent rather than an artefact of a single model.
+\end{itemize}
+The evaluation protocol that operationalizes these questions is developed in
+Chapter~\ref{ch:methodology}, the implementation and automated test suite in
+Chapter~\ref{ch:implementation-testing}, and the measurements themselves in
+Chapter~\ref{ch:results}. Together with the preceding sections, this concludes
+the review, sets out the conceptual framework that guides the design of the
+Intent Recognition Engine in Chapter~\ref{ch:product-design}.
+
+\TODO{At the final AUDIT step, cross-check the informal safety invariant stated
+here against the full formal definition to be developed in
+Chapter~\ref{ch:product-design}.}
