@@ -184,6 +184,12 @@ async def execute(payload: PlannerOutput):
 
     while True:
         attempt += 1
+        # ── Wall-time guard: do not retry beyond the total budget ──
+        max_total_seconds = float(os.getenv('C3_MAX_TOTAL_SECONDS', '120'))
+        if attempt > 1 and (time.time() - start) > max_total_seconds:
+            status = 'failed' if final_raw is None else 'recovered'
+            error_class = error_class or 'TIME_BUDGET_EXCEEDED'
+            break
         try:
             # ── STAGE 0: Safety check original command ────────────
             if attempt == 1:

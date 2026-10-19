@@ -1,0 +1,35 @@
+DIG
+
+Purpose: query DNS servers directly for specific record types.
+Passive recon against authoritative DNS, no direct host contact required.
+
+Syntax:
+  dig <name> <type>
+  dig @<dns-server> <name> <type>
+  dig -x <name>
+
+The query NAME is the target. The optional @ argument is a DNS SERVER,
+never the target itself.
+
+Examples:
+  dig <target> A
+  dig <target> AAAA
+  dig <target> MX
+  dig <target> NS
+  dig <target> TXT
+  dig +short <target> A
+  dig -x <target>
+
+Record types:
+  A      IPv4 address
+  AAAA   IPv6 address
+  MX     mail exchange
+  NS     nameserver
+  TXT    text records
+  SOA    start of authority
+  PTR    reverse lookup (use -x <target>)
+
+Notes:
+  - +short returns only the answer section, one record per line.
+  - Always query one record type per command; do not combine types.
+  - Safe and stealthy. Use for subdomain and mail infrastructure discovery.

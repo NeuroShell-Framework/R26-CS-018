@@ -5,5 +5,5 @@
   "DIRECTORY_BRUTEFORCE": ["gobuster"],
   "EXPLOITATION": [],
   "PASSWORD_ATTACK": [],
-  "PASSIVE_RECON": []
+  "PASSIVE_RECON": ["whois"]
 }

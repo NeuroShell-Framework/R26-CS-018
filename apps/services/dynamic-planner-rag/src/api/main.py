@@ -150,6 +150,11 @@ def plan(request: PlanRequest, x_api_key: str = Header(None)):
             top_retrieval_source=top_rag_source,
         ) or "unknown"
 
+        # Propagate the resolved tool into the prompt context so the planner
+        # prompt/planner-input advertise the same tool the selector chose
+        # (e.g. PASSIVE_RECON -> whois/dig instead of defaulting to nmap).
+        params["tool_hint"] = tool
+
         # Step 4 - Assemble prompt
         try:
             prompt = assembler.assemble(docs, params)
@@ -253,7 +258,7 @@ def plan(request: PlanRequest, x_api_key: str = Header(None)):
 @app.get("/tools/available")
 def available_tools():
     return {
-        "tools": ["nmap", "nikto", "gobuster"],
+        "tools": ["nmap", "nikto", "gobuster", "whois", "dig"],
         "kb_chunks": retriever.collection.count(),
     }
 

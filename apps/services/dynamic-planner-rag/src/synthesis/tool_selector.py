@@ -1,7 +1,7 @@
 import os
 import json
 
-SUPPORTED_TOOLS = {"nmap", "nikto", "gobuster"}
+SUPPORTED_TOOLS = {"nmap", "nikto", "gobuster", "whois", "dig"}
 
 # Resolve tool_map.json relative to this file's own location so the path is
 # correct regardless of which directory uvicorn is launched from.

@@ -1,0 +1,17 @@
+WHOIS
+
+Purpose: passive reconnaissance. Queries public WHOIS registries for
+ownership, contact, and allocation data. No packets are sent to the target.
+
+Syntax: whois <target>
+
+The target is the only argument. No options or flags are needed.
+
+Example: whois <target>
+
+Notes:
+  - Read-only, safe, and stealthy.
+  - Output includes registrar, netrange, CIDR, and abuse contact.
+  - Use for scope validation and asset ownership checks.
+  - The whois command takes exactly one argument: the target.
+  - Do not add servers, flags or options.

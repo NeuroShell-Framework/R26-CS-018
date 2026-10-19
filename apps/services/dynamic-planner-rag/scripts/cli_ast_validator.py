@@ -339,9 +339,12 @@ class CLIASTValidator:
         return res
 
     def _check_tool_syntax(self, tokens: List[str], tool: str, mode: str, details: List[str]) -> bool:
-        if tool not in ["nmap", "nikto", "gobuster"]:
+        if tool not in ["nmap", "nikto", "gobuster", "whois", "dig"]:
             details.append(f"Unknown binary executable '{tool}'")
             return False
+
+        if tool in ["whois", "dig"]:
+            return True
 
         if tool == "nmap":
             flags_needing_args = {"-p", "--script", "-iL", "-iR", "-oN", "-oX", "-oG", "-oA", "-T", "--min-rate", "--max-rate", "--top-ports"}
@@ -403,6 +406,25 @@ class CLIASTValidator:
                 for i, tok in enumerate(tokens):
                     if tok in ["-u", "--url"] and i + 1 < len(tokens):
                         target_tokens.append(tokens[i + 1])
+            if len(target_tokens) > 1:
+                return False
+        elif tool in ("whois", "dig"):
+            # Passive recon: the target is the bare NAME argument, not a flag.
+            # For dig, ignore DNS server (@host) tokens and record-type tokens.
+            dig_record_types = {
+                "A", "AAAA", "MX", "NS", "TXT", "SOA", "PTR", "SRV",
+                "CNAME", "ANY", "AXFR", "CAA", "DNSKEY",
+            }
+            for i, tok in enumerate(tokens):
+                if i == 0:
+                    continue
+                if tok.startswith("-") or tok.startswith("+"):
+                    continue
+                if tok.startswith("@"):
+                    continue
+                if tool == "dig" and tok.upper() in dig_record_types:
+                    continue
+                target_tokens.append(tok)
             if len(target_tokens) > 1:
                 return False
 
