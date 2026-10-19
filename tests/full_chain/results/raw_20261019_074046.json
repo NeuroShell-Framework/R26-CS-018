@@ -1,0 +1,2128 @@
+{
+  "suite": "NeuroShell full-chain end-to-end suite",
+  "generated_at": "20261019_074046",
+  "c1_url": "http://127.0.0.1:8001",
+  "timeout_seconds": 300,
+  "case_count": 11,
+  "total_seconds": 1136.7,
+  "results": [
+    {
+      "case": {
+        "id": "FC-001",
+        "category": "valid-scan",
+        "command": "scan 192.168.1.10 for open ports",
+        "expect": "full_chain",
+        "expected_tool": "nmap",
+        "note": "baseline port scan of reachable host"
+      },
+      "response": {
+        "http_status": 200,
+        "body": {
+          "status": "ok",
+          "flow": {
+            "step_1_user_input": {
+              "command": "scan 192.168.1.10 for open ports",
+              "session_id": "fc-fc-001",
+              "role": "analyst"
+            },
+            "step_2_component_1": {
+              "status": "success",
+              "output": {
+                "version1": {
+                  "intent_contract": {
+                    "intent": "NETWORK_SCAN",
+                    "target": {
+                      "type": "IP",
+                      "value": "192.168.1.10"
+                    },
+                    "ports": [],
+                    "modifiers": [],
+                    "cve_ids": [],
+                    "tool_hint": "nmap",
+                    "confidence": 0.95,
+                    "rejection_reason": null,
+                    "scope_warnings": []
+                  },
+                  "session_id": "fc-fc-001"
+                },
+                "version2": {
+                  "status": "success",
+                  "intent": "NETWORK_SCAN",
+                  "target": {
+                    "type": "IP",
+                    "value": "192.168.1.10"
+                  },
+                  "ports": [],
+                  "modifiers": [],
+                  "cve_ids": [],
+                  "tool_hint": "nmap",
+                  "schedule": null,
+                  "confidence": 0.95,
+                  "rejection_reason": null,
+                  "scope_warnings": [],
+                  "latency_ms": 40461,
+                  "error": null,
+                  "stage": null,
+                  "field": null,
+                  "detail": null,
+                  "sub_intent": "NETWORK_SCAN.ICMP_DISCOVERY",
+                  "secondary_intents": [],
+                  "clarification_request": null,
+                  "uncertainty_band": "low",
+                  "raw_entropy": 0.0,
+                  "tier_triggered": 1,
+                  "resolution_method": "single_sample",
+                  "calibration_method": null,
+                  "cache_hit": null,
+                  "rbac_role": "analyst",
+                  "session_turns": 1,
+                  "xai": null,
+                  "validation_findings": [
+                    {
+                      "validator": "schema_validator",
+                      "passed": true,
+                      "hallucination_class": null,
+                      "detail": "Pydantic intent schema structure validated successfully",
+                      "severity": "block"
+                    },
+                    {
+                      "validator": "regex_validator",
+                      "passed": true,
+                      "hallucination_class": null,
+                      "detail": "Target value '192.168.1.10' matches expected regex format for type IP",
+                      "severity": "block"
+                    },
+                    {
+                      "validator": "regex_validator",
+                      "passed": true,
+                      "hallucination_class": null,
+                      "detail": "No CVE IDs present to validate",
+                      "severity": "block"
+                    },
+                    {
+                      "validator": "regex_validator",
+                      "passed": true,
+                      "hallucination_class": null,
+                      "detail": "All 0 ports fall within valid range [1, 65535]",
+                      "severity": "block"
+                    },
+                    {
+                      "validator": "regex_validator",
+                      "passed": true,
+                      "hallucination_class": null,
+                      "detail": "No shell metacharacters detected in target or modifiers",
+                      "severity": "block"
+                    },
+                    {
+                      "validator": "network_validator",
+                      "passed": true,
+                      "hallucination_class": null,
+                      "detail": "Target type 'IP' is consistent with value '192.168.1.10'",
+                      "severity": "block"
+                    },
+                    {
+                      "validator": "network_validator",
+                      "passed": true,
+                      "hallucination_class": null,
+                      "detail": "Target address '192.168.1.10' parsed valid format",
+                      "severity": "block"
+                    },
+                    {
+                      "validator": "network_validator",
+                      "passed": true,
+                      "hallucination_class": null,
+                      "detail": "Target '192.168.1.10' is within engagement scope '192.168.0.0/16'",
+                      "severity": "warn"
+                    },
+                    {
+                      "validator": "scope_guard",
+                      "passed": true,
+                      "hallucination_class": null,
+                      "detail": "No prompt injection patterns detected in input",
+                      "severity": "block"
+                    },
+                    {
+                      "validator": "scope_guard",
+                      "passed": true,
+                      "hallucination_class": null,
+                      "detail": "Target '192.168.1.10' is within private RFC-1918 range",
+                      "severity": "warn"
+                    }
+                  ],
+                  "schema_version": 2
+                }
+              }
+            },
+            "step_3_component_2": {
+              "status": "success",
+              "latency_ms": 25630,
+              "output": {
+                "status": "success",
+                "command": "nmap -sS -T4 192.168.1.10",
+                "command_sequence": [
+                  "nmap -sS -T4 192.168.1.10"
+                ],
+                "tool": "nmap",
+                "session_id": "fc-fc-001",
+                "intent_ref": "NETWORK_SCAN",
+                "estimated_duration": "medium",
+                "retrieval_sources": [
+                  "nmap",
+                  "nmap",
+                  "nmap"
+                ],
+                "validation_passed": true,
+                "safety_flags": [],
+                "latency_ms": 25290
+              }
+            },
+            "step_4_component_3": {
+              "status": "success",
+              "latency_ms": 6550,
+              "output": {
+                "status": "success",
+                "push_latency_ms": 6550,
+                "session_id": "fc-fc-001",
+                "command_executed": "nmap -sS -T4 192.168.1.10",
+                "stdout": "Starting Nmap 7.991 ( https://nmap.org ) at 2026-10-19 02:14 +0000\nNmap scan report for 192.168.1.10\nHost is up (0.0059s latency).\nNot shown: 999 filtered tcp ports (no-response)\nPORT   STATE SERVICE\n25/tcp open  smtp\n\nNmap done: 1 IP address (1 host up) scanned in 5.17 seconds\n",
+                "stderr": "",
+                "exit_code": 0,
+                "recovery_log": [],
+                "correction_history": [],
+                "failure_report": null,
+                "tool_substituted": false,
+                "latency_ms": 6257,
+                "integration_latency_ms": 6550
+              }
+            },
+            "step_5_component_4": {
+              "status": "success",
+              "latency_ms": 696,
+              "output": {
+                "status": "success",
+                "push_latency_ms": 696,
+                "session_id": "fc-fc-001",
+                "parse_result": {
+                  "hosts": [
+                    "192.168.1.10"
+                  ],
+                  "services": [
+                    {
+                      "ip": "192.168.1.10",
+                      "port": 25,
+                      "protocol": "tcp",
+                      "service_name": "smtp",
+                      "service_version": "",
+                      "banner": "",
+                      "cpe": "",
+                      "cve_hints": []
+                    }
+                  ],
+                  "raw_cve_ids": [],
+                  "paths_found": []
+                },
+                "enriched_count": 0,
+                "enriched_vulnerabilities": [],
+                "predictions": [
+                  {
+                    "cve_id": "SERVICE_BASED",
+                    "service_name": "smtp",
+                    "service_port": 25,
+                    "analysis_mode": "service_based_fallback",
+                    "prediction_method": "rule_based",
+                    "exploit_probability": null,
+                    "service_risk_score": 0.2,
+                    "composite_risk_score": 0.2,
+                    "risk_tier": "LOW",
+                    "top_features": {},
+                    "risk_basis": "service_exposure_only",
+                    "vulnerability_confirmed": false
+                  }
+                ],
+                "ranked_findings": [
+                  {
+                    "cve_id": "SERVICE_BASED",
+                    "service_name": "smtp",
+                    "service_port": 25,
+                    "analysis_mode": "service_based_fallback",
+                    "prediction_method": "rule_based",
+                    "exploit_probability": null,
+                    "service_risk_score": 0.2,
+                    "composite_risk_score": 0.2,
+                    "risk_tier": "LOW",
+                    "top_features": {},
+                    "risk_basis": "service_exposure_only",
+                    "vulnerability_confirmed": false
+                  }
+                ],
+                "false_positive_reduction_rate": 0.0,
+                "latency_ms": 613,
+                "integration_latency_ms": 696
+              }
+            }
+          }
+        }
+      },
+      "wall_seconds": 208.29
+    },
+    {
+      "case": {
+        "id": "FC-002",
+        "category": "valid-scan",
+        "command": "run a stealth nmap scan on 192.168.1.10",
+        "expect": "full_chain",
+        "expected_tool": "nmap",
+        "note": "modifier -> stealth flags"
+      },
+      "response": {
+        "http_status": 200,
+        "body": {
+          "status": "ok",
+          "flow": {
+            "step_1_user_input": {
+              "command": "run a stealth nmap scan on 192.168.1.10",
+              "session_id": "fc-fc-002",
+              "role": "analyst"
+            },
+            "step_2_component_1": {
+              "status": "success",
+              "output": {
+                "version1": {
+                  "intent_contract": {
+                    "intent": "NETWORK_SCAN",
+                    "target": {
+                      "type": "IP",
+                      "value": "192.168.1.10"
+                    },
+                    "ports": [],
+                    "modifiers": [
+                      "stealth"
+                    ],
+                    "cve_ids": [],
+                    "tool_hint": "nmap",
+                    "confidence": 0.95,
+                    "rejection_reason": null,
+                    "scope_warnings": []
+                  },
+                  "session_id": "fc-fc-002"
+                },
+                "version2": {
+                  "status": "success",
+                  "intent": "NETWORK_SCAN",
+                  "target": {
+                    "type": "IP",
+                    "value": "192.168.1.10"
+                  },
+                  "ports": [],
+                  "modifiers": [
+                    "stealth"
+                  ],
+                  "cve_ids": [],
+                  "tool_hint": "nmap",
+                  "schedule": null,
+                  "confidence": 0.95,
+                  "rejection_reason": null,
+                  "scope_warnings": [],
+                  "latency_ms": 11755,
+                  "error": null,
+                  "stage": null,
+                  "field": null,
+                  "detail": null,
+                  "sub_intent": "NETWORK_SCAN.SYN_STEALTH",
+                  "secondary_intents": [],
+                  "clarification_request": null,
+                  "uncertainty_band": "low",
+                  "raw_entropy": 0.0,
+                  "tier_triggered": 1,
+                  "resolution_method": "single_sample",
+                  "calibration_method": null,
+                  "cache_hit": null,
+                  "rbac_role": "analyst",
+                  "session_turns": 1,
+                  "xai": null,
+                  "validation_findings": [
+                    {
+                      "validator": "schema_validator",
+                      "passed": true,
+                      "hallucination_class": null,
+                      "detail": "Pydantic intent schema structure validated successfully",
+                      "severity": "block"
+                    },
+                    {
+                      "validator": "regex_validator",
+                      "passed": true,
+                      "hallucination_class": null,
+                      "detail": "Target value '192.168.1.10' matches expected regex format for type IP",
+                      "severity": "block"
+                    },
+                    {
+                      "validator": "regex_validator",
+                      "passed": true,
+                      "hallucination_class": null,
+                      "detail": "No CVE IDs present to validate",
+                      "severity": "block"
+                    },
+                    {
+                      "validator": "regex_validator",
+                      "passed": true,
+                      "hallucination_class": null,
+                      "detail": "All 0 ports fall within valid range [1, 65535]",
+                      "severity": "block"
+                    },
+                    {
+                      "validator": "regex_validator",
+                      "passed": true,
+                      "hallucination_class": null,
+                      "detail": "No shell metacharacters detected in target or modifiers",
+                      "severity": "block"
+                    },
+                    {
+                      "validator": "network_validator",
+                      "passed": true,
+                      "hallucination_class": null,
+                      "detail": "Target type 'IP' is consistent with value '192.168.1.10'",
+                      "severity": "block"
+                    },
+                    {
+                      "validator": "network_validator",
+                      "passed": true,
+                      "hallucination_class": null,
+                      "detail": "Target address '192.168.1.10' parsed valid format",
+                      "severity": "block"
+                    },
+                    {
+                      "validator": "network_validator",
+                      "passed": true,
+                      "hallucination_class": null,
+                      "detail": "Target '192.168.1.10' is within engagement scope '192.168.0.0/16'",
+                      "severity": "warn"
+                    },
+                    {
+                      "validator": "scope_guard",
+                      "passed": true,
+                      "hallucination_class": null,
+                      "detail": "No prompt injection patterns detected in input",
+                      "severity": "block"
+                    },
+                    {
+                      "validator": "scope_guard",
+                      "passed": true,
+                      "hallucination_class": null,
+                      "detail": "Target '192.168.1.10' is within private RFC-1918 range",
+                      "severity": "warn"
+                    }
+                  ],
+                  "schema_version": 2
+                }
+              }
+            },
+            "step_3_component_2": {
+              "status": "success",
+              "latency_ms": 14585,
+              "output": {
+                "status": "success",
+                "command": "nmap -sS -T4 192.168.1.10",
+                "command_sequence": [
+                  "nmap -sS -T4 192.168.1.10"
+                ],
+                "tool": "nmap",
+                "session_id": "fc-fc-002",
+                "intent_ref": "NETWORK_SCAN",
+                "estimated_duration": "medium",
+                "retrieval_sources": [
+                  "nmap",
+                  "nmap",
+                  "nmap"
+                ],
+                "validation_passed": true,
+                "safety_flags": [],
+                "latency_ms": 14547
+              }
+            },
+            "step_4_component_3": {
+              "status": "success",
+              "latency_ms": 5923,
+              "output": {
+                "status": "success",
+                "push_latency_ms": 5923,
+                "session_id": "fc-fc-002",
+                "command_executed": "nmap -sS -T4 192.168.1.10",
+                "stdout": "Starting Nmap 7.991 ( https://nmap.org ) at 2026-10-19 02:14 +0000\nNmap scan report for 192.168.1.10\nHost is up (0.0060s latency).\nNot shown: 999 filtered tcp ports (no-response)\nPORT   STATE SERVICE\n25/tcp open  smtp\n\nNmap done: 1 IP address (1 host up) scanned in 5.18 seconds\n",
+                "stderr": "",
+                "exit_code": 0,
+                "recovery_log": [],
+                "correction_history": [],
+                "failure_report": null,
+                "tool_substituted": false,
+                "latency_ms": 5797,
+                "integration_latency_ms": 5923
+              }
+            },
+            "step_5_component_4": {
+              "status": "success",
+              "latency_ms": 46,
+              "output": {
+                "status": "success",
+                "push_latency_ms": 46,
+                "session_id": "fc-fc-002",
+                "parse_result": {
+                  "hosts": [
+                    "192.168.1.10"
+                  ],
+                  "services": [
+                    {
+                      "ip": "192.168.1.10",
+                      "port": 25,
+                      "protocol": "tcp",
+                      "service_name": "smtp",
+                      "service_version": "",
+                      "banner": "",
+                      "cpe": "",
+                      "cve_hints": []
+                    }
+                  ],
+                  "raw_cve_ids": [],
+                  "paths_found": []
+                },
+                "enriched_count": 0,
+                "enriched_vulnerabilities": [],
+                "predictions": [
+                  {
+                    "cve_id": "SERVICE_BASED",
+                    "service_name": "smtp",
+                    "service_port": 25,
+                    "analysis_mode": "service_based_fallback",
+                    "prediction_method": "rule_based",
+                    "exploit_probability": null,
+                    "service_risk_score": 0.2,
+                    "composite_risk_score": 0.2,
+                    "risk_tier": "LOW",
+                    "top_features": {},
+                    "risk_basis": "service_exposure_only",
+                    "vulnerability_confirmed": false
+                  }
+                ],
+                "ranked_findings": [
+                  {
+                    "cve_id": "SERVICE_BASED",
+                    "service_name": "smtp",
+                    "service_port": 25,
+                    "analysis_mode": "service_based_fallback",
+                    "prediction_method": "rule_based",
+                    "exploit_probability": null,
+                    "service_risk_score": 0.2,
+                    "composite_risk_score": 0.2,
+                    "risk_tier": "LOW",
+                    "top_features": {},
+                    "risk_basis": "service_exposure_only",
+                    "vulnerability_confirmed": false
+                  }
+                ],
+                "false_positive_reduction_rate": 0.0,
+                "latency_ms": 30,
+                "integration_latency_ms": 46
+              }
+            }
+          }
+        }
+      },
+      "wall_seconds": 33.15
+    },
+    {
+      "case": {
+        "id": "FC-003",
+        "category": "valid-scan",
+        "command": "do a service version detection scan on 192.168.1.10",
+        "expect": "full_chain",
+        "expected_tool": "nmap",
+        "note": "SERVICE_ENUMERATION via -sV"
+      },
+      "response": {
+        "http_status": 200,
+        "body": {
+          "status": "ok",
+          "flow": {
+            "step_1_user_input": {
+              "command": "do a service version detection scan on 192.168.1.10",
+              "session_id": "fc-fc-003",
+              "role": "analyst"
+            },
+            "step_2_component_1": {
+              "status": "success",
+              "output": {
+                "version1": {
+                  "intent_contract": {
+                    "intent": "SERVICE_ENUMERATION",
+                    "target": {
+                      "type": "IP",
+                      "value": "192.168.1.10"
+                    },
+                    "ports": [],
+                    "modifiers": [],
+                    "cve_ids": [],
+                    "tool_hint": "nmap",
+                    "confidence": 0.95,
+                    "rejection_reason": null,
+                    "scope_warnings": []
+                  },
+                  "session_id": "fc-fc-003"
+                },
+                "version2": {
+                  "status": "success",
+                  "intent": "SERVICE_ENUMERATION",
+                  "target": {
+                    "type": "IP",
+                    "value": "192.168.1.10"
+                  },
+                  "ports": [],
+                  "modifiers": [],
+                  "cve_ids": [],
+                  "tool_hint": "nmap",
+                  "schedule": null,
+                  "confidence": 0.95,
+                  "rejection_reason": null,
+                  "scope_warnings": [],
+                  "latency_ms": 11894,
+                  "error": null,
+                  "stage": null,
+                  "field": null,
+                  "detail": null,
+                  "sub_intent": "SERVICE_ENUMERATION.BANNER_GRAB",
+                  "secondary_intents": [],
+                  "clarification_request": null,
+                  "uncertainty_band": "low",
+                  "raw_entropy": 0.0,
+                  "tier_triggered": 1,
+                  "resolution_method": "single_sample",
+                  "calibration_method": null,
+                  "cache_hit": null,
+                  "rbac_role": "analyst",
+                  "session_turns": 1,
+                  "xai": null,
+                  "validation_findings": [
+                    {
+                      "validator": "schema_validator",
+                      "passed": true,
+                      "hallucination_class": null,
+                      "detail": "Pydantic intent schema structure validated successfully",
+                      "severity": "block"
+                    },
+                    {
+                      "validator": "regex_validator",
+                      "passed": true,
+                      "hallucination_class": null,
+                      "detail": "Target value '192.168.1.10' matches expected regex format for type IP",
+                      "severity": "block"
+                    },
+                    {
+                      "validator": "regex_validator",
+                      "passed": true,
+                      "hallucination_class": null,
+                      "detail": "No CVE IDs present to validate",
+                      "severity": "block"
+                    },
+                    {
+                      "validator": "regex_validator",
+                      "passed": true,
+                      "hallucination_class": null,
+                      "detail": "All 0 ports fall within valid range [1, 65535]",
+                      "severity": "block"
+                    },
+                    {
+                      "validator": "regex_validator",
+                      "passed": true,
+                      "hallucination_class": null,
+                      "detail": "No shell metacharacters detected in target or modifiers",
+                      "severity": "block"
+                    },
+                    {
+                      "validator": "network_validator",
+                      "passed": true,
+                      "hallucination_class": null,
+                      "detail": "Target type 'IP' is consistent with value '192.168.1.10'",
+                      "severity": "block"
+                    },
+                    {
+                      "validator": "network_validator",
+                      "passed": true,
+                      "hallucination_class": null,
+                      "detail": "Target address '192.168.1.10' parsed valid format",
+                      "severity": "block"
+                    },
+                    {
+                      "validator": "network_validator",
+                      "passed": true,
+                      "hallucination_class": null,
+                      "detail": "Target '192.168.1.10' is within engagement scope '192.168.0.0/16'",
+                      "severity": "warn"
+                    },
+                    {
+                      "validator": "scope_guard",
+                      "passed": true,
+                      "hallucination_class": null,
+                      "detail": "No prompt injection patterns detected in input",
+                      "severity": "block"
+                    },
+                    {
+                      "validator": "scope_guard",
+                      "passed": true,
+                      "hallucination_class": null,
+                      "detail": "Target '192.168.1.10' is within private RFC-1918 range",
+                      "severity": "warn"
+                    }
+                  ],
+                  "schema_version": 2
+                }
+              }
+            },
+            "step_3_component_2": {
+              "status": "success",
+              "latency_ms": 22515,
+              "output": {
+                "status": "success",
+                "command": "nmap -sV -sC -p 80,443 192.168.1.10",
+                "command_sequence": [
+                  "nmap -sV -sC -p 80,443 192.168.1.10"
+                ],
+                "tool": "nmap",
+                "session_id": "fc-fc-003",
+                "intent_ref": "SERVICE_ENUMERATION",
+                "estimated_duration": "medium",
+                "retrieval_sources": [
+                  "nmap",
+                  "nmap",
+                  "nmap"
+                ],
+                "validation_passed": true,
+                "safety_flags": [],
+                "latency_ms": 22487
+              }
+            },
+            "step_4_component_3": {
+              "status": "success",
+              "latency_ms": 8608,
+              "output": {
+                "status": "success",
+                "push_latency_ms": 8608,
+                "session_id": "fc-fc-003",
+                "command_executed": "nmap -sV -sC -p 80,443 192.168.1.10",
+                "stdout": "Starting Nmap 7.991 ( https://nmap.org ) at 2026-10-19 02:15 +0000\nNmap scan report for 192.168.1.10\nHost is up (0.0015s latency).\n\nPORT    STATE    SERVICE VERSION\n80/tcp  filtered http\n443/tcp filtered https\n\nService detection performed. Please report any incorrect results at https://nmap.org/submit/ .\nNmap done: 1 IP address (1 host up) scanned in 7.72 seconds\n",
+                "stderr": "",
+                "exit_code": 0,
+                "recovery_log": [],
+                "correction_history": [],
+                "failure_report": null,
+                "tool_substituted": false,
+                "latency_ms": 8486,
+                "integration_latency_ms": 8608
+              }
+            },
+            "step_5_component_4": {
+              "status": "success",
+              "latency_ms": 54,
+              "output": {
+                "status": "success",
+                "push_latency_ms": 54,
+                "session_id": "fc-fc-003",
+                "parse_result": {
+                  "hosts": [
+                    "192.168.1.10"
+                  ],
+                  "services": [],
+                  "raw_cve_ids": [],
+                  "paths_found": []
+                },
+                "enriched_count": 0,
+                "enriched_vulnerabilities": [],
+                "predictions": [],
+                "ranked_findings": [],
+                "false_positive_reduction_rate": 0.0,
+                "latency_ms": 14,
+                "integration_latency_ms": 54
+              }
+            }
+          }
+        }
+      },
+      "wall_seconds": 44.23
+    },
+    {
+      "case": {
+        "id": "FC-004",
+        "category": "valid-scan",
+        "command": "scan host 192.168.1.10 port 25",
+        "expect": "full_chain",
+        "expected_tool": "nmap",
+        "note": "explicit single port"
+      },
+      "response": {
+        "http_status": 200,
+        "body": {
+          "status": "ok",
+          "flow": {
+            "step_1_user_input": {
+              "command": "scan host 192.168.1.10 port 25",
+              "session_id": "fc-fc-004",
+              "role": "analyst"
+            },
+            "step_2_component_1": {
+              "status": "success",
+              "output": {
+                "version1": {
+                  "intent_contract": {
+                    "intent": "NETWORK_SCAN",
+                    "target": {
+                      "type": "IP",
+                      "value": "192.168.1.10"
+                    },
+                    "ports": [
+                      25
+                    ],
+                    "modifiers": [],
+                    "cve_ids": [],
+                    "tool_hint": "nmap",
+                    "confidence": 0.98,
+                    "rejection_reason": null,
+                    "scope_warnings": []
+                  },
+                  "session_id": "fc-fc-004"
+                },
+                "version2": {
+                  "status": "success",
+                  "intent": "NETWORK_SCAN",
+                  "target": {
+                    "type": "IP",
+                    "value": "192.168.1.10"
+                  },
+                  "ports": [
+                    25
+                  ],
+                  "modifiers": [],
+                  "cve_ids": [],
+                  "tool_hint": "nmap",
+                  "schedule": null,
+                  "confidence": 0.98,
+                  "rejection_reason": null,
+                  "scope_warnings": [],
+                  "latency_ms": 12576,
+                  "error": null,
+                  "stage": null,
+                  "field": null,
+                  "detail": null,
+                  "sub_intent": "NETWORK_SCAN.VERSION_DETECT",
+                  "secondary_intents": [],
+                  "clarification_request": null,
+                  "uncertainty_band": "low",
+                  "raw_entropy": 0.0,
+                  "tier_triggered": 1,
+                  "resolution_method": "single_sample",
+                  "calibration_method": null,
+                  "cache_hit": null,
+                  "rbac_role": "analyst",
+                  "session_turns": 1,
+                  "xai": null,
+                  "validation_findings": [
+                    {
+                      "validator": "schema_validator",
+                      "passed": true,
+                      "hallucination_class": null,
+                      "detail": "Pydantic intent schema structure validated successfully",
+                      "severity": "block"
+                    },
+                    {
+                      "validator": "regex_validator",
+                      "passed": true,
+                      "hallucination_class": null,
+                      "detail": "Target value '192.168.1.10' matches expected regex format for type IP",
+                      "severity": "block"
+                    },
+                    {
+                      "validator": "regex_validator",
+                      "passed": true,
+                      "hallucination_class": null,
+                      "detail": "No CVE IDs present to validate",
+                      "severity": "block"
+                    },
+                    {
+                      "validator": "regex_validator",
+                      "passed": true,
+                      "hallucination_class": null,
+                      "detail": "All 1 ports fall within valid range [1, 65535]",
+                      "severity": "block"
+                    },
+                    {
+                      "validator": "regex_validator",
+                      "passed": true,
+                      "hallucination_class": null,
+                      "detail": "No shell metacharacters detected in target or modifiers",
+                      "severity": "block"
+                    },
+                    {
+                      "validator": "network_validator",
+                      "passed": true,
+                      "hallucination_class": null,
+                      "detail": "Target type 'IP' is consistent with value '192.168.1.10'",
+                      "severity": "block"
+                    },
+                    {
+                      "validator": "network_validator",
+                      "passed": true,
+                      "hallucination_class": null,
+                      "detail": "Target address '192.168.1.10' parsed valid format",
+                      "severity": "block"
+                    },
+                    {
+                      "validator": "network_validator",
+                      "passed": true,
+                      "hallucination_class": null,
+                      "detail": "Target '192.168.1.10' is within engagement scope '192.168.0.0/16'",
+                      "severity": "warn"
+                    },
+                    {
+                      "validator": "scope_guard",
+                      "passed": true,
+                      "hallucination_class": null,
+                      "detail": "No prompt injection patterns detected in input",
+                      "severity": "block"
+                    },
+                    {
+                      "validator": "scope_guard",
+                      "passed": true,
+                      "hallucination_class": null,
+                      "detail": "Target '192.168.1.10' is within private RFC-1918 range",
+                      "severity": "warn"
+                    }
+                  ],
+                  "schema_version": 2
+                }
+              }
+            },
+            "step_3_component_2": {
+              "status": "success",
+              "latency_ms": 15487,
+              "output": {
+                "status": "success",
+                "command": "nmap -p 25 192.168.1.10",
+                "command_sequence": [
+                  "nmap -p 25 192.168.1.10"
+                ],
+                "tool": "nmap",
+                "session_id": "fc-fc-004",
+                "intent_ref": "NETWORK_SCAN",
+                "estimated_duration": "medium",
+                "retrieval_sources": [
+                  "nmap",
+                  "nmap",
+                  "nmap"
+                ],
+                "validation_passed": true,
+                "safety_flags": [],
+                "latency_ms": 15463
+              }
+            },
+            "step_4_component_3": {
+              "status": "success",
+              "latency_ms": 1402,
+              "output": {
+                "status": "success",
+                "push_latency_ms": 1402,
+                "session_id": "fc-fc-004",
+                "command_executed": "nmap -p 25 192.168.1.10",
+                "stdout": "Starting Nmap 7.991 ( https://nmap.org ) at 2026-10-19 02:16 +0000\nNmap scan report for 192.168.1.10\nHost is up (0.0079s latency).\n\nPORT   STATE SERVICE\n25/tcp open  smtp\n\nNmap done: 1 IP address (1 host up) scanned in 0.68 seconds\n",
+                "stderr": "",
+                "exit_code": 0,
+                "recovery_log": [],
+                "correction_history": [],
+                "failure_report": null,
+                "tool_substituted": false,
+                "latency_ms": 1280,
+                "integration_latency_ms": 1402
+              }
+            },
+            "step_5_component_4": {
+              "status": "success",
+              "latency_ms": 57,
+              "output": {
+                "status": "success",
+                "push_latency_ms": 57,
+                "session_id": "fc-fc-004",
+                "parse_result": {
+                  "hosts": [
+                    "192.168.1.10"
+                  ],
+                  "services": [
+                    {
+                      "ip": "192.168.1.10",
+                      "port": 25,
+                      "protocol": "tcp",
+                      "service_name": "smtp",
+                      "service_version": "",
+                      "banner": "",
+                      "cpe": "",
+                      "cve_hints": []
+                    }
+                  ],
+                  "raw_cve_ids": [],
+                  "paths_found": []
+                },
+                "enriched_count": 0,
+                "enriched_vulnerabilities": [],
+                "predictions": [
+                  {
+                    "cve_id": "SERVICE_BASED",
+                    "service_name": "smtp",
+                    "service_port": 25,
+                    "analysis_mode": "service_based_fallback",
+                    "prediction_method": "rule_based",
+                    "exploit_probability": null,
+                    "service_risk_score": 0.2,
+                    "composite_risk_score": 0.2,
+                    "risk_tier": "LOW",
+                    "top_features": {},
+                    "risk_basis": "service_exposure_only",
+                    "vulnerability_confirmed": false
+                  }
+                ],
+                "ranked_findings": [
+                  {
+                    "cve_id": "SERVICE_BASED",
+                    "service_name": "smtp",
+                    "service_port": 25,
+                    "analysis_mode": "service_based_fallback",
+                    "prediction_method": "rule_based",
+                    "exploit_probability": null,
+                    "service_risk_score": 0.2,
+                    "composite_risk_score": 0.2,
+                    "risk_tier": "LOW",
+                    "top_features": {},
+                    "risk_basis": "service_exposure_only",
+                    "vulnerability_confirmed": false
+                  }
+                ],
+                "false_positive_reduction_rate": 0.0,
+                "latency_ms": 26,
+                "integration_latency_ms": 57
+              }
+            }
+          }
+        }
+      },
+      "wall_seconds": 30.25
+    },
+    {
+      "case": {
+        "id": "FC-005",
+        "category": "valid-scan",
+        "command": "perform an aggressive nmap scan against 192.168.1.10",
+        "expect": "full_chain",
+        "expected_tool": "nmap",
+        "note": "aggressive modifier"
+      },
+      "response": {
+        "http_status": 200,
+        "body": {
+          "status": "ok",
+          "flow": {
+            "step_1_user_input": {
+              "command": "perform an aggressive nmap scan against 192.168.1.10",
+              "session_id": "fc-fc-005",
+              "role": "analyst"
+            },
+            "step_2_component_1": {
+              "status": "success",
+              "output": {
+                "version1": {
+                  "intent_contract": {
+                    "intent": "NETWORK_SCAN",
+                    "target": {
+                      "type": "IP",
+                      "value": "192.168.1.10"
+                    },
+                    "ports": [],
+                    "modifiers": [
+                      "stealth"
+                    ],
+                    "cve_ids": [],
+                    "tool_hint": "nmap",
+                    "confidence": 0.95,
+                    "rejection_reason": null,
+                    "scope_warnings": []
+                  },
+                  "session_id": "fc-fc-005"
+                },
+                "version2": {
+                  "status": "success",
+                  "intent": "NETWORK_SCAN",
+                  "target": {
+                    "type": "IP",
+                    "value": "192.168.1.10"
+                  },
+                  "ports": [],
+                  "modifiers": [
+                    "stealth"
+                  ],
+                  "cve_ids": [],
+                  "tool_hint": "nmap",
+                  "schedule": null,
+                  "confidence": 0.95,
+                  "rejection_reason": null,
+                  "scope_warnings": [],
+                  "latency_ms": 30,
+                  "error": null,
+                  "stage": null,
+                  "field": null,
+                  "detail": null,
+                  "sub_intent": "NETWORK_SCAN.SYN_STEALTH",
+                  "secondary_intents": [],
+                  "clarification_request": null,
+                  "uncertainty_band": null,
+                  "raw_entropy": null,
+                  "tier_triggered": null,
+                  "resolution_method": null,
+                  "calibration_method": null,
+                  "cache_hit": "semantic",
+                  "rbac_role": "analyst",
+                  "session_turns": null,
+                  "xai": null,
+                  "validation_findings": [],
+                  "schema_version": 2
+                }
+              }
+            },
+            "step_3_component_2": {
+              "status": "success",
+              "latency_ms": 13563,
+              "output": {
+                "status": "success",
+                "command": "nmap -sS -T4 192.168.1.10",
+                "command_sequence": [
+                  "nmap -sS -T4 192.168.1.10"
+                ],
+                "tool": "nmap",
+                "session_id": "fc-fc-005",
+                "intent_ref": "NETWORK_SCAN",
+                "estimated_duration": "medium",
+                "retrieval_sources": [
+                  "nmap",
+                  "nmap",
+                  "nmap"
+                ],
+                "validation_passed": true,
+                "safety_flags": [],
+                "latency_ms": 13436
+              }
+            },
+            "step_4_component_3": {
+              "status": "success",
+              "latency_ms": 6030,
+              "output": {
+                "status": "success",
+                "push_latency_ms": 6030,
+                "session_id": "fc-fc-005",
+                "command_executed": "nmap -sS -T4 192.168.1.10",
+                "stdout": "Starting Nmap 7.991 ( https://nmap.org ) at 2026-10-19 02:16 +0000\nNmap scan report for 192.168.1.10\nHost is up (0.0056s latency).\nNot shown: 999 filtered tcp ports (no-response)\nPORT   STATE SERVICE\n25/tcp open  smtp\n\nNmap done: 1 IP address (1 host up) scanned in 5.14 seconds\n",
+                "stderr": "",
+                "exit_code": 0,
+                "recovery_log": [],
+                "correction_history": [],
+                "failure_report": null,
+                "tool_substituted": false,
+                "latency_ms": 5778,
+                "integration_latency_ms": 6030
+              }
+            },
+            "step_5_component_4": {
+              "status": "success",
+              "latency_ms": 56,
+              "output": {
+                "status": "success",
+                "push_latency_ms": 56,
+                "session_id": "fc-fc-005",
+                "parse_result": {
+                  "hosts": [
+                    "192.168.1.10"
+                  ],
+                  "services": [
+                    {
+                      "ip": "192.168.1.10",
+                      "port": 25,
+                      "protocol": "tcp",
+                      "service_name": "smtp",
+                      "service_version": "",
+                      "banner": "",
+                      "cpe": "",
+                      "cve_hints": []
+                    }
+                  ],
+                  "raw_cve_ids": [],
+                  "paths_found": []
+                },
+                "enriched_count": 0,
+                "enriched_vulnerabilities": [],
+                "predictions": [
+                  {
+                    "cve_id": "SERVICE_BASED",
+                    "service_name": "smtp",
+                    "service_port": 25,
+                    "analysis_mode": "service_based_fallback",
+                    "prediction_method": "rule_based",
+                    "exploit_probability": null,
+                    "service_risk_score": 0.2,
+                    "composite_risk_score": 0.2,
+                    "risk_tier": "LOW",
+                    "top_features": {},
+                    "risk_basis": "service_exposure_only",
+                    "vulnerability_confirmed": false
+                  }
+                ],
+                "ranked_findings": [
+                  {
+                    "cve_id": "SERVICE_BASED",
+                    "service_name": "smtp",
+                    "service_port": 25,
+                    "analysis_mode": "service_based_fallback",
+                    "prediction_method": "rule_based",
+                    "exploit_probability": null,
+                    "service_risk_score": 0.2,
+                    "composite_risk_score": 0.2,
+                    "risk_tier": "LOW",
+                    "top_features": {},
+                    "risk_basis": "service_exposure_only",
+                    "vulnerability_confirmed": false
+                  }
+                ],
+                "false_positive_reduction_rate": 0.0,
+                "latency_ms": 18,
+                "integration_latency_ms": 56
+              }
+            }
+          }
+        }
+      },
+      "wall_seconds": 19.69
+    },
+    {
+      "case": {
+        "id": "FC-006",
+        "category": "valid-scan",
+        "command": "enumerate services on 192.168.1.10",
+        "expect": "full_chain",
+        "expected_tool": "nmap",
+        "note": "service enumeration intent"
+      },
+      "response": {
+        "http_status": 200,
+        "body": {
+          "status": "ok",
+          "flow": {
+            "step_1_user_input": {
+              "command": "enumerate services on 192.168.1.10",
+              "session_id": "fc-fc-006",
+              "role": "analyst"
+            },
+            "step_2_component_1": {
+              "status": "success",
+              "output": {
+                "version1": {
+                  "intent_contract": {
+                    "intent": "SERVICE_ENUMERATION",
+                    "target": {
+                      "type": "IP",
+                      "value": "192.168.1.10"
+                    },
+                    "ports": [],
+                    "modifiers": [],
+                    "cve_ids": [],
+                    "tool_hint": "nmap",
+                    "confidence": 1.0,
+                    "rejection_reason": null,
+                    "scope_warnings": []
+                  },
+                  "session_id": "fc-fc-006"
+                },
+                "version2": {
+                  "status": "success",
+                  "intent": "SERVICE_ENUMERATION",
+                  "target": {
+                    "type": "IP",
+                    "value": "192.168.1.10"
+                  },
+                  "ports": [],
+                  "modifiers": [],
+                  "cve_ids": [],
+                  "tool_hint": "nmap",
+                  "schedule": null,
+                  "confidence": 1.0,
+                  "rejection_reason": null,
+                  "scope_warnings": [],
+                  "latency_ms": 36806,
+                  "error": null,
+                  "stage": null,
+                  "field": null,
+                  "detail": null,
+                  "sub_intent": "SERVICE_ENUMERATION.BANNER_GRAB",
+                  "secondary_intents": [],
+                  "clarification_request": null,
+                  "uncertainty_band": "low",
+                  "raw_entropy": 0.0,
+                  "tier_triggered": 1,
+                  "resolution_method": "single_sample",
+                  "calibration_method": null,
+                  "cache_hit": null,
+                  "rbac_role": "analyst",
+                  "session_turns": 1,
+                  "xai": null,
+                  "validation_findings": [
+                    {
+                      "validator": "schema_validator",
+                      "passed": true,
+                      "hallucination_class": null,
+                      "detail": "Pydantic intent schema structure validated successfully",
+                      "severity": "block"
+                    },
+                    {
+                      "validator": "regex_validator",
+                      "passed": true,
+                      "hallucination_class": null,
+                      "detail": "Target value '192.168.1.10' matches expected regex format for type IP",
+                      "severity": "block"
+                    },
+                    {
+                      "validator": "regex_validator",
+                      "passed": true,
+                      "hallucination_class": null,
+                      "detail": "No CVE IDs present to validate",
+                      "severity": "block"
+                    },
+                    {
+                      "validator": "regex_validator",
+                      "passed": true,
+                      "hallucination_class": null,
+                      "detail": "All 0 ports fall within valid range [1, 65535]",
+                      "severity": "block"
+                    },
+                    {
+                      "validator": "regex_validator",
+                      "passed": true,
+                      "hallucination_class": null,
+                      "detail": "No shell metacharacters detected in target or modifiers",
+                      "severity": "block"
+                    },
+                    {
+                      "validator": "network_validator",
+                      "passed": true,
+                      "hallucination_class": null,
+                      "detail": "Target type 'IP' is consistent with value '192.168.1.10'",
+                      "severity": "block"
+                    },
+                    {
+                      "validator": "network_validator",
+                      "passed": true,
+                      "hallucination_class": null,
+                      "detail": "Target address '192.168.1.10' parsed valid format",
+                      "severity": "block"
+                    },
+                    {
+                      "validator": "network_validator",
+                      "passed": true,
+                      "hallucination_class": null,
+                      "detail": "Target '192.168.1.10' is within engagement scope '192.168.0.0/16'",
+                      "severity": "warn"
+                    },
+                    {
+                      "validator": "scope_guard",
+                      "passed": true,
+                      "hallucination_class": null,
+                      "detail": "No prompt injection patterns detected in input",
+                      "severity": "block"
+                    },
+                    {
+                      "validator": "scope_guard",
+                      "passed": true,
+                      "hallucination_class": null,
+                      "detail": "Target '192.168.1.10' is within private RFC-1918 range",
+                      "severity": "warn"
+                    }
+                  ],
+                  "schema_version": 2
+                }
+              }
+            },
+            "step_3_component_2": {
+              "status": "success",
+              "latency_ms": 5105,
+              "output": {
+                "status": "success",
+                "command": "nmap -sV -sC -p 80,443 192.168.1.10",
+                "command_sequence": [
+                  "nmap -sV -sC -p 80,443 192.168.1.10"
+                ],
+                "tool": "nmap",
+                "session_id": "fc-fc-006",
+                "intent_ref": "SERVICE_ENUMERATION",
+                "estimated_duration": "medium",
+                "retrieval_sources": [
+                  "nmap",
+                  "nmap",
+                  "nmap"
+                ],
+                "validation_passed": true,
+                "safety_flags": [],
+                "latency_ms": 5075
+              }
+            },
+            "step_4_component_3": {
+              "status": "success",
+              "latency_ms": 8547,
+              "output": {
+                "status": "success",
+                "push_latency_ms": 8547,
+                "session_id": "fc-fc-006",
+                "command_executed": "nmap -sV -sC -p 80,443 192.168.1.10",
+                "stdout": "Starting Nmap 7.991 ( https://nmap.org ) at 2026-10-19 02:17 +0000\nNmap scan report for 192.168.1.10\nHost is up (0.0014s latency).\n\nPORT    STATE    SERVICE VERSION\n80/tcp  filtered http\n443/tcp filtered https\n\nService detection performed. Please report any incorrect results at https://nmap.org/submit/ .\nNmap done: 1 IP address (1 host up) scanned in 7.52 seconds\n",
+                "stderr": "",
+                "exit_code": 0,
+                "recovery_log": [],
+                "correction_history": [],
+                "failure_report": null,
+                "tool_substituted": false,
+                "latency_ms": 8163,
+                "integration_latency_ms": 8547
+              }
+            },
+            "step_5_component_4": {
+              "status": "success",
+              "latency_ms": 55,
+              "output": {
+                "status": "success",
+                "push_latency_ms": 55,
+                "session_id": "fc-fc-006",
+                "parse_result": {
+                  "hosts": [
+                    "192.168.1.10"
+                  ],
+                  "services": [],
+                  "raw_cve_ids": [],
+                  "paths_found": []
+                },
+                "enriched_count": 0,
+                "enriched_vulnerabilities": [],
+                "predictions": [],
+                "ranked_findings": [],
+                "false_positive_reduction_rate": 0.0,
+                "latency_ms": 27,
+                "integration_latency_ms": 55
+              }
+            }
+          }
+        }
+      },
+      "wall_seconds": 51.61
+    },
+    {
+      "case": {
+        "id": "FC-007",
+        "category": "valid-scan",
+        "command": "scan 192.168.1.10 and detect the operating system",
+        "expect": "full_chain",
+        "expected_tool": "nmap",
+        "note": "OS detection -O"
+      },
+      "response": {
+        "http_status": 200,
+        "body": {
+          "status": "ok",
+          "flow": {
+            "step_1_user_input": {
+              "command": "scan 192.168.1.10 and detect the operating system",
+              "session_id": "fc-fc-007",
+              "role": "analyst"
+            },
+            "step_2_component_1": {
+              "status": "success",
+              "output": {
+                "version1": {
+                  "intent_contract": {
+                    "intent": "NETWORK_SCAN",
+                    "target": {
+                      "type": "IP",
+                      "value": "192.168.1.10"
+                    },
+                    "ports": [],
+                    "modifiers": [],
+                    "cve_ids": [],
+                    "tool_hint": "nmap",
+                    "confidence": 0.95,
+                    "rejection_reason": null,
+                    "scope_warnings": []
+                  },
+                  "session_id": "fc-fc-007"
+                },
+                "version2": {
+                  "status": "success",
+                  "intent": "NETWORK_SCAN",
+                  "target": {
+                    "type": "IP",
+                    "value": "192.168.1.10"
+                  },
+                  "ports": [],
+                  "modifiers": [],
+                  "cve_ids": [],
+                  "tool_hint": "nmap",
+                  "schedule": null,
+                  "confidence": 0.95,
+                  "rejection_reason": null,
+                  "scope_warnings": [],
+                  "latency_ms": 12035,
+                  "error": null,
+                  "stage": null,
+                  "field": null,
+                  "detail": null,
+                  "sub_intent": "NETWORK_SCAN.ICMP_DISCOVERY",
+                  "secondary_intents": [],
+                  "clarification_request": null,
+                  "uncertainty_band": "low",
+                  "raw_entropy": 0.0,
+                  "tier_triggered": 1,
+                  "resolution_method": "single_sample",
+                  "calibration_method": null,
+                  "cache_hit": null,
+                  "rbac_role": "analyst",
+                  "session_turns": 1,
+                  "xai": null,
+                  "validation_findings": [
+                    {
+                      "validator": "schema_validator",
+                      "passed": true,
+                      "hallucination_class": null,
+                      "detail": "Pydantic intent schema structure validated successfully",
+                      "severity": "block"
+                    },
+                    {
+                      "validator": "regex_validator",
+                      "passed": true,
+                      "hallucination_class": null,
+                      "detail": "Target value '192.168.1.10' matches expected regex format for type IP",
+                      "severity": "block"
+                    },
+                    {
+                      "validator": "regex_validator",
+                      "passed": true,
+                      "hallucination_class": null,
+                      "detail": "No CVE IDs present to validate",
+                      "severity": "block"
+                    },
+                    {
+                      "validator": "regex_validator",
+                      "passed": true,
+                      "hallucination_class": null,
+                      "detail": "All 0 ports fall within valid range [1, 65535]",
+                      "severity": "block"
+                    },
+                    {
+                      "validator": "regex_validator",
+                      "passed": true,
+                      "hallucination_class": null,
+                      "detail": "No shell metacharacters detected in target or modifiers",
+                      "severity": "block"
+                    },
+                    {
+                      "validator": "network_validator",
+                      "passed": true,
+                      "hallucination_class": null,
+                      "detail": "Target type 'IP' is consistent with value '192.168.1.10'",
+                      "severity": "block"
+                    },
+                    {
+                      "validator": "network_validator",
+                      "passed": true,
+                      "hallucination_class": null,
+                      "detail": "Target address '192.168.1.10' parsed valid format",
+                      "severity": "block"
+                    },
+                    {
+                      "validator": "network_validator",
+                      "passed": true,
+                      "hallucination_class": null,
+                      "detail": "Target '192.168.1.10' is within engagement scope '192.168.0.0/16'",
+                      "severity": "warn"
+                    },
+                    {
+                      "validator": "scope_guard",
+                      "passed": true,
+                      "hallucination_class": null,
+                      "detail": "No prompt injection patterns detected in input",
+                      "severity": "block"
+                    },
+                    {
+                      "validator": "scope_guard",
+                      "passed": true,
+                      "hallucination_class": null,
+                      "detail": "Target '192.168.1.10' is within private RFC-1918 range",
+                      "severity": "warn"
+                    }
+                  ],
+                  "schema_version": 2
+                }
+              }
+            },
+            "step_3_component_2": {
+              "status": "success",
+              "latency_ms": 14602,
+              "output": {
+                "status": "success",
+                "command": "nmap -sS -T4 192.168.1.10",
+                "command_sequence": [
+                  "nmap -sS -T4 192.168.1.10"
+                ],
+                "tool": "nmap",
+                "session_id": "fc-fc-007",
+                "intent_ref": "NETWORK_SCAN",
+                "estimated_duration": "medium",
+                "retrieval_sources": [
+                  "nmap",
+                  "nmap",
+                  "nmap"
+                ],
+                "validation_passed": true,
+                "safety_flags": [],
+                "latency_ms": 14581
+              }
+            },
+            "step_4_component_3": {
+              "status": "success",
+              "latency_ms": 5608,
+              "output": {
+                "status": "success",
+                "push_latency_ms": 5608,
+                "session_id": "fc-fc-007",
+                "command_executed": "nmap -sS -T4 192.168.1.10",
+                "stdout": "Starting Nmap 7.991 ( https://nmap.org ) at 2026-10-19 02:17 +0000\nNmap scan report for 192.168.1.10\nHost is up (0.0054s latency).\nNot shown: 999 filtered tcp ports (no-response)\nPORT   STATE SERVICE\n25/tcp open  smtp\n\nNmap done: 1 IP address (1 host up) scanned in 4.64 seconds\n",
+                "stderr": "",
+                "exit_code": 0,
+                "recovery_log": [],
+                "correction_history": [],
+                "failure_report": null,
+                "tool_substituted": false,
+                "latency_ms": 5266,
+                "integration_latency_ms": 5608
+              }
+            },
+            "step_5_component_4": {
+              "status": "success",
+              "latency_ms": 59,
+              "output": {
+                "status": "success",
+                "push_latency_ms": 59,
+                "session_id": "fc-fc-007",
+                "parse_result": {
+                  "hosts": [
+                    "192.168.1.10"
+                  ],
+                  "services": [
+                    {
+                      "ip": "192.168.1.10",
+                      "port": 25,
+                      "protocol": "tcp",
+                      "service_name": "smtp",
+                      "service_version": "",
+                      "banner": "",
+                      "cpe": "",
+                      "cve_hints": []
+                    }
+                  ],
+                  "raw_cve_ids": [],
+                  "paths_found": []
+                },
+                "enriched_count": 0,
+                "enriched_vulnerabilities": [],
+                "predictions": [
+                  {
+                    "cve_id": "SERVICE_BASED",
+                    "service_name": "smtp",
+                    "service_port": 25,
+                    "analysis_mode": "service_based_fallback",
+                    "prediction_method": "rule_based",
+                    "exploit_probability": null,
+                    "service_risk_score": 0.2,
+                    "composite_risk_score": 0.2,
+                    "risk_tier": "LOW",
+                    "top_features": {},
+                    "risk_basis": "service_exposure_only",
+                    "vulnerability_confirmed": false
+                  }
+                ],
+                "ranked_findings": [
+                  {
+                    "cve_id": "SERVICE_BASED",
+                    "service_name": "smtp",
+                    "service_port": 25,
+                    "analysis_mode": "service_based_fallback",
+                    "prediction_method": "rule_based",
+                    "exploit_probability": null,
+                    "service_risk_score": 0.2,
+                    "composite_risk_score": 0.2,
+                    "risk_tier": "LOW",
+                    "top_features": {},
+                    "risk_basis": "service_exposure_only",
+                    "vulnerability_confirmed": false
+                  }
+                ],
+                "false_positive_reduction_rate": 0.0,
+                "latency_ms": 29,
+                "integration_latency_ms": 59
+              }
+            }
+          }
+        }
+      },
+      "wall_seconds": 33.44
+    },
+    {
+      "case": {
+        "id": "FC-008",
+        "category": "valid-scan",
+        "command": "check for web vulnerabilities on 192.168.1.10 with nikto",
+        "expect": "full_chain",
+        "expected_tool": "nikto",
+        "note": "web audit tool"
+      },
+      "response": {
+        "http_status": 200,
+        "body": {
+          "status": "ok",
+          "flow": {
+            "step_1_user_input": {
+              "command": "check for web vulnerabilities on 192.168.1.10 with nikto",
+              "session_id": "fc-fc-008",
+              "role": "analyst"
+            },
+            "step_2_component_1": {
+              "status": "success",
+              "output": {
+                "version1": {
+                  "intent_contract": {
+                    "intent": "VULNERABILITY_AUDIT",
+                    "target": {
+                      "type": "IP",
+                      "value": "192.168.1.10"
+                    },
+                    "ports": [],
+                    "modifiers": [],
+                    "cve_ids": [],
+                    "tool_hint": "nikto",
+                    "confidence": 0.95,
+                    "rejection_reason": null,
+                    "scope_warnings": []
+                  },
+                  "session_id": "fc-fc-008"
+                },
+                "version2": {
+                  "status": "success",
+                  "intent": "VULNERABILITY_AUDIT",
+                  "target": {
+                    "type": "IP",
+                    "value": "192.168.1.10"
+                  },
+                  "ports": [],
+                  "modifiers": [],
+                  "cve_ids": [],
+                  "tool_hint": "nikto",
+                  "schedule": null,
+                  "confidence": 0.95,
+                  "rejection_reason": null,
+                  "scope_warnings": [],
+                  "latency_ms": 19003,
+                  "error": null,
+                  "stage": null,
+                  "field": null,
+                  "detail": null,
+                  "sub_intent": "VULNERABILITY_AUDIT.FULL_SCAN",
+                  "secondary_intents": [],
+                  "clarification_request": null,
+                  "uncertainty_band": "low",
+                  "raw_entropy": 0.0,
+                  "tier_triggered": 1,
+                  "resolution_method": "single_sample",
+                  "calibration_method": null,
+                  "cache_hit": null,
+                  "rbac_role": "analyst",
+                  "session_turns": 1,
+                  "xai": null,
+                  "validation_findings": [
+                    {
+                      "validator": "schema_validator",
+                      "passed": true,
+                      "hallucination_class": null,
+                      "detail": "Pydantic intent schema structure validated successfully",
+                      "severity": "block"
+                    },
+                    {
+                      "validator": "regex_validator",
+                      "passed": true,
+                      "hallucination_class": null,
+                      "detail": "Target value '192.168.1.10' matches expected regex format for type IP",
+                      "severity": "block"
+                    },
+                    {
+                      "validator": "regex_validator",
+                      "passed": true,
+                      "hallucination_class": null,
+                      "detail": "No CVE IDs present to validate",
+                      "severity": "block"
+                    },
+                    {
+                      "validator": "regex_validator",
+                      "passed": true,
+                      "hallucination_class": null,
+                      "detail": "All 0 ports fall within valid range [1, 65535]",
+                      "severity": "block"
+                    },
+                    {
+                      "validator": "regex_validator",
+                      "passed": true,
+                      "hallucination_class": null,
+                      "detail": "No shell metacharacters detected in target or modifiers",
+                      "severity": "block"
+                    },
+                    {
+                      "validator": "network_validator",
+                      "passed": true,
+                      "hallucination_class": null,
+                      "detail": "Target type 'IP' is consistent with value '192.168.1.10'",
+                      "severity": "block"
+                    },
+                    {
+                      "validator": "network_validator",
+                      "passed": true,
+                      "hallucination_class": null,
+                      "detail": "Target address '192.168.1.10' parsed valid format",
+                      "severity": "block"
+                    },
+                    {
+                      "validator": "network_validator",
+                      "passed": true,
+                      "hallucination_class": null,
+                      "detail": "Target '192.168.1.10' is within engagement scope '192.168.0.0/16'",
+                      "severity": "warn"
+                    },
+                    {
+                      "validator": "scope_guard",
+                      "passed": true,
+                      "hallucination_class": null,
+                      "detail": "No prompt injection patterns detected in input",
+                      "severity": "block"
+                    },
+                    {
+                      "validator": "scope_guard",
+                      "passed": true,
+                      "hallucination_class": null,
+                      "detail": "Target '192.168.1.10' is within private RFC-1918 range",
+                      "severity": "warn"
+                    }
+                  ],
+                  "schema_version": 2
+                }
+              }
+            },
+            "step_3_component_2": {
+              "status": "success",
+              "latency_ms": 22123,
+              "output": {
+                "status": "success",
+                "command": "nikto -h 192.168.1.10 -p 80",
+                "command_sequence": [
+                  "nikto -h 192.168.1.10 -p 80"
+                ],
+                "tool": "nikto",
+                "session_id": "fc-fc-008",
+                "intent_ref": "VULNERABILITY_AUDIT",
+                "estimated_duration": "medium",
+                "retrieval_sources": [
+                  "nikto",
+                  "nikto",
+                  "nikto"
+                ],
+                "validation_passed": true,
+                "safety_flags": [],
+                "latency_ms": 21970
+              }
+            },
+            "step_4_component_3": {
+              "status": "success",
+              "latency_ms": 42824,
+              "output": {
+                "status": "success",
+                "push_latency_ms": 42824,
+                "session_id": "fc-fc-008",
+                "command_executed": "nikto -h 192.168.1.10 -p 80",
+                "stdout": "- Nikto v2.6.1\n---------------------------------------------------------------------------\n+ [FAIL] Unable to connect to 192.168.1.10:80.\n",
+                "stderr": "Argument \"Unable to connect to 192.168.1.10:80\" isn't numeric in numeric ne (!=) at /var/lib/nikto/nikto.pl line 155.\n",
+                "exit_code": 0,
+                "recovery_log": [],
+                "correction_history": [],
+                "failure_report": null,
+                "tool_substituted": false,
+                "latency_ms": 42438,
+                "integration_latency_ms": 42824
+              }
+            },
+            "step_5_component_4": {
+              "status": "success",
+              "latency_ms": 75,
+              "output": {
+                "status": "success",
+                "push_latency_ms": 75,
+                "session_id": "fc-fc-008",
+                "parse_result": {
+                  "hosts": [
+                    "192.168.1.10"
+                  ],
+                  "services": [
+                    {
+                      "ip": "192.168.1.10",
+                      "port": 80,
+                      "protocol": "tcp",
+                      "service_name": "http",
+                      "service_version": "",
+                      "banner": "",
+                      "cpe": "",
+                      "cve_hints": []
+                    }
+                  ],
+                  "raw_cve_ids": [],
+                  "paths_found": []
+                },
+                "enriched_count": 0,
+                "enriched_vulnerabilities": [],
+                "predictions": [
+                  {
+                    "cve_id": "SERVICE_BASED",
+                    "service_name": "http",
+                    "service_port": 80,
+                    "analysis_mode": "service_based_fallback",
+                    "prediction_method": "rule_based",
+                    "exploit_probability": null,
+                    "service_risk_score": 0.4,
+                    "composite_risk_score": 0.4,
+                    "risk_tier": "LOW",
+                    "top_features": {},
+                    "risk_basis": "service_exposure_only",
+                    "vulnerability_confirmed": false
+                  }
+                ],
+                "ranked_findings": [
+                  {
+                    "cve_id": "SERVICE_BASED",
+                    "service_name": "http",
+                    "service_port": 80,
+                    "analysis_mode": "service_based_fallback",
+                    "prediction_method": "rule_based",
+                    "exploit_probability": null,
+                    "service_risk_score": 0.4,
+                    "composite_risk_score": 0.4,
+                    "risk_tier": "LOW",
+                    "top_features": {},
+                    "risk_basis": "service_exposure_only",
+                    "vulnerability_confirmed": false
+                  }
+                ],
+                "false_positive_reduction_rate": 0.0,
+                "latency_ms": 30,
+                "integration_latency_ms": 75
+              }
+            }
+          }
+        }
+      },
+      "wall_seconds": 84.9
+    },
+    {
+      "case": {
+        "id": "FC-009",
+        "category": "valid-scan",
+        "command": "run a directory brute force on 192.168.1.10 with gobuster",
+        "expect": "full_chain",
+        "expected_tool": "gobuster",
+        "note": "directory bruteforce"
+      },
+      "response": {
+        "http_status": 200,
+        "body": {
+          "status": "ok",
+          "flow": {
+            "step_1_user_input": {
+              "command": "run a directory brute force on 192.168.1.10 with gobuster",
+              "session_id": "fc-fc-009",
+              "role": "analyst"
+            },
+            "step_2_component_1": {
+              "status": "error",
+              "output": {
+                "version1": {
+                  "intent_contract": {
+                    "intent": null,
+                    "target": null,
+                    "ports": [],
+                    "modifiers": [],
+                    "cve_ids": [],
+                    "tool_hint": null,
+                    "confidence": null,
+                    "rejection_reason": null,
+                    "scope_warnings": []
+                  },
+                  "session_id": "fc-fc-009"
+                },
+                "version2": {
+                  "status": "error",
+                  "intent": null,
+                  "target": null,
+                  "ports": [],
+                  "modifiers": [],
+                  "cve_ids": [],
+                  "tool_hint": null,
+                  "schedule": null,
+                  "confidence": null,
+                  "rejection_reason": null,
+                  "scope_warnings": [],
+                  "latency_ms": 31082,
+                  "error": "INTENT_ACCESS_DENIED",
+                  "stage": "rbac_guard",
+                  "field": null,
+                  "detail": "Role 'analyst' is not permitted to invoke 'DIRECTORY_BRUTEFORCE' intents. Permitted intents for this role: ['NETWORK_SCAN', 'VULNERABILITY_AUDIT', 'SERVICE_ENUMERATION', 'PASSIVE_RECON', 'AMBIGUOUS', 'REJECTED']",
+                  "sub_intent": null,
+                  "secondary_intents": [],
+                  "clarification_request": null,
+                  "uncertainty_band": null,
+                  "raw_entropy": null,
+                  "tier_triggered": null,
+                  "resolution_method": null,
+                  "calibration_method": null,
+                  "cache_hit": null,
+                  "rbac_role": null,
+                  "session_turns": null,
+                  "xai": null,
+                  "validation_findings": [
+                    {
+                      "validator": "schema_validator",
+                      "passed": true,
+                      "hallucination_class": null,
+                      "detail": "Pydantic intent schema structure validated successfully",
+                      "severity": "block"
+                    },
+                    {
+                      "validator": "regex_validator",
+                      "passed": true,
+                      "hallucination_class": null,
+                      "detail": "Target value '192.168.1.10' matches expected regex format for type IP",
+                      "severity": "block"
+                    },
+                    {
+                      "validator": "regex_validator",
+                      "passed": true,
+                      "hallucination_class": null,
+                      "detail": "No CVE IDs present to validate",
+                      "severity": "block"
+                    },
+                    {
+                      "validator": "regex_validator",
+                      "passed": true,
+                      "hallucination_class": null,
+                      "detail": "All 0 ports fall within valid range [1, 65535]",
+                      "severity": "block"
+                    },
+                    {
+                      "validator": "regex_validator",
+                      "passed": true,
+                      "hallucination_class": null,
+                      "detail": "No shell metacharacters detected in target or modifiers",
+                      "severity": "block"
+                    },
+                    {
+                      "validator": "network_validator",
+                      "passed": true,
+                      "hallucination_class": null,
+                      "detail": "Target type 'IP' is consistent with value '192.168.1.10'",
+                      "severity": "block"
+                    },
+                    {
+                      "validator": "network_validator",
+                      "passed": true,
+                      "hallucination_class": null,
+                      "detail": "Target address '192.168.1.10' parsed valid format",
+                      "severity": "block"
+                    },
+                    {
+                      "validator": "network_validator",
+                      "passed": true,
+                      "hallucination_class": null,
+                      "detail": "Target '192.168.1.10' is within engagement scope '192.168.0.0/16'",
+                      "severity": "warn"
+                    },
+                    {
+                      "validator": "scope_guard",
+                      "passed": true,
+                      "hallucination_class": null,
+                      "detail": "No prompt injection patterns detected in input",
+                      "severity": "block"
+                    },
+                    {
+                      "validator": "scope_guard",
+                      "passed": true,
+                      "hallucination_class": null,
+                      "detail": "Target '192.168.1.10' is within private RFC-1918 range",
+                      "severity": "warn"
+                    }
+                  ],
+                  "schema_version": 2
+                }
+              }
+            },
+            "step_3_component_2": {
+              "status": "skipped",
+              "reason": "C1 did not produce a forwardable contract (error/rejected) or planner not configured",
+              "output": null
+            },
+            "step_4_component_3": null,
+            "step_5_component_4": null
+          }
+        }
+      },
+      "wall_seconds": 31.09
+    },
+    {
+      "case": {
+        "id": "FC-010",
+        "category": "valid-scan",
+        "command": "scan the subnet 192.168.1.0/24 for live hosts",
+        "expect": "full_chain",
+        "expected_tool": "nmap",
+        "note": "subnet discovery"
+      },
+      "response": {
+        "http_status": 0,
+        "body": {
+          "_error": "TimeoutError: timed out"
+        }
+      },
+      "wall_seconds": 300.02
+    },
+    {
+      "case": {
+        "id": "FC-011",
+        "category": "valid-scan",
+        "command": "do a ping sweep of 192.168.1.0/24",
+        "expect": "full_chain",
+        "expected_tool": "nmap",
+        "note": "ping sweep -sn"
+      },
+      "response": {
+        "http_status": 0,
+        "body": {
+          "_error": "TimeoutError: timed out"
+        }
+      },
+      "wall_seconds": 300.0
+    }
+  ]
+}
