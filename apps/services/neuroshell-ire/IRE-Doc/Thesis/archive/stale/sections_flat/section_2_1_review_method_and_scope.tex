@@ -1,0 +1,58 @@
+\section{Review Method and Scope}\label{sec:review-method-and-scope}
+
+This chapter reviews the literature needed to support the research questions
+posed in Section~\ref{sec:research-questions}. The review is deliberately
+targeted rather than bibliometric: its purpose is to establish (1) how
+language-model copilots for security operations behave and how they validate
+their own output; (2) the attack surface of applications that integrate
+language models with tooling; (3) the available methods for detecting model
+fabrication and for measuring answer agreement or uncertainty; and (4) which of
+these techniques remain viable under the deployment constraints adopted in this
+dissertation---an offline, CPU-only, single-inference budget with no retrieval
+at query time. These four questions map directly onto RQ1--RQ3.
+
+The corpus is drawn from the computing literature and from authoritative
+technical sources. Peer-reviewed and established-venue material was sought
+across the ACM proceedings (including the ESEC/FSE joint conference and the
+Artificial Intelligence and Security (AISec) workshop), the empirical NLP and
+machine learning conferences (EMNLP, ICLR, NeurIPS), the ACM Computing Surveys
+journal, and the arXiv preprint archive; standards and tooling references were taken
+from their canonical sources (the IETF RFC series, the OWASP project, and the
+official documentation of the Nmap and Metasploit tools). Candidate works were
+located with controlled query themes covering the joint areas of interest:
+security copilots and penetration testing assisted by language models, prompt
+injection and indirect prompt injection, hallucination detection, semantic
+uncertainty, self-consistent decoding, retrieval-augmented generation, and
+authorisation control for tool-driven systems.
+
+Works were included when they satisfied two criteria: relevance to at least one
+research question, and a verifiable primary source reporting either an empirical
+evaluation or an authoritative specification. The machine-learning literature
+covered is concentrated in the period 2019--2025, which spans the advent of the
+sentence-embedding and language-model techniques relied on here
+\parencite{reimers2019sbert,lewis2020rag}; older technical standards and
+tooling references are included regardless of year because they define stable
+interfaces rather than evolving research claims. Preprint versions were
+preferred only when a peer-reviewed version was not available for a work; each
+entry in the reference list was verified against its real source before it was
+cited in this dissertation. The review is bounded by the deployment constraint:
+methods that assume interactive generation, a cloud-hosted verifier, or
+retrieval infrastructure are surveyed because they are the competing
+alternatives against which the guarded pipeline must be justified, and their
+unsuitability for the offline single-inference budget is part of the analysis
+in Section~\ref{sec:gap-synthesis}.
+
+The remainder of the chapter is organised as follows.
+Section~\ref{sec:domain-foundations} establishes the theoretical background of
+intent recognition and of the guarantees expected from a safety-critical
+interface. Section~\ref{sec:related-research} examines the related research on
+LLM copilots, attacks, and fabrication detection in detail.
+Section~\ref{sec:existing-systems} reviews existing systems, products and
+techniques against the same criteria. Section~\ref{sec:gap-synthesis} synthesises
+the findings into the gap that motivates this dissertation and into the
+conceptual framework that the design chapters build on.
+
+\TODO{Confirm whether the faculty's assessment rubric requires a formal
+systematic-review protocol (screening counts, PRISMA-style reporting). The
+current review is a targeted narrative review; screening statistics are not
+reported because no formal screening process was conducted.}

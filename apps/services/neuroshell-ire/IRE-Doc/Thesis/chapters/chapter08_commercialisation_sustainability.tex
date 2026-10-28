@@ -1,0 +1,244 @@
+%% Chapter 8 - Commercialisation and Sustainability
+%% Sections: 8.1 Value proposition and target users; 8.2 Market and competitive
+%% position; 8.3 Business or sustainability model; 8.4 Scalability, intellectual
+%% property and compliance; 8.5 Contribution to the Sustainable Development Goals.
+%% Master rules: no fabricated market statistics; no claim of legal/certification
+%% compliance without evidence; speculative commercialisation written as potential
+%% pathways only.
+
+\chapter{Commercialisation and Sustainability}\label{ch:commercialisation}
+
+This chapter examines how the Intent Recognition Engine could be taken from a
+research artefact to a deployed capability. It states the value proposition and
+the users it would serve, positions the engine against the surveyed landscape,
+and sets out plausible---not claimed---commercialisation and sustainability
+pathways. Consistent with the evidence-first rule of this dissertation, no
+market statistic is fabricated here, no revenue or adoption figure is asserted,
+and every legal or certification statement is either grounded in the verified
+record of the preceding chapters or explicitly marked as a requirement rather
+than an achievement.
+
+\section{Value Proposition and Target Users}\label{sec:value-proposition}
+
+The value proposition follows directly from the measured result of
+Chapter~\ref{ch:results}. A security organisation that wants to let analysts
+drive tooling through natural language faces a choice between correctness and
+automation: a raw language model offers fluency but, as Experiment~1 shows,
+transfers every malformed, misclassified or hallucinated output into the actions
+a pipeline would execute---a 0\% catch rate and a 32\%/31\% false-positive
+rate before guarding. The IRE converts that choice into a combination: on the
+evaluated 1,500-record population, the guarded pipeline raises flaw catch from
+0\% to 64--72\%, lifts decision accuracy from 69--78\% to 82--86\%, and halves
+the false-positive rate (14\%/15\%), while remaining offline, CPU-only,
+single-inference and retrieval-free
+(Section~\ref{sec:exp1}). The value is therefore not ``an LLM that understands
+security prose''---it is ``a head-of-pipeline component that guarantees
+structurally valid, schema-constrained, authorised and in-scope intent
+contracts despite the underlying model''.
+
+This value concentrates where three conditions coincide: the organisation uses
+offensive-security tooling, operates under data- or policy-constraints that
+disallow sending prompts to a hosted model or a retrieval service, and has an
+automation chain that can consume validated JSON contracts rather than prose
+(Section~\ref{sec:component-architecture}). Three user groups follow.
+
+\emph{Security analysts and operators} are the primary users. For them the
+engine removes the manual translation stage between intent and tool invocation,
+and the safety invariant (Equation~\ref{eq:safety-invariant}) means a
+misremembered tool syntax, an out-of-scope target or a role violation is caught
+by deterministic predicates rather than by the analyst's vigilance. The
+audit-friendly structured response and per-request metrics
+(Section~\ref{sec:deployment-operation}) also suit post-action review.
+
+\emph{Security-tooling integrators} are the secondary users. Because the IRE
+emits a closed, schema-enforced contract with a documented tool hint and
+parameter envelope (nine intent classes, validated target types and explicit
+CVE/port/modifier fields), it is an integration point for orchestrators and
+planners that would otherwise re-parse prose (Section~\ref{sec:component-architecture}).
+Within the broader NeuroShell chain (project reference R26-CS-018,
+Section~\ref{sec:overall-project-context}) the IRE is Component~01 and is
+designed to be the validated eye of the chain.
+
+\emph{Offline-constrained environments} constitute the differentiating third
+user group: air-gapped networks, regulated industries, embedded or edge
+deployments and research ranges where external inference is unavailable or
+prohibited. The engine's only runtime dependencies are model weights, policies
+and an operator API key, and nothing leaves the device at inference time
+(Section~\ref{sec:deployment-operation}). This is the segment the comparable
+copilots in the survey do not serve (Section~\ref{sec:existing-systems}).
+
+\section{Market and Competitive Position}\label{sec:market-position}
+
+The competitive position is stated relative to the verified
+existing-systems survey (Section~\ref{sec:existing-systems}) rather than to
+unverifiable market sizing. The survey found a four-way split: deterministic
+tooling (for example Nmap and the exploitation framework) that is ground-truth
+accurate but requires a human to map intent, generation-side copilots that map
+intent but consume human review, integration techniques that connect models to
+tools without an intermediate validation stage, and post-hoc guardrail
+techniques that check model behaviour after the fact. In those four categories,
+any candidate is strong in one and absent in another: none combined
+machine-consumed output, schema and scope/authorisation enforcement, and
+offline, CPU-only, retrieval-free operation over a closed intent taxonomy
+(Section~\ref{sec:gap-synthesis} and Table~\ref{tab:existing-systems}).
+
+The IRE occupies that empty combination, and its defensible position rests on
+three properties the evaluation supports rather than on marketing claims.
+First, the catch-before-dispatch architecture is a behavioural claim with a
+measurement: the ablation record shows the validation stack is the dominant
+safety contributor (Gemma $-30$, Qwen $-24$ catch points when removed;
+Section~\ref{sec:exp3}). Second, the result is reproducible and
+backend-independent on the safety dimension---the identical stack orders the
+effects of the same way on two distinct offline models
+(Section~\ref{sec:exp2})---which weakens a ``vendor-locked model'' objection.
+Third, the offline posture is structural, not incidental: it is the deployment
+constraint the design is built around, not a configuration.
+
+Two competitive risks are stated openly. The large-model copilots are strong on
+coverage and conversation, so the IRE competes only in the automated,
+machine-consumed corner of the space, not against interactive assistants. And
+because no named commercial product was included in the survey for lack of
+verifiable primary sources (Section~\ref{sec:existing-systems}),
+the position here is a review-based gap claim, to be re-verified against named
+products at any commercialisation step before a broader claim is made.
+
+\section{Business and Sustainability Model}\label{sec:business-model}
+
+Consistent with the master rules, the following is a set of potential pathways,
+not a claimed business. All are sketched as options that a founder or
+institution could evaluate, and none asserts a market or revenue number.
+
+\subsection*{Open-core with managed hardening services}
+
+The engine, its data set and its evaluation harness are research artefacts
+versioned with the project source
+(Section~\ref{sec:reproducibility}), and the model backends are open-weight
+and locally runnable. A natural model is open-core: the validated core is
+published to establish trust and to grow an integrator base, while the
+commercial layer concentrates on what a single-team paper cannot ship---the
+hardening and certification work itemised in Section~\ref{sec:ip-compliance}
+(bounded latency measurement, closed production scope path, credential
+management), integration packs for the principal scanning and exploitation
+tools, and a maintained contract-schema migration path.
+
+\subsection*{Direct licensing and private deployment}
+
+An alternative or complement is direct licensing of the component to security
+product vendors and internal security platforms, under which the licensee embeds
+the IRE as the NLU gateway between their users and their tooling. The
+deliverable in this pathway is a library-plus-service with a documented contract
+schema and the test suite (506 tests, 76\% statement coverage;
+Section~\ref{sec:product-results}) as the acceptance baseline the licensee can
+run independently.
+
+\subsection*{Sustainability rather than revenue}
+
+A third reading of ``sustainability'' is operational, not financial. Because the
+system is CPU-only, runs on a single device without a hosted inference bill,
+and holds no external data dependency at inference time
+(Section~\ref{sec:deployment-operation}), it has a low and predictable running
+cost. That property is itself the sustainable-deployment argument: the engine
+can keep providing a security-gate capability in environments or budgets where
+hosted copilot licensing is not viable. Any real costing must be produced from
+measured latency and resource profiles, neither of which is asserted here
+(Section~\ref{sec:discussion-limitations}).
+
+\section{Scalability, Intellectual Property and Compliance}\label{sec:ip-compliance}
+
+\subsection*{Scalability}
+
+The scalability story is deliberately honest about the current measurement.
+Each request is a single offline inference, so throughput on one device is
+bounded by the model's inference latency and the semantic-cache hit rate; no
+latency figures are quoted because they were not measured in this dissertation
+(Section~\ref{sec:discussion-limitations}). What scales by design is the
+deployment shape, not the single-node speed: because the component is a
+stateless, rate-limited API service holding no per-request state beyond the
+session context, more capacity is acquired by adding independent instances
+behind a load balancer, each with its own model weights, rather than by
+contending on one node (Sections~\ref{sec:component-architecture} and
+\ref{sec:deployment-operation}). The semantic cache, the bounded-sampling
+agreement gate and the deterministic escalation path
+(Section~\ref{sec:related-research}) are the design choices that keep the
+per-request cost bounded as usage grows.
+
+\subsection*{Intellectual property}
+
+The intellectual-property position rests on what was authored here and what is
+third-party. Authored: the seven-stage pipeline composition, the closed
+nine-intent taxonomy, the 22-entry alias-to-CVE resolver, the evaluation data
+set and harness, and the ablation methodology used to quantify layer
+contribution (Section~\ref{sec:component-architecture} and
+Chapter~\ref{ch:results}). These are the defensible original elements, and any
+commercialisation should identify them as the owned asset
+(Section~\ref{sec:discussion-product}). Third-party: the model backends
+(\texttt{gemma4:e4b} and \texttt{qwen2.5-coder:7b}) are open-weight, the OWASP
+Top~10 for LLM applications \parencite{owasp2025}, RFC~1918 \parencite{rfc1918}
+and the vulnerability-identifier registries \parencite{nistnvd} are external
+standards referenced by the design, and the scanning-tool syntaxes the engine
+emits follow vendor documentation \parencite{lyon2009nmap,metasploit}
+(Section~\ref{sec:standards}). A licensing review is therefore a requirement of
+any commercial step, not a completed fact: the statement here is that the
+original layers are separable from the third-party dependencies, not that any
+licence has been executed.
+
+\subsection*{Compliance}
+
+The verified compliance position is narrow and comfortable. The product
+processes no personal data at any point: requests, session context and results
+remain on the device and involve no identifiable-individual information
+(Section~\ref{sec:ethics}), so it falls outside personal-data protection regimes
+as a data-processing matter (Section~\ref{sec:standards}). The research itself
+required no institutional research-ethics approval, involved no human
+participants and contacted no live system, and holds only model weights and
+operator-configured policies as persistent assets
+(Section~\ref{sec:ethics}).
+
+Two verified findings bound commercial deployment, and both are stated as
+requirements rather than resolved items. First, the shipped configuration uses a
+default development API key that bypasses transport authentication when left
+untouched, and the ``\texttt{production}'' scope-mode value admitted by the
+settings schema falls through to the \texttt{WARN} enforcement path rather than
+\texttt{BLOCK}---both must be closed before any deployment outside a controlled
+lab (Section~\ref{sec:discussion-product}). Second, institutional confirmation
+of the applicable declarations (integrity and AI-tools disclosures) is still
+pending at the final AUDIT step (Section~\ref{sec:ethics}). No certification
+(metric, standard or regulatory) is claimed as obtained; certification is
+positioned as a future hardening task.
+
+\section{Contribution to the Sustainable Development Goals}\label{sec:sdg}
+
+This section states the engine's relationship to the UN Sustainable Development
+Goals in the only form the evidence supports: a reasoned contribution
+narrative, with no quantified or statistical claim against the SDG indicators.
+
+\emph{SDG~9 (Industry, Innovation and Infrastructure)} is the most direct
+mapping. The engine is an applied-AI component for a critical-industry
+function, and its deployment argument---validated, offline, low-infrastructure
+automation of routine security workflows---speaks to building resilient
+cybersecurity capability without depending on large hosted-model infrastructure.
+The measured reduction in free-form model error before machine dispatch
+(Section~\ref{sec:exp1}) is precisely the reliability improvement that makes an
+innovation acceptable in infrastructure automation.
+
+\emph{SDG~16 (Peace, Justice and Strong Institutions)} is served through cyber
+resilience. By placing a deterministic, authorisation- and scope-enforced gate
+in front of security action, the engine contributes to protecting digital
+infrastructure and the institutions that rely on it. The dual-use treatment is
+part of that narrative: the system is deployment-gated and scope-enforced, its
+failure modes are published rather than suppressed, and its offensive
+capability is bounded by the same invariants it enforces
+(Section~\ref{sec:ethics}), so the contribution to secure institutions is
+conditional on that gate.
+
+\emph{SDG~8 (Decent Work and Economic Growth)} is a secondary mapping: the
+system automates the error-prone manual translation of security intent into
+tool actions, the kind of task delegation consistent with freeing analysts for
+higher-value work. The claim is qualitative only---the engine changes the
+distribution of human effort, and its productivity effect is a matter for
+measured deployment, not an assertion made here.
+
+No claim is made against SDG~4, 13 or others without a concrete connection, and
+no SDG indicator is cited with a number. This section is deliberately more
+modest than a typical sustainability claim because the master rule of this
+dissertation is that contributions are either measured or explicitly unmeasured.

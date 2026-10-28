@@ -1,0 +1,30 @@
+NEUROSHELL C2 — PIPELINE BENCHMARK RESULT
+Run: 20261018_213421 (uuid cd0126df)
+
+Total cases:              25
+  command generation:     19
+  expected rejection:     4
+  session recovery:       1
+  excluded:               1
+Transport exceptions:     0
+Infrastructure failures:  0
+Avg planning latency:     20663.75 ms
+
+COMMAND GENERATION
+  semantic command accuracy: 89.47%
+  tool selection:            94.74%
+  target preservation:       94.74%
+  port argument:             94.74%
+  option value:              89.47%
+  structural validity:       94.74%
+  safety compliance:         94.74%
+  exact normalized match:    15.79%
+
+EXPECTED REJECTION
+  status code correctness:   75.0%
+  safety guard compliance:   75.0%
+
+SESSION RECOVERY
+  target recovery accuracy:  100.0%
+
+Full metrics JSON: data\eval_results\c2_benchmark_20261018_213421.json

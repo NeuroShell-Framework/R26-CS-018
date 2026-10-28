@@ -1,0 +1,121 @@
+\section{Related Research}\label{sec:related-research}
+
+This section reviews the three bodies of work most directly related to the
+Intent Recognition Engine---language-model copilots for security operations,
+attacks on applications that integrate language models, and methods for
+detecting model fabrication---followed by a brief assessment of what each body
+contributes to and leaves open for this dissertation.
+
+\subsection*{Language-model copilots for security operations}
+
+Two systems define the current shape of LLM-assisted offensive security. Happe
+and Cito proposed language models as \emph{sparring partners} for penetration
+testing and demonstrated a closed-loop system in which a model drove a
+deliberately vulnerable virtual machine to root access \parencite{happe2023pwned}.
+PENTESTGPT treats penetration testing as a task for a language-model-centric
+assistant, decomposing an engagement across a reasoning chain, a generation
+chain and a guidance chain so that each phase of an assessment is planned and
+executed incrementally \parencite{deng2024pentestgpt}. Both contributions
+establish that language models can produce \emph{plausible} security actions
+and can operate tooling in controlled environments, and both are representative
+of the generation-side focus of the field: output is produced for a human
+operator to review, and correctness is handled informally. Neither system
+subjects its output to deterministic schema, scope and authorisation validation
+before machine consumption, which is precisely the gap that a copilot feeding
+an \emph{automated} toolchain must close. The IRE inverts this priority: it
+treats the model's generation as a candidate that must pass checkable
+predicates (Section~\ref{sec:domain-foundations}) and only then becomes an
+actionable intent.
+
+\subsection*{Attacks on language-model-integrated applications}
+
+The second body of work establishes that unvalidated model output is dangerous
+in integrated systems. Liu \emph{et al.} formalised prompt-injection attacks
+against LLM-integrated applications and systematically benchmarked a set of
+common defences, finding that prevention-based defences were weak and
+detection-based defences incomplete \parencite{liu2023promptinjection}.
+Greshake \emph{et al.} demonstrated \emph{indirect} prompt injection, in which
+an attacker plants instructions inside content---including web pages and
+documents---that an integration later retrieves and feeds to the model, and
+showed compromise of real-world assistant-style integrations
+\parencite{greshake2023indirect}. Kang \emph{et al.} showed that dual-use
+attacks that combine well-known computer-security techniques bypass in-the-wild
+content safeguards of deployed models with near-complete success
+\parencite{kang2024dualuse}. The OWASP Top~10 for LLM applications
+consolidates these classes---prompt injection first among them---as
+first-class application risks rather than theoretical concerns
+\parencite{owasp2025}.
+
+The implication for this dissertation is direct. A security copilot that
+consumes an utterance, asks a model to classify it, and dispatches the result
+is exactly the kind of integration these attacks exploit: a single adversarial
+utterance can steer the classification output, and any downstream consumer will
+then act on the attacker-chosen intent unless an independent, non-model check
+intervenes. The relevant design response therefore places deterministic
+authorisation and validation \emph{after} generation, so that even a perfectly
+diverted model cannot manufacture an accepted intent that violates syntax,
+scope or role policy (the safety invariant introduced in
+Chapter~\ref{ch:product-design}).
+
+\subsection*{Detecting fabrication and measuring uncertainty}
+
+The third body of work supplies the theoretical toolkit for catching fabricated
+output. Ji \emph{et al.} provide the taxonomy of hallucination in natural
+language generation that distinguishes intrinsic from extrinsic fabrication
+\parencite{ji2023hallucination} (Section~\ref{sec:domain-foundations}).
+Sampling-based detection uses the model's own output statistics:
+SelfCheckGPT scores the consistency of sampled responses to flag ungrounded
+claims \parencite{manakul2023selfcheckgpt}; semantic-uncertainty methods embed
+responses and cluster meaning-equivalent outputs to measure disagreement
+\parencite{kuhn2023semantic}, and semantic entropy applies this principle to
+detect confabulations in free-form text \parencite{farquhar2024semantic}.
+Self-consistency decoding accumulates agreement across samples and rewards the
+majority answer \parencite{wang2023selfconsistency}.
+
+What these methods share is an implicit budget: they assume either interactive
+generation with a user, or the freedom to produce several responses per query
+and cluster them. Each additional sample multiplies the inference cost of a
+CPU-only model on the operator's laptop, so the design of this dissertation
+must transpose the disagreement intuition into a \emph{single} guarded
+classification: restricted sampling (a bounded number of responses), a cheap
+embedding-based agreement gate, and a deterministic escalation path that does
+not depend on a large verifier model.
+
+\subsection*{Grounding via retrieval and embeddings}
+
+A complementary line of work grounds model answers in external corpora rather
+than in self-consistency. Retrieval-augmented generation (RAG) conditions
+generation on retrieved passages so that answers can be traced to sources
+\parencite{lewis2020rag}, and sentence embeddings provide the similarity
+signals such systems rely on \parencite{reimers2019sbert}. RAG is attractive
+for factual Q\&A, but it introduces retrieved content into the prompt at
+inference time---an additional prompt-injection surface
+\parencite{greshake2023indirect}---and presupposes corpus infrastructure and
+embedding services that contradict the offline, single-device boundary adopted
+here (Section~\ref{sec:scope-limitations-assumptions}). The IRE therefore
+performs no retrieval at inference time and uses embeddings only for the
+agreement and cache signals.
+
+\subsection*{Assessment}
+
+Taken together, the related research establishes three things: copilots can
+generate plausible security actions but do not validate them for machine
+consumption; integrated systems are exploitable through adversarial and
+indirect-injection utterances, and published defences are brittle; and
+fabrication can be detected in principle through sampling and semantic
+agreement, at a cost that grows with the number of samples. What the surveyed
+literature does not measure, to the best of the review conducted here, is the
+behaviour of a \emph{guardrail stack}---a full deterministic validation
+pipeline with authorisation checks and a bounded self-consistency gate over a
+small offline model---under a strict single-inference latency budget, nor the
+isolated contribution of each guard layer, nor whether the achieved safety
+transfers between different offline model backends. Those measurements are
+precisely RQ1--RQ3, and Section~\ref{sec:gap-synthesis} consolidates the gap
+they define into the conceptual framework used in the remainder of this
+dissertation.
+
+\TODO{At the final AUDIT step, re-verify the characterisation of
+\citeauthor{liu2023promptinjection} (defence benchmark) and
+\citeauthor{kang2024dualuse} (dual-use bypass) against the full text of their
+respective publications, since the descriptions here are relayed through the
+project's research paper rather than a direct reading of each source.}

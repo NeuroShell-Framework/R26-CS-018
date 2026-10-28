@@ -1,0 +1,19 @@
+{
+  "DIRECTORY_BRUTEFORCE": {
+    "gobuster": ["ffuf", "dirb", "wfuzz"],
+    "ffuf":     ["gobuster", "dirb", "wfuzz"],
+    "dirb":     ["gobuster", "ffuf", "wfuzz"]
+  },
+  "VULNERABILITY_AUDIT": {
+    "nikto":   ["whatweb", "nmap --script vuln"],
+    "whatweb": ["nikto"]
+  },
+  "NETWORK_SCAN": {
+    "nmap":    ["masscan", "rustscan"],
+    "masscan": ["nmap", "rustscan"]
+  },
+  "PASSWORD_ATTACK": {
+    "hydra":  ["medusa", "ncrack", "crackmapexec"],
+    "medusa": ["hydra", "ncrack"]
+  }
+}

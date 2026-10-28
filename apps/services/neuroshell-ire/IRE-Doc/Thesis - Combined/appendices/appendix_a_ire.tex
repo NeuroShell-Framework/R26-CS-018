@@ -1,0 +1,71 @@
+\section{Asian and scope of the instrument}
+
+The data set and evaluation protocol committed by the Intent Recognition Engine
+(IRE, Component~1) are reproduced from the component report so that every figure
+reported in \cref{ch:results} can be audited against the same artefact.
+
+\section{Committed data set (1,500 records)}
+
+The data set contains 1,500 evaluation records split into a well-formed set
+(\(D^{+}\)) and a deliberately flawed set (\(D^{-}\)).
+
+\begin{center}
+\begin{tabular}{@{}lcc@{}}
+  \toprule
+  \textbf{Category} & \textbf{Records} & \textbf{Share}\\
+  \midrule
+  Well-formed (\(D^{+}\)) & 600 & 40.0\\
+  Deliberately flawed (\(D^{-}\)) & 900 & 60.0\\
+  \midrule
+  Total \(D\) & 1,500 & 100.0\\
+  \bottomrule
+\end{tabular}
+\end{center}
+
+The eight flaw classes in the flawed subset are: adversarial utterances, RBAC
+(role) violations, fabricated parameters, type mismatches, fabricated CVEs,
+contradictory requests, out-of-scope targets, and ambiguous requests. Each
+record carries a gold intent label and a gold flaw label, so per-record
+decisions are scored deterministically.
+
+\section{Measurement definitions}
+
+The IRE defines three primary measures. Decision accuracy is the fraction of
+records whose accepted/rejected decision matches the gold label (computed over
+the well-formed set as acceptance accuracy and over the flawed set as catch
+rate). The flaw-catch rate is the fraction of flawed records that are rejected.
+The false-positive rate is the fraction of well-formed records that are wrongly
+rejected. Decision accuracy is reported over the full 1,500-record set by
+combining the acceptance rate on \(D^{+}\) and the catch rate on \(D^{-}\).
+
+\section{Experiment schedule}
+
+\begin{enumerate}
+  \item \textbf{Experiment 1 (RQ1):} value of the guarded pipeline; raw model
+  output against the full pipeline on the 1,500-record set; measures decision
+  accuracy, catch rate, false-positive rate.
+  \item \textbf{Experiment 2 (RQ2):} backend comparison; two offline backends
+  (Gemma and Qwen) under an identical guardrail stack.
+  \item \textbf{Experiment 3 (RQ2):} per-layer ablation; one protection removed
+  at a time from the full pipeline, reporting the change in catch rate and
+  false-positive rate relative to the baseline.
+  \item \textbf{Experiment 4 (RQ2):} per-class catch rate; a deep-dive subset of
+  the data set reporting the catch rate for each of the eight flaw classes.
+\end{enumerate}
+
+All results are single-run point estimates obtained on one CPU-only machine. The
+evaluation harness commits per-record decisions so that the reported figures
+can be reproduced.
+
+\section{Reproducibility artefacts}
+
+\begin{description}
+  \item[Evaluation data set] -- the 1,500-record, gold-labelled collection used
+  for all reported experiments.
+  \item[Evaluation harness] -- the script that executes the four experiments and
+  writes per-record decisions.
+  \item[Per-layer ablation protocol] -- the configuration used to remove one
+  protection at a time.
+  \item[Test suite] -- 506 tests (434 unit, 72 integration) collected on
+  7 October 2026, all passing, with 76\% statement coverage.
+\end{description}

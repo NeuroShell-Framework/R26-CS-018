@@ -1,0 +1,154 @@
+TOOL: nmap
+VERSION: 7.94
+CATEGORY: Network Scanner
+
+DESCRIPTION:
+Nmap (Network Mapper) is an open-source utility for network discovery, port scanning, service version detection, OS identification, and security auditing. It sends specially crafted raw IP packets to probe hosts, analyze firewall rules, discover open ports, and execute automated vulnerability assessment scripts.
+
+BASIC SYNTAX:
+nmap [scan types] [options] <target>
+
+TARGET SPECIFICATION:
+Single IP address:          nmap 192.168.1.1
+CIDR network range:         nmap 192.168.1.0/24
+Hostname:                   nmap scanme.nmap.org
+IP octet range:             nmap 192.168.1.1-254
+Input from target list file: nmap -iL targets.txt
+Exclude specific hosts:     nmap 192.168.1.0/24 --exclude 192.168.1.50
+Exclude hosts from file:    nmap 192.168.1.0/24 --excludefile exclude.txt
+Random targets generation:  nmap -iR 100 -p 80
+
+HOST DISCOVERY (PING SCANNING):
+-sn               Ping sweep mode (disable port scan, host discovery only)
+-Pn               Skip host discovery (treat all target hosts as online)
+-PE               ICMP echo request discovery ping
+-PP               ICMP timestamp request discovery ping
+-PM               ICMP netmask request discovery ping
+-PS <portlist>    TCP SYN ping to specified ports (default 80)
+-PA <portlist>    TCP ACK ping to specified ports
+-PU <portlist>    UDP ping to specified ports (default 40125)
+-PR               ARP discovery ping (default on local Ethernet networks)
+-n                Never perform reverse DNS resolution (speeds up scans)
+-R                Always perform reverse DNS resolution for all targets
+--traceroute      Trace hop path to each target host
+
+SCAN TYPES & TECHNIQUES:
+-sS               SYN stealth scan (default for root users, half-open TCP scan)
+-sT               TCP connect scan (default for non-root, completes full 3-way handshake)
+-sU               UDP scan (scans UDP ports like DNS, SNMP, DHCP)
+-sA               ACK scan (map firewall rulesets and filtered ports)
+-sW               Window scan (TCP window size inspection for port status)
+-sM               Maimon scan (FIN/ACK probe scan)
+-sN               Null scan (sets no TCP flags)
+-sF               FIN scan (sets only TCP FIN flag)
+-sX               Xmas scan (sets TCP FIN, PSH, and URG flags)
+-sI <zombie_host> Idle scan (stealth scan using a zombie host IP ID sequence)
+-sY               SCTP INIT scan
+-sZ               SCTP COOKIE ECHO scan
+-sO               IP protocol scan (determines supported IP protocols like ICMP, IGMP, IPsec)
+
+PORT SPECIFICATION & SCAN ORDER:
+-p 80             Scan single port 80
+-p 22,80,443      Scan list of specific ports
+-p 1-1000         Scan port range from 1 to 1000
+-p-               Scan all 65535 TCP ports
+-p T:80,443,U:53  Scan specific TCP and UDP ports simultaneously
+-F                Fast scan mode (scan top 100 ports instead of default 1000)
+--top-ports <n>   Scan top <n> most common ports (e.g. --top-ports 100 or 1000)
+--exclude-ports   Exclude specified ports from scan (e.g. --exclude-ports 53,80)
+-r                Scan ports sequentially (do not randomize scan order)
+
+SERVICE & VERSION DETECTION:
+-sV                       Probe open ports to determine service and version info
+--version-intensity <0-9> Set version probe intensity (0=light to 9=all probes)
+--version-light           Light version probe mode (intensity 2 for faster scans)
+--version-all             Try every single version probe (intensity 9)
+--version-trace           Show detailed version scan activity output
+
+OS DETECTION:
+-O                Enable OS detection
+--osscan-limit    Limit OS detection to promising targets
+--osscan-guess    Guess OS more aggressively when exact match is unavailable
+-A                Aggressive scan mode (enables OS detection -O, version scan -sV, default scripts -sC, traceroute)
+
+NMAP SCRIPT ENGINE (NSE):
+-sC                     Run default script category
+--script=<name>         Run specific script by name or wildcard pattern
+--script=default        Run default scripts
+--script=vuln           Run vulnerability identification scripts
+--script=auth           Run authentication and credential checks
+--script=discovery      Run directory and network service discovery scripts
+--script=exploit        Run safe vulnerability exploit verification scripts
+--script=safe           Run scripts that are safe and non-intrusive
+--script=brute          Run brute-force password audit scripts
+--script-args=<args>    Pass custom key-value arguments to NSE scripts
+
+POPULAR NSE SCRIPTS:
+http-enum               Enumerate common web application directories and files
+http-headers            Fetch and inspect HTTP response headers
+http-methods            Determine supported HTTP methods (GET, POST, OPTIONS, TRACE)
+http-title              Extract web page title tag content
+http-robots.txt         Fetch and parse robots.txt paths
+smb-enum-shares         Enumerate SMB shares on Windows/Samba targets
+smb-vuln-ms17-010       Check for EternalBlue SMB vulnerability (MS17-010)
+ssl-cert                Fetch and analyze SSL/TLS server certificate details
+ssl-enum-ciphers        Inspect supported SSL/TLS ciphers and protocol versions
+ftp-anon                Check if FTP server allows anonymous login
+ssh-auth-methods        List supported SSH authentication methods
+
+TIMING & PERFORMANCE:
+-T0               Paranoid timing (IDS evasion, extremely slow)
+-T1               Sneaky timing (slow, low bandwidth IDS evasion)
+-T2               Polite timing (slows down to consume less bandwidth)
+-T3               Normal timing (default timing policy)
+-T4               Aggressive timing (faster scan, assumes reliable high-speed network)
+-T5               Insane timing (fastest scan, may sacrifice accuracy on slow networks)
+--min-rate <num>  Send packets at a minimum rate of <num> packets per second
+--max-rate <num>  Cap maximum packet sending rate to <num> packets per second
+--min-hostgroup   Minimum parallel host scan group size
+--max-hostgroup   Maximum parallel host scan group size
+
+FIREWALL/IDS EVASION & SPOOFING:
+-f                Fragment IP packets into small 8-byte header blocks
+--mtu <val>       Set custom MTU packet size (must be a multiple of 8)
+-D RND:10         Decoy scan using 10 random decoy IP addresses
+-D decoy1,decoy2,ME Decoy scan using specified decoy IPs and real host ME
+-S <IP>           Spoof source IP address
+--source-port <p> Use specific source port number (or short option -g <p>)
+--data-length <n> Append random data payload of <n> bytes to sent packets
+--spoof-mac <mac> Spoof source MAC address (MAC address, prefix, or vendor name)
+--badsum          Send packets with bogus TCP/UDP checksums
+--randomize-hosts Randomize target host scan sequence
+
+OUTPUT & DIAGNOSTICS:
+-oN <file>        Save normal output to specified file
+-oX <file>        Save XML formatted output to specified file
+-oG <file>        Save Grepable formatted output to specified file
+-oA <basename>    Save output in all three major formats simultaneously
+-v                Increase verbosity level (-vv for higher verbosity)
+-d                Increase debugging level (-dd for detailed debug output)
+--open            Show only open (or possibly open) ports in output
+--packet-trace    Display every packet sent and received
+--reason          Print explicit reason why a port is marked in a specific state
+
+PRACTICAL COMMAND EXAMPLES:
+nmap -sS -T4 192.168.1.1
+nmap -sV -sC -p 80,443 192.168.1.1
+nmap -A -T4 192.168.1.0/24
+nmap -sU -p 53,161 192.168.1.1
+nmap -Pn -sS -p- 192.168.1.1
+nmap -sn 192.168.1.0/24
+nmap -sS -T4 --top-ports 1000 192.168.1.1
+nmap -sV --version-intensity 5 192.168.1.1
+nmap -sS -D RND:10 192.168.1.1
+nmap -f -sS 192.168.1.1
+nmap -oA scan_results 192.168.1.1
+nmap --script=vuln 192.168.1.1
+nmap -sS -p- -T4 -oN full_scan.txt 192.168.1.1
+nmap -sV -sC -O -T4 192.168.1.1
+nmap --script=http-enum,http-title -p 80,443 192.168.1.1
+nmap --script=smb-vuln-ms17-010 -p 445 192.168.1.1
+nmap --script=ssl-enum-ciphers -p 443 192.168.1.1
+nmap -sU -sS -p T:80,443,U:53,161 -T4 192.168.1.1
+nmap -Pn -sS --source-port 53 --data-length 25 192.168.1.1
+nmap -sS -T4 --min-rate 1000 --open 192.168.1.0/24

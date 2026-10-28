@@ -1,0 +1,21 @@
+{
+  "_comment": "Maps offensive security jargon/aliases to canonical identifiers",
+  "EternalBlue": "CVE-2017-0144",
+  "Log4Shell": "CVE-2021-44228",
+  "BlueKeep": "CVE-2019-0708",
+  "ShellShock": "CVE-2014-6271",
+  "Heartbleed": "CVE-2014-0160",
+  "PrintNightmare": "CVE-2021-34527",
+  "ZeroLogon": "CVE-2020-1472",
+  "ProxyLogon": "CVE-2021-26855",
+  "DirtyPipe": "CVE-2022-0847",
+  "PwnKit": "CVE-2021-4034",
+  "pwn": "exploit",
+  "box": "host",
+  "syn scan": "SYN stealth scan",
+  "ping sweep": "ICMP discovery scan",
+  "stealthy sweep": "stealth ICMP discovery scan",
+  "brute": "brute force",
+  "enum": "enumeration",
+  "recon": "reconnaissance"
+}

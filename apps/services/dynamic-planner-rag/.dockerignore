@@ -1,0 +1,12 @@
+.venv/
+venv/
+c2venv/
+__pycache__/
+*.pyc
+.env
+*.gguf
+*.log
+*.err
+*.pid
+knowledge_base/chroma_db/
+tests/

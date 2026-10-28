@@ -1,0 +1,36 @@
+﻿\chapter{Implementation}\label{ch:implementation}
+
+\section{Introduction}\label{sec:impl-intro}
+
+This chapter describes the implementation of the NeuroShell Intent Recognition Engine. Implementation details are derived strictly from the actual source code in \texttt{src/}, configuration in \texttt{config/}, data files in \texttt{data/}, and supporting files (\texttt{README.md}, \texttt{requirements.txt}, \texttt{pytest.ini}). The implementation follows a modular architecture with clear separation between preprocessing, inference, validation, middleware, schemas, API layer, audit, and utilities.
+
+\section{Technology Stack}\label{sec:impl-tech}
+
+The technology stack as implemented is summarised below (from \texttt{README.md}):
+
+\begin{table}[htbp]
+  \centering
+  \caption{Technology stack of the NeuroShell IRE}
+  \label{tab:tech-stack}
+  \sliittablestyle
+  \begin{tabular}{lp{0.32\textwidth}p{0.42\textwidth}}
+    \toprule
+    \textbf{Layer} & \textbf{Technology} & \textbf{Purpose} \\
+    \midrule
+    LLM & Gemma 4 E4B / 27B-IT, Qwen2.5-Coder 7B & Local instruction-following model for intent classification \\
+    Inference Runtime & Ollama & Local model serving via REST API \\
+    API Framework & FastAPI & Async HTTP API with OpenAPI/Swagger and Pydantic integration \\
+    Validation & Pydantic v2 + jsonschema & Strict schema enforcement and validation \\
+    Preprocessing & spaCy (\texttt{en\_core\_web\_sm}) & NLP preprocessing pipeline \\
+    Logging & structlog & Structured JSON logging for auditability \\
+    Rate Limiting & slowapi & Per-IP rate limiting (30 req/min on \texttt{/parse}) \\
+    Testing & pytest + httpx.AsyncClient & Unit and async integration testing \\
+    Containerisation & Docker + docker-compose & Reproducible deployment \\
+    Fine-tuning & LoRA + PEFT + bitsandbytes & Parameter-efficient adaptation (scaffolded) \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+All dependencies are specified in \texttt{requirements.txt}. The system is designed to run offline (no external API calls at inference time).
+
+\section{Project Structure}\label{sec:impl-structure}

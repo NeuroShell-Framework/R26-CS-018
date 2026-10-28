@@ -1,0 +1,121 @@
+\chapter{Introduction}\label{ch:intro}
+
+\section{Overall Project Context}\label{sec:intro-overall}
+
+Security operations require precise mapping between human intent and machine-executable actions. Within offensive security workflows, operators must translate natural-language goals into concrete actions for network scanners, directory enumeration tools, credential attack utilities and related tooling. This translation is error-prone when performed manually and becomes especially problematic when automated toolchains consume operator intent. The NeuroShell Framework is developed to address this integration gap between operator intent and executable security actions.
+
+The NeuroShell Intent Recognition Engine (IRE) is \textbf{Component 01} of the NeuroShell Framework. Its purpose is to act as a domain-specific Natural Language Understanding (NLU) gateway that converts natural-language offensive security commands into validated, schema-constrained JSON intent contracts. By enforcing deterministic validation on model output, the IRE decouples free-form language understanding from downstream planning and execution, preventing malformed or unauthorised intent from propagating to automated tooling.
+
+\section{Individual Component Context}\label{sec:intro-individual}
+
+The IRE is designed as a self-contained, offline-first FastAPI microservice that wraps a local large language model (LLM) with a guarded validation pipeline. Rather than treating the LLM as an authoritative source of truth, the IRE treats it as an unreliable proposition generator. All outputs are subjected to strict validation: JSON parsing, schema enforcement, regular-expression validation of entities, network architecture validation, scope enforcement and a three-layer adversarial detection mechanism.
+
+The implemented pipeline comprises seven core stages: input normalisation (S1), alias resolution (S2), LLM inference (S3), JSON parsing (S4), schema validation (S5), regex validation (S6) with network validation (S6B), and scope guard (S7). In addition, five middleware components provide safety and performance guarantees: adversarial detection (M1), RBAC pre-inference (M2), session context injection (M3), semantic cache (M4) and RBAC post-validation (M5). The service enforces role-based access control across four roles (viewer, analyst, operator, admin) and supports session-aware context injection.
+
+All inference runs against a locally hosted Ollama model (Gemma 4 e4b or Qwen2.5-Coder 7B) with no network calls at inference time and no retrieval-augmented generation. The system operates in a laboratory/research engagement scope (default \texttt{192.168.0.0/16}) and emits machine-consumable intent structures to downstream components of the NeuroShell Framework. The full source code and configuration are present in the repository at \texttt{F:\neuroshell-core\apps\services\neuroshell-ire}.
+
+\section{Problem Statement}\label{sec:intro-problem}
+
+Large language models (LLMs) have been proposed as copilots for penetration testing and defensive security operations~\cite{deng2024pentestgpt,happe2023pwned}. However, LLMs are prone to fabrication (hallucination)~\cite{ji2023hallucination,farquhar2024semantic}, vulnerable to adversarial prompt injection~\cite{greshake2023indirect,liu2023promptinjection,kang2024dualuse}, and lack inherent enforcement of authorisation boundaries. When an LLM's free-form output is consumed directly by automated toolchains, these weaknesses become executable failures rather than display errors.
+
+Specifically, for an intent recognition gateway in an offensive security context, the following issues arise: (1) fabricated CVEs, ports, parameters or targets can be emitted; (2) adversarial utterances can deflect the model from classification; (3) unauthorised request classes (e.g. exploitation, password attacks) may be produced for insufficiently privileged roles; and (4) unvalidated JSON structures may be passed downstream, causing parsing or execution failures. These risks are amplified when operating offline on a single device with limited inference capacity, where retry-based verification is expensive.
+
+The research problem addressed in this dissertation is: \emph{how to make a small, offline LLM sufficiently reliable to drive an automated security toolchain by wrapping it with deterministic, auditable guardrails that enforce schema correctness, scope compliance, authorisation and adversarial resilience}.
+
+\section{Research Gap}\label{sec:intro-gap}
+
+Existing LLM-powered security copilots focus primarily on generating plausible next actions for human consumption~\cite{deng2024pentestgpt,happe2023pwned}. They typically do not subject model output to deterministic validation before automated execution. Meanwhile, the broader LLM security literature addresses prompt injection defences~\cite{liu2023promptinjection}, indirect injection~\cite{greshake2023indirect}, and hallucination detection methods such as SelfCheckGPT~\cite{manakul2023selfcheckgpt}, semantic entropy~\cite{farquhar2024semantic,kuhn2023semantic} and self-consistency~\cite{wang2023selfconsistency}. However, few works quantify the per-layer contribution of stacked guardrails for a \emph{small, offline} model deployed as an unattended intent gateway.
+
+In particular, the literature lacks: (1) quantitative ablation of individual validation layers (schema, regex, network, scope, RBAC, adversarial detection) on a purpose-built security intent dataset; (2) evaluation of such guardrails across multiple offline backends under CPU-only constraints; and (3) a concrete measurement of the trade-off between safety (flaw catch rate) and usability (false positive rate on legitimate requests). This dissertation addresses these gaps through the empirical evaluation presented in \cref{ch:results} using the 900-record dataset and ablation methodology defined in the research paper~\cite{deng2024pentestgpt,greshake2023indirect,farquhar2024semantic} context and implemented in the codebase.
+
+\section{Aim and Objectives}\label{sec:intro-aim}
+
+\subsection{Aim}
+
+The aim of this dissertation is to design, implement and empirically evaluate a guarded, schema-constrained Intent Recognition Engine that reliably converts natural-language offensive security commands into validated intent contracts while enforcing authorisation, scope and adversarial resilience in an offline deployment.
+
+\subsection{Objectives}
+
+To achieve this aim, the following objectives are pursued:
+
+\begin{enumerate}
+  \item \textbf{Design the guarded pipeline:} Specify and implement a seven-stage normalisation and validation pipeline (S1--S7) with five middleware components (M1--M5) including adversarial detection, RBAC, session context, semantic cache and self-consistency gating.
+  \item \textbf{Implement deterministic validation:} Develop schema validation, regex/entity verification, network architecture validation against an engagement scope, and scope enforcement to reject malformed or out-of-scope intents.
+  \item \textbf{Enforce safety controls:} Implement role-based access control (pre- and post-inference), three-layer adversarial detection, and a hallucination taxonomy with enforcement actions (BLOCK/WARN/ESCALATE).
+  \item \textbf{Construct an evaluation dataset:} Develop and utilise a 900-record dataset comprising 400 well-formed and 500 flawed prompts across eight flaw categories relevant to security intent recognition.
+  \item \textbf{Conduct empirical evaluation:} Measure intent recognition accuracy on well-formed prompts, flaw catch rate on adversarial/flawed prompts, and false positive rate, comparing raw LLM output against the guarded pipeline.
+  \item \textbf{Perform ablation analysis:} Quantify the contribution of each guardrail layer (scope guard, RBAC, network validator, hallucination validator, validation stack, self-consistency, semantic cache) through systematic ablation.
+  \item \textbf{Compare backends:} Evaluate the guarded pipeline across two offline LLM backends (Gemma 4 e4b and Qwen2.5-Coder 7B) under CPU-only constraints.
+  \item \textbf{Document evidence:} Produce academically defensible documentation of the implementation, methodology, results, limitations and conclusions based strictly on implemented evidence in the codebase, documentation and evaluation outputs.
+\end{enumerate}
+
+\section{Research Questions or Hypotheses}\label{sec:intro-rq}
+
+This dissertation addresses the following research questions:
+
+\begin{enumerate}[label=RQ\arabic*:]
+  \item \textbf{Pipeline effectiveness:} To what extent does the stacked validation pipeline improve structured intent recognition accuracy and flaw catch rate compared to raw LLM output?
+  \item \textbf{Layer contribution:} Which individual guardrail layer contributes most to flaw catch rate, and which layers exhibit destructive or limited interaction effects?
+  \item \textbf{Backend generalisation:} Do the guardrails generalise across two different offline LLM backends (Gemma 4 e4b and Qwen2.5-Coder 7B) under identical configurations?
+\end{enumerate}
+
+\section{Scope, Limitations and Assumptions}\label{sec:intro-scope}
+
+\subsection{Scope}
+
+The scope of this work is limited to the Intent Recognition Engine (Component 01) as implemented in the repository. The following are in scope:
+\begin{itemize}
+  \item The seven-stage pipeline and five middleware components as specified in \texttt{src/pipeline/ire\_pipeline.py}, \texttt{src/api/main.py} and related modules.
+  \item Schema, regex, network architecture and scope validation; adversarial detection; RBAC enforcement; session context; semantic cache; sub-intent classification; audit logging; metrics collection.
+  \item Intent classification across the nine intent classes defined in \texttt{src/schemas/intent\_schema.py}: \texttt{NETWORK\_SCAN}, \texttt{VULNERABILITY\_AUDIT}, \texttt{DIRECTORY\_BRUTEFORCE}, \texttt{SERVICE\_ENUMERATION}, \texttt{EXPLOITATION}, \texttt{PASSWORD\_ATTACK}, \texttt{PASSIVE\_RECON}, \texttt{AMBIGUOUS}, \texttt{REJECTED}.
+  \item Offline inference using locally hosted Ollama models with no retrieval at inference time.
+  \item Evaluation using the 900-record dataset and ablation methodology implemented under \texttt{eval/}.
+\end{itemize}
+
+\subsection{Limitations}
+
+The following limitations are acknowledged based on the implemented system and evaluation:
+\begin{itemize}
+  \item All measurements are single-run point estimates from one backend pass per configuration; no confidence intervals, bootstrapping or repeated seed sweeps are reported in the evaluation harness outputs inspected.
+  \item The dataset category sizes are non-uniform (24--100 records per flaw class), limiting direct cross-category statistical comparison.
+  \item Evaluation was conducted on a single consumer laptop (CPU-only) with specific model versions (Gemma 4 e4b, Qwen2.5-Coder 7B); results may differ on other hardware or model revisions.
+  \item The threat model assumes the device is not compromised and that no retrieval occurs at inference time; indirect prompt injection via retrieved content and physical compromise are out of scope.
+  \item The system is designed for controlled laboratory/research engagement scope; production hardening beyond the implemented guardrails is not claimed.
+\end{itemize}
+
+\subsection{Assumptions}
+
+The following assumptions apply to this dissertation:
+\begin{itemize}
+  \item The repository contents inspected (\texttt{src/}, \texttt{config/}, \texttt{data/}, \texttt{eval/}, \texttt{tests/}, \texttt{README.md}, SRS, research paper) accurately represent the implemented system.
+  \item Ollama is available and the specified models can be loaded locally in CPU-only mode.
+  \item The engagement scope configuration (\texttt{192.168.0.0/16}) matches the laboratory environment used for evaluation.
+  \item Test data in the 900-record set is representative of the classes of inputs relevant to the defined scope.
+\end{itemize}
+
+\section{Individual Contribution}\label{sec:intro-contribution}
+
+The work presented in this dissertation is the design, implementation, evaluation and documentation of the NeuroShell Intent Recognition Engine (Component 01) as a complete, guarded intent recognition pipeline. The individual contribution encompasses:
+\begin{itemize}
+  \item Implementation of the full seven-stage pipeline (S1--S7) with network validation (S6B) and scope guard (S7), integrating preprocessing, inference, parsing, schema validation, regex validation, network architecture validation and scope enforcement.
+  \item Implementation of the middleware layer (M1--M5): three-layer adversarial detection, RBAC pre- and post-inference enforcement, session context injection, semantic cache and sub-intent classification, with feature-flag controlled activation.
+  \item Development of schema definitions (\texttt{IntentSchema}, \texttt{IREResponse}, \texttt{IREResponseV2}, planner contracts) with strict validation rules and Pydantic models.
+  \item Implementation of audit logging, metrics collection, chain cache utilities, and FastAPI endpoints (\texttt{/parse}, \texttt{/health}, \texttt{/metrics}) with API key enforcement.
+  \item Design and execution of the evaluation methodology (ablation across seven guardrail configurations, backend comparison, per-class catch analysis) using the implemented \texttt{eval/} harness.
+  \item Evidence-based academic documentation of the system, methodology, results and limitations grounded in the actual codebase and evaluation outputs.
+\end{itemize}
+
+\section{Thesis Structure}\label{sec:intro-structure}
+
+This dissertation is organised as follows:
+
+\begin{itemize}
+  \item \textbf{\cref{ch:intro} (Introduction)} establishes the project context, problem statement, research gap, aim, objectives, research questions, scope/limitations/assumptions, individual contribution and thesis structure.
+  \item \textbf{\cref{ch:litreview} (Literature Review)} reviews relevant literature on LLMs for security tooling, prompt injection and adversarial attacks, hallucination detection, retrieval/embeddings, and identifies gaps that motivate this work.
+  \item \textbf{\cref{ch:methodology} (Methodology)} describes the research design, system architecture, pipeline stages and middleware, validation mechanisms, RBAC model, threat model, dataset construction, evaluation metrics and experimental procedures.
+  \item \textbf{\cref{ch:implementation} (Implementation)} details the implementation of core modules, schemas, validation logic, middleware, API surface, configuration, audit/metrics, and testing approach with evidence from the codebase.
+  \item \textbf{\cref{ch:results} (Results and Discussion)} presents experimental results for Exp1--Exp4 (pipeline value, backend comparison, ablation analysis, per-class catch), discusses findings relative to research questions, and analyses limitations and implications.
+  \item \textbf{\cref{ch:conclusion} (Conclusions and Recommendations)} summarises key findings, addresses each research question, states contributions, acknowledges limitations, and proposes recommendations for future work.
+  \item \textbf{References} lists cited academic sources using the bibliography system defined by the template.
+  \item \textbf{Appendices} (if included) contain supplementary material such as schema definitions, configuration examples, evaluation outputs or code listings where academically justified.
+\end{itemize}

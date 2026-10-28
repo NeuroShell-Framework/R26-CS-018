@@ -1,0 +1,116 @@
+\chapter{Conclusions and Recommendations}\label{ch:conclusions}
+
+\section{Conclusion}\label{sec:conclusions}
+
+This research set out to answer a practical question: can a natural-language
+security request be carried end-to-end to an explainable, prioritised
+vulnerability report with minimal human intervention, while keeping every step
+inside a controlled safety boundary? The answer supported by the evidence is a
+qualified yes. NeuroShell, as designed and evaluated across its four
+components, covers every stage of the chain---intent recognition, planning,
+execution and error recovery, and vulnerability analysis---and each stage returns
+measured results on its own committed protocol.
+
+The conclusions are therefore honest about their strength. The guarded intent
+pipeline (C1) converts unguarded model output into a schema-enforced contract:
+it raises decision accuracy by 8--13 points, converts a 0\% flaw-catch into a
+72\%/64\% catch, and more than halves the false-positive rate under its own
+1,500-case protocol. The planner (C2) demonstrates that a general instruction
+model can be adapted to a structured intent-to-command task and grounded in
+maintainable documentation: 87.54\% strict exact-match on the held-out set, and
+a 28-point semantic-accuracy gain from retrieval in the separate base-model
+ablation. The error-recovery engine (C3) establishes the framework's
+distinctive capability: reading a failed security tool's error, labelling it,
+and selecting a fix on the device, with a 99.1\% macro-F1 at a realistic 30\%
+message-noise level. The vulnerability analysis engine (C4) shows that a
+compact, explainable classifier over five vulnerability-intelligence features
+can separate vulnerabilities with documented exploitation evidence, subject to
+the provisional figures being confirmed (93.00\% accuracy, 87.47\% F1, 97.20\%
+ROC-AUC, 90.30\% PR-AUC).
+
+The honesty of the reporting is itself a conclusion. Every measured figure is
+reported with its verification context; targets that were not measured (the
+AEERE fix-rate, speed, and safety-tables; the AVAE confirmed final-model
+evaluation; an integrated end-to-end benchmark) are left open in the component
+reports and in this dissertation rather than filled with estimates. This means
+the current strongest claim is that the framework behaves as designed against
+its own committed, reproducible evaluations, not that it has been validated
+against an independent benchmark or by end users.
+
+\section{Limitations}\label{sec:conclusions-limitations}
+
+Six limitations bound the conclusions. (1) The evaluation data sets (IRE
+1,500-case set, planner 337-case held-out set, AEERE 8,000-case set, AVAE
+155,852-record set) were authored or curated by the research group, so the
+reported rates measure performance on the components' own labelled
+distributions. (2) The results are single-run point estimates on one CPU-only
+machine; no cross-platform or cross-hardware generalisation is established.
+(3) No component completed a formal user or stakeholder validation study, so
+usability and deployment-practice claims remain untested. (4) The planner's two
+experiments measure different configurations and cannot be combined into a
+single end-to-end accuracy figure. (5) The AEERE fix-rate, end-to-end speed, and
+dangerous-command block-rate targets could not be measured because the live
+engine (Docker plus Ollama) was not available at the time of writing. (6) The
+AVAE performance figures are provisional and depend on confirmation of the final
+model configuration.
+
+\section{Recommendations}\label{sec:conclusions-recommendations}
+
+The following recommendations follow directly from the findings and
+limitations.
+
+\begin{enumerate}
+  \item \textbf{Close the open engineering gaps before deployment.} The IRE's
+  default development API key and inactive \emph{production} scope mode, and the
+  planner's pending deprecation warning, are the concrete items identified so
+  far; a pre-deployment security review should look for further ones.
+  \item \textbf{Measure the live AEERE engine.} Execute the committed SO1, SO2
+  and SO4 target runs on the full engine (Docker plus Ollama) and complete the
+  fix-rate, speed, and dangerous-command-block tables that the component report
+  intentionally left blank.
+  \item \textbf{Confirm the AVAE model results.} Complete the verified final
+  evaluation of the XGBoost configuration and replace the provisional metric
+  table with the confirmed one, keeping the same data description.
+  \item \textbf{Conduct an integrated evaluation.} Design a factorial comparison
+  (the same unseen cases across the pipeline stages) so that adaptation,
+  retrieval, execution recovery, and analysis can be separated, and so that a
+  single end-to-end benchmark for the whole framework can be reported.
+  \item \textbf{Build an independent test corpus and user study.} An
+  independently authored prompt/error corpus and a formal user evaluation of the
+  CLI and API would lift the current self-authored evaluation limitation.
+  \item \textbf{Maintain the knowledge base as a first-class artefact.} Because
+  the planner keeps documentation separate from the model, updates to tool
+  syntax do not require retraining; a review process for the ChromaDB store
+  should be defined as part of maintenance.
+\end{enumerate}
+
+\section{Future Work}\label{sec:conclusions-future}
+
+Each component names its own next steps, and the framework as a whole inherits
+them. The IRE should close the API-key and scope-mode gaps IRE names, extend
+the data set to additional tools and intent classes, and run a user study. The
+planner should extend RAG evaluation to the final adapted model on a factorial
+design, broaden the knowledge base to more tools and option patterns, and move
+from a strict exact-match criterion toward a documented semantic evaluation that
+distinguishes valid command alternatives from errors. The AEERE should complete
+the live-engine measurements, extend the error list and tool-swap rules from
+logged UNKNOWN cases as real tools change, and test recovery under deliberately
+adversarial error messages beyond the current noise injection. The AVAE should
+confirm its final model, add broader scanning-tool input support, and expand the
+data set with additional exploitation-related signals.
+
+The framework-level next steps are to run the components as one integrated
+system, to test the hand-over contracts (intent contract, planner output,
+execution result, analysis output) under a single end-to-end scenario, and to
+use the SQLite safety logs and Neo4j findings graph as the audit trail for a
+realistic depth-first engagement against a safe lab target. If those runs
+sustain the component-level results, the framework's core claim---an autonomous,
+local, guarded natural-language-to-vulnerability-report chain---will be
+supported end to end, and the open gaps identified in this dissertation will be
+closed.
+
+This dissertation set out to remove the human from the loop where it is safe to
+do so---between intent and command, between command and execution, and between
+execution and report---while leaving the human in the loop of what to engage.
+That is the boundary NeuroShell is designed to respect, and the results and
+limitations reported here delineate how far, exactly, it currently goes.

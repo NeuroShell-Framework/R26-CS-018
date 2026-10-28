@@ -1,0 +1,24 @@
+\section{Research Questions}\label{sec:research-questions}
+
+The central question guiding this dissertation is whether a small, offline,
+unattended language model can be made reliable enough to drive an automated
+security copilot once its output is subject to deterministic validation.
+From this central question three concrete research questions are derived:
+
+\begin{enumerate}
+\item \textbf{RQ1 (pipeline value).} How much does a stacked validation
+pipeline improve structured intent-recognition accuracy and flaw catching over
+raw language-model output?
+\item \textbf{RQ2 (layer contribution).} Which individual guard layer
+contributes the most to the flaw-catch rate, and which layers interact
+destructively when combined?
+\item \textbf{RQ3 (generalisability).} Do the guardrails generalise across two
+different offline language-model backends, or is the measured safety an
+artefact of a single model?
+\end{enumerate}
+
+The study is conducted as an empirical, measurement-based investigation rather
+than a hypothesis-testing one: the outcomes of RQ1--RQ3 are quantified from the
+committed experiment record reported in Chapter~\ref{ch:results}, and no
+statistical significance claim is attached to the single-run measurements
+(see Section~\ref{sec:scope-limitations-assumptions}).

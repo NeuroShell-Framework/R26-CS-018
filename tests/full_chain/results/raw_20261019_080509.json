@@ -1,0 +1,274 @@
+{
+  "suite": "NeuroShell full-chain end-to-end suite",
+  "generated_at": "20261019_080509",
+  "c1_url": "http://127.0.0.1:8001",
+  "timeout_seconds": 300,
+  "case_count": 1,
+  "total_seconds": 49.0,
+  "results": [
+    {
+      "case": {
+        "id": "FC-009",
+        "category": "valid-scan",
+        "command": "run a directory brute force on 192.168.1.10 with gobuster",
+        "expect": "full_chain",
+        "expected_tool": "gobuster",
+        "role": "admin",
+        "note": "directory bruteforce; requires admin role (analyst is RBAC-denied DIRECTORY_BRUTEFORCE)"
+      },
+      "response": {
+        "http_status": 200,
+        "body": {
+          "status": "ok",
+          "flow": {
+            "step_1_user_input": {
+              "command": "run a directory brute force on 192.168.1.10 with gobuster",
+              "session_id": "fc-fc-009",
+              "role": "admin"
+            },
+            "step_2_component_1": {
+              "status": "success",
+              "output": {
+                "version1": {
+                  "intent_contract": {
+                    "intent": "DIRECTORY_BRUTEFORCE",
+                    "target": {
+                      "type": "IP",
+                      "value": "192.168.1.10"
+                    },
+                    "ports": [],
+                    "modifiers": [],
+                    "cve_ids": [],
+                    "tool_hint": "gobuster",
+                    "confidence": 1.0,
+                    "rejection_reason": null,
+                    "scope_warnings": []
+                  },
+                  "session_id": "fc-fc-009"
+                },
+                "version2": {
+                  "status": "success",
+                  "intent": "DIRECTORY_BRUTEFORCE",
+                  "target": {
+                    "type": "IP",
+                    "value": "192.168.1.10"
+                  },
+                  "ports": [],
+                  "modifiers": [],
+                  "cve_ids": [],
+                  "tool_hint": "gobuster",
+                  "schedule": null,
+                  "confidence": 1.0,
+                  "rejection_reason": null,
+                  "scope_warnings": [],
+                  "latency_ms": 433,
+                  "error": null,
+                  "stage": null,
+                  "field": null,
+                  "detail": null,
+                  "sub_intent": "DIRECTORY_BRUTEFORCE.WEB",
+                  "secondary_intents": [],
+                  "clarification_request": null,
+                  "uncertainty_band": "low",
+                  "raw_entropy": 0.0,
+                  "tier_triggered": 1,
+                  "resolution_method": "single_sample",
+                  "calibration_method": null,
+                  "cache_hit": null,
+                  "rbac_role": "admin",
+                  "session_turns": 1,
+                  "xai": null,
+                  "validation_findings": [
+                    {
+                      "validator": "schema_validator",
+                      "passed": true,
+                      "hallucination_class": null,
+                      "detail": "Pydantic intent schema structure validated successfully",
+                      "severity": "block"
+                    },
+                    {
+                      "validator": "regex_validator",
+                      "passed": true,
+                      "hallucination_class": null,
+                      "detail": "Target value '192.168.1.10' matches expected regex format for type IP",
+                      "severity": "block"
+                    },
+                    {
+                      "validator": "regex_validator",
+                      "passed": true,
+                      "hallucination_class": null,
+                      "detail": "No CVE IDs present to validate",
+                      "severity": "block"
+                    },
+                    {
+                      "validator": "regex_validator",
+                      "passed": true,
+                      "hallucination_class": null,
+                      "detail": "All 0 ports fall within valid range [1, 65535]",
+                      "severity": "block"
+                    },
+                    {
+                      "validator": "regex_validator",
+                      "passed": true,
+                      "hallucination_class": null,
+                      "detail": "No shell metacharacters detected in target or modifiers",
+                      "severity": "block"
+                    },
+                    {
+                      "validator": "network_validator",
+                      "passed": true,
+                      "hallucination_class": null,
+                      "detail": "Target type 'IP' is consistent with value '192.168.1.10'",
+                      "severity": "block"
+                    },
+                    {
+                      "validator": "network_validator",
+                      "passed": true,
+                      "hallucination_class": null,
+                      "detail": "Target address '192.168.1.10' parsed valid format",
+                      "severity": "block"
+                    },
+                    {
+                      "validator": "network_validator",
+                      "passed": true,
+                      "hallucination_class": null,
+                      "detail": "Target '192.168.1.10' is within engagement scope '192.168.0.0/16'",
+                      "severity": "warn"
+                    },
+                    {
+                      "validator": "scope_guard",
+                      "passed": true,
+                      "hallucination_class": null,
+                      "detail": "No prompt injection patterns detected in input",
+                      "severity": "block"
+                    },
+                    {
+                      "validator": "scope_guard",
+                      "passed": true,
+                      "hallucination_class": null,
+                      "detail": "Target '192.168.1.10' is within private RFC-1918 range",
+                      "severity": "warn"
+                    }
+                  ],
+                  "schema_version": 2
+                }
+              }
+            },
+            "step_3_component_2": {
+              "status": "success",
+              "latency_ms": 40344,
+              "output": {
+                "status": "success",
+                "command": "gobuster dir -u http://192.168.1.10 -w /usr/share/wordlists/dirb/common.txt",
+                "command_sequence": [
+                  "gobuster dir -u http://192.168.1.10 -w /usr/share/wordlists/dirb/common.txt"
+                ],
+                "tool": "gobuster",
+                "session_id": "fc-fc-009",
+                "intent_ref": "DIRECTORY_BRUTEFORCE",
+                "estimated_duration": "medium",
+                "retrieval_sources": [
+                  "gobuster",
+                  "gobuster",
+                  "gobuster"
+                ],
+                "validation_passed": true,
+                "safety_flags": [],
+                "latency_ms": 39706
+              }
+            },
+            "step_4_component_3": {
+              "status": "failed",
+              "latency_ms": 5100,
+              "output": {
+                "status": "failed",
+                "push_latency_ms": 5100,
+                "session_id": "fc-fc-009",
+                "command_executed": "gobuster dir -u http://192.168.1.10 -w /usr/share/wordlists/dirb/common.txt",
+                "stdout": "",
+                "stderr": "2026/10/19 02:35:56 wordlist file \"/usr/share/wordlists/dirb/common.txt\" does not exist: stat /usr/share/wordlists/dirb/common.txt: no such file or directory\n",
+                "exit_code": 1,
+                "recovery_log": [
+                  {
+                    "attempt": 1,
+                    "error_class": "WRONG_SYNTAX",
+                    "strategy": "FIX_SYNTAX",
+                    "clf_method": "regex",
+                    "confidence": 0.9,
+                    "original_command": "gobuster dir -u http://192.168.1.10 -w /usr/share/wordlists/dirb/common.txt",
+                    "corrected_command": "gobuster dir -u http://192.168.1.10 -w /usr/share/wordlists/dirb/common.txt"
+                  },
+                  {
+                    "attempt": 2,
+                    "error_class": "WRONG_SYNTAX",
+                    "strategy": "FIX_SYNTAX",
+                    "clf_method": "regex",
+                    "confidence": 0.9,
+                    "original_command": "gobuster dir -u http://192.168.1.10 -w /usr/share/wordlists/dirb/common.txt",
+                    "corrected_command": "gobuster dir -u http://192.168.1.10 -w /usr/share/wordlists/dirb/common.txt"
+                  }
+                ],
+                "correction_history": [
+                  {
+                    "attempt": 1,
+                    "original_command": "gobuster dir -u http://192.168.1.10 -w /usr/share/wordlists/dirb/common.txt",
+                    "corrected_command": "gobuster dir -u http://192.168.1.10 -w /usr/share/wordlists/dirb/common.txt",
+                    "error_class": "WRONG_SYNTAX",
+                    "strategy": "FIX_SYNTAX",
+                    "approved": true,
+                    "correction_source": "dataset"
+                  },
+                  {
+                    "attempt": 2,
+                    "original_command": "gobuster dir -u http://192.168.1.10 -w /usr/share/wordlists/dirb/common.txt",
+                    "corrected_command": "gobuster dir -u http://192.168.1.10 -w /usr/share/wordlists/dirb/common.txt",
+                    "error_class": "WRONG_SYNTAX",
+                    "strategy": "FIX_SYNTAX",
+                    "approved": true,
+                    "correction_source": "dataset"
+                  }
+                ],
+                "failure_report": {
+                  "attempts": 3,
+                  "final_error_class": "WRONG_SYNTAX",
+                  "strategies_tried": [
+                    "FIX_SYNTAX",
+                    "BUDGET_EXHAUSTED"
+                  ],
+                  "recommendation": "Review command flags against the tool's help output.",
+                  "audit_trail_count": 3
+                },
+                "tool_substituted": false,
+                "latency_ms": 4982,
+                "integration_latency_ms": 5100
+              }
+            },
+            "step_5_component_4": {
+              "status": "success",
+              "latency_ms": 1678,
+              "output": {
+                "status": "success",
+                "push_latency_ms": 1678,
+                "session_id": "fc-fc-009",
+                "parse_result": {
+                  "hosts": [],
+                  "services": [],
+                  "raw_cve_ids": [],
+                  "paths_found": []
+                },
+                "enriched_count": 0,
+                "enriched_vulnerabilities": [],
+                "predictions": [],
+                "ranked_findings": [],
+                "false_positive_reduction_rate": 0.0,
+                "latency_ms": 1463,
+                "integration_latency_ms": 1678
+              }
+            }
+          }
+        }
+      },
+      "wall_seconds": 49.04
+    }
+  ]
+}

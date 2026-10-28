@@ -1,0 +1,119 @@
+\contentsline {chapter}{Declaration of the Candidates \& Supervisors}{i}{section*.2}%
+\contentsline {chapter}{Abstract}{iii}{section*.3}%
+\contentsline {chapter}{Acknowledgement}{iv}{section*.5}%
+\contentsline {chapter}{Table of Contents}{v}{section*.6}%
+\contentsline {chapter}{List of Figures}{x}{section*.8}%
+\contentsline {chapter}{List of Tables}{xi}{section*.10}%
+\contentsline {chapter}{List of Abbreviations}{xiii}{section*.13}%
+\contentsline {chapter}{List of Appendices}{xv}{section*.14}%
+\contentsline {chapter}{\numberline {1}Introduction}{1}{chapter.1}%
+\contentsline {section}{\numberline {1.1}Background and Literature Survey}{1}{section.1.1}%
+\contentsline {subsection}{\numberline {1.1.1}Overall Project Context: The NeuroShell Framework}{1}{subsection.1.1.1}%
+\contentsline {subsection}{\numberline {1.1.2}The Intent Recognition Engine (Component 1)}{2}{subsection.1.1.2}%
+\contentsline {subsection}{\numberline {1.1.3}The Dynamic Planner and RAG Engine (Component 2)}{2}{subsection.1.1.3}%
+\contentsline {subsection}{\numberline {1.1.4}The Adaptive Execution and Error-Recovery Engine (Component 3)}{3}{subsection.1.1.4}%
+\contentsline {subsection}{\numberline {1.1.5}The AI-Driven Vulnerability Analysis Engine (Component 4)}{3}{subsection.1.1.5}%
+\contentsline {subsection}{\numberline {1.1.6}Comparison with Existing Systems}{4}{subsection.1.1.6}%
+\contentsline {subsection}{\numberline {1.1.7}Conceptual Framework and Design Principles}{4}{subsection.1.1.7}%
+\contentsline {section}{\numberline {1.2}Research Gap}{5}{section.1.2}%
+\contentsline {subsection}{\numberline {1.2.1}Gaps in Offensive-Security Automation}{5}{subsection.1.2.1}%
+\contentsline {subsection}{\numberline {1.2.2}Gap Specific to Each Component}{6}{subsection.1.2.2}%
+\contentsline {section}{\numberline {1.3}Research Problem}{7}{section.1.3}%
+\contentsline {subsection}{\numberline {1.3.1}Framework Problem Statement}{7}{subsection.1.3.1}%
+\contentsline {subsection}{\numberline {1.3.2}Problem Specific to Each Component}{7}{subsection.1.3.2}%
+\contentsline {section}{\numberline {1.4}Research Objectives}{7}{section.1.4}%
+\contentsline {subsection}{\numberline {1.4.1}Main Objective}{7}{subsection.1.4.1}%
+\contentsline {subsection}{\numberline {1.4.2}Specific Objectives per Component}{7}{subsection.1.4.2}%
+\contentsline {subsection}{\numberline {1.4.3}Research Questions}{8}{subsection.1.4.3}%
+\contentsline {section}{\numberline {1.5}Scope, Limitations and Assumptions}{9}{section.1.5}%
+\contentsline {section}{\numberline {1.6}Thesis Structure}{9}{section.1.6}%
+\contentsline {chapter}{\numberline {2}Methodology}{10}{chapter.2}%
+\contentsline {section}{\numberline {2.1}Methodology}{10}{section.2.1}%
+\contentsline {subsection}{\numberline {2.1.1}Overall Research Approach}{10}{subsection.2.1.1}%
+\contentsline {subsection}{\numberline {2.1.2}Framework Architecture and Requirements}{10}{subsection.2.1.2}%
+\contentsline {subsection}{\numberline {2.1.3}Methodology of the Intent Recognition Engine}{12}{subsection.2.1.3}%
+\contentsline {subsection}{\numberline {2.1.4}IRE Architecture and Requirements}{13}{subsection.2.1.4}%
+\contentsline {subsection}{\numberline {2.1.5}IRE Detailed Design: Stages, Middleware and Enforcement}{13}{subsection.2.1.5}%
+\contentsline {subsection}{\numberline {2.1.6}IRE Design Decisions}{18}{subsection.2.1.6}%
+\contentsline {subsection}{\numberline {2.1.7}Methodology of the Adaptive Execution and Error-Recovery Engine}{20}{subsection.2.1.7}%
+\contentsline {subsection}{\numberline {2.1.8}Methodology of the AI-Driven Vulnerability Analysis Engine}{23}{subsection.2.1.8}%
+\contentsline {subsection}{\numberline {2.1.9}Ethics, Privacy, Security, Standards and Responsible AI}{24}{subsection.2.1.9}%
+\contentsline {section}{\numberline {2.2}Commercialization Aspects}{25}{section.2.2}%
+\contentsline {subsection}{\numberline {2.2.1}Value Proposition and Target Users}{25}{subsection.2.2.1}%
+\contentsline {subsection}{\numberline {2.2.2}Market and Competitive Position}{26}{subsection.2.2.2}%
+\contentsline {subsection}{\numberline {2.2.3}Business and Sustainability Model}{26}{subsection.2.2.3}%
+\contentsline {subsection}{\numberline {2.2.4}Scalability, Intellectual Property and Compliance}{26}{subsection.2.2.4}%
+\contentsline {subsection}{\numberline {2.2.5}Contribution to the Sustainable Development Goals}{27}{subsection.2.2.5}%
+\contentsline {section}{\numberline {2.3}Testing and Implementation}{27}{section.2.3}%
+\contentsline {subsection}{\numberline {2.3.1}Development Environment and Technology Stack}{27}{subsection.2.3.1}%
+\contentsline {subsection}{\numberline {2.3.2}IRE Implementation, Verification and Testing}{27}{subsection.2.3.2}%
+\contentsline {subsection}{\numberline {2.3.3}Planner Implementation, Verification and Testing}{28}{subsection.2.3.3}%
+\contentsline {subsection}{\numberline {2.3.4}AEERE Implementation, Verification and Testing}{28}{subsection.2.3.4}%
+\contentsline {subsection}{\numberline {2.3.5}AVAE Implementation, Verification and Testing}{29}{subsection.2.3.5}%
+\contentsline {subsection}{\numberline {2.3.6}Integration Testing}{29}{subsection.2.3.6}%
+\contentsline {subsection}{\numberline {2.3.7}Deployment and Operation}{30}{subsection.2.3.7}%
+\contentsline {chapter}{\numberline {3}Results and Discussion}{31}{chapter.3}%
+\contentsline {section}{\numberline {3.1}Results and Discussion of the Intent Recognition Engine}{31}{section.3.1}%
+\contentsline {subsection}{\numberline {3.1.1}Data set composition}{31}{subsection.3.1.1}%
+\contentsline {subsection}{\numberline {3.1.2}Experiment 1 (RQ1): value of the guarded pipeline}{31}{subsection.3.1.2}%
+\contentsline {subsection}{\numberline {3.1.3}Experiments 2 and 3 (RQ2): backend comparison and ablation}{31}{subsection.3.1.3}%
+\contentsline {subsection}{\numberline {3.1.4}Experiment 4 (RQ2): catch rate by flaw class}{34}{subsection.3.1.4}%
+\contentsline {subsection}{\numberline {3.1.5}Product integrity and verification of the IRE}{34}{subsection.3.1.5}%
+\contentsline {subsection}{\numberline {3.1.6}Integration results of the IRE}{35}{subsection.3.1.6}%
+\contentsline {subsection}{\numberline {3.1.7}Discussion of the IRE}{36}{subsection.3.1.7}%
+\contentsline {section}{\numberline {3.2}Results and Discussion of the Dynamic Planner and RAG Engine}{37}{section.3.2}%
+\contentsline {subsection}{\numberline {3.2.1}Held-out assessment of the adapted model (RQ1)}{37}{subsection.3.2.1}%
+\contentsline {subsection}{\numberline {3.2.2}RAG ablation (RQ2)}{38}{subsection.3.2.2}%
+\contentsline {subsection}{\numberline {3.2.3}Rejection, safety, and latency behaviour (RQ3)}{39}{subsection.3.2.3}%
+\contentsline {subsection}{\numberline {3.2.4}Product integrity and verification of the planner}{39}{subsection.3.2.4}%
+\contentsline {subsection}{\numberline {3.2.5}Discussion of the planner}{39}{subsection.3.2.5}%
+\contentsline {section}{\numberline {3.3}Results and Discussion of the Adaptive Execution and Error-Recovery Engine}{40}{section.3.3}%
+\contentsline {subsection}{\numberline {3.3.1}Error labelling at rising message noise (SO3)}{40}{subsection.3.3.1}%
+\contentsline {subsection}{\numberline {3.3.2}Verification targets of the AEERE}{42}{subsection.3.3.2}%
+\contentsline {subsection}{\numberline {3.3.3}Discussion of the AEERE}{42}{subsection.3.3.3}%
+\contentsline {section}{\numberline {3.4}Results and Discussion of the AI-Driven Vulnerability Analysis Engine}{43}{section.3.4}%
+\contentsline {subsection}{\numberline {3.4.1}Prepared data set (RQ1)}{43}{subsection.3.4.1}%
+\contentsline {subsection}{\numberline {3.4.2}Provision results of the classifier (RQ2)}{43}{subsection.3.4.2}%
+\contentsline {subsection}{\numberline {3.4.3}Component implementation results (RQ3)}{44}{subsection.3.4.3}%
+\contentsline {subsection}{\numberline {3.4.4}Product integrity and verification of the AVAE}{44}{subsection.3.4.4}%
+\contentsline {subsection}{\numberline {3.4.5}Discussion of the AVAE}{44}{subsection.3.4.5}%
+\contentsline {section}{\numberline {3.5}Comparison of Findings with Existing Systems}{44}{section.3.5}%
+\contentsline {section}{\numberline {3.6}Integrated Findings of the Framework}{45}{section.3.6}%
+\contentsline {section}{\numberline {3.7}Summary and Discussion}{45}{section.3.7}%
+\contentsline {chapter}{\numberline {4}Conclusions and Recommendations}{47}{chapter.4}%
+\contentsline {section}{\numberline {4.1}Conclusion}{47}{section.4.1}%
+\contentsline {section}{\numberline {4.2}Limitations}{48}{section.4.2}%
+\contentsline {section}{\numberline {4.3}Recommendations}{48}{section.4.3}%
+\contentsline {section}{\numberline {4.4}Future Work}{49}{section.4.4}%
+\contentsline {chapter}{Reference List}{50}{section*.53}%
+\renewcommand {\cftchappresnum }{Appendix~}\renewcommand {\cftchapaftersnum }{:}\setlength {\cftchapnumwidth }{6.5em}
+\contentsline {chapter}{\numberline {A}Research Instruments: IRE Data Set and Evaluation Protocol}{53}{appendix.A}%
+\contentsline {section}{\numberline {A.1}Asian and scope of the instrument}{53}{section.A.1}%
+\contentsline {section}{\numberline {A.2}Committed data set (1,500 records)}{53}{section.A.2}%
+\contentsline {section}{\numberline {A.3}Measurement definitions}{53}{section.A.3}%
+\contentsline {section}{\numberline {A.4}Experiment schedule}{54}{section.A.4}%
+\contentsline {section}{\numberline {A.5}Reproducibility artefacts}{54}{section.A.5}%
+\contentsline {chapter}{\numberline {B}Research Instruments: Dynamic Planner and RAG Engine}{55}{appendix.B}%
+\contentsline {section}{\numberline {B.1}Asian and scope of the instrument}{55}{section.B.1}%
+\contentsline {section}{\numberline {B.2}Held-out assessment set}{55}{section.B.2}%
+\contentsline {section}{\numberline {B.3}RAG ablation case set}{55}{section.B.3}%
+\contentsline {section}{\numberline {B.4}Evaluation rules}{56}{section.B.4}%
+\contentsline {section}{\numberline {B.5}Verification artefacts}{56}{section.B.5}%
+\contentsline {chapter}{\numberline {C}Research Instruments: Adaptive Execution and Error-Recovery Engine}{57}{appendix.C}%
+\contentsline {section}{\numberline {C.1}Asian and scope of the instrument}{57}{section.C.1}%
+\contentsline {section}{\numberline {C.2}Error taxonomy and the error-type lists}{57}{section.C.2}%
+\contentsline {section}{\numberline {C.3}The 8,000-case data set}{57}{section.C.3}%
+\contentsline {section}{\numberline {C.4}Noise-injection protocol}{58}{section.C.4}%
+\contentsline {section}{\numberline {C.5}The three safety checks}{58}{section.C.5}%
+\contentsline {section}{\numberline {C.6}Verification targets}{59}{section.C.6}%
+\contentsline {section}{\numberline {C.7}Public API}{59}{section.C.7}%
+\contentsline {chapter}{\numberline {D}Research Instruments: AI-Driven Vulnerability Analysis Engine}{60}{appendix.D}%
+\contentsline {section}{\numberline {D.1}Asian and scope of the instrument}{60}{section.D.1}%
+\contentsline {section}{\numberline {D.2}Prepared data set}{60}{section.D.2}%
+\contentsline {section}{\numberline {D.3}Feature engineering}{60}{section.D.3}%
+\contentsline {section}{\numberline {D.4}Model configuration and evaluation}{60}{section.D.4}%
+\contentsline {section}{\numberline {D.5}Provision and confirmation of the results}{61}{section.D.5}%
+\contentsline {section}{\numberline {D.6}Component artefacts}{61}{section.D.6}%
+\contentsline {chapter}{\numberline {E}Academic Integrity and AI Use Disclosure}{62}{appendix.E}%
+\contentsline {section}{\numberline {E.1}Declaration on academic integrity}{62}{section.E.1}%
+\contentsline {section}{\numberline {E.2}Declaration on the use of AI tools}{62}{section.E.2}%

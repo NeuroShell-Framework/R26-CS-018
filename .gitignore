@@ -1,0 +1,86 @@
+# ── Secrets ────────────────────────────────────────────────────────────
+.env
+.env.*
+!.env.example
+
+# ── Virtual environments ──────────────────────────────────────────────
+.venv/
+venv/
+c2venv/
+__pycache__/
+*.pyc
+
+# ── Node ──────────────────────────────────────────────────────────────
+node_modules/
+dist/
+
+# ── Build artifacts ───────────────────────────────────────────────────
+*.tsbuildinfo
+
+# ── Logs & runtime state ──────────────────────────────────────────────
+*.pid
+*.log
+*.err
+logs/
+.ollama_inference_cache*
+
+# ── Databases (runtime artifacts) ─────────────────────────────────────
+*.db
+*.sqlite
+*.sqlite3
+
+# ── Coverage & testing artifacts ──────────────────────────────────────
+.coverage
+.coverage.*
+htmlcov/
+.pytest_cache/
+.ruff_cache/
+
+# ── Docker ────────────────────────────────────────────────────────────
+docker-compose.override.yml
+
+# ── IDE ───────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ── OS ────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+
+# ── Large binary files ────────────────────────────────────────────────
+*.zip
+*.tar.gz
+*.rar
+*.7z
+
+# ── Local archive of superseded versions ──────────────────────────────
+.archive/
+
+# ── Local ML model artifacts ──────────────────────────────────────────
+*.gguf
+*.safetensors
+*.joblib
+
+# ── Experiment datasets (not source) ──────────────────────────────────
+*.docx
+**/data/**/*.csv
+**/data/**/*.jsonl
+**/data/**/*.parquet
+**/data/synthesis_dataset/
+**/data/synthetic/ire_dataset/
+**/data/benchmark_eval.json
+**/training/**/*.jsonl
+**/kali_data/*.csv
+apps/services/adaptive-execution-error-recovery/kali_linux_error.csv
+apps/services/neuroshell-ire/IRE-Doc/MS_Teams_Planner_Import.csv
+
+# ── Scratch / experiment dumps ────────────────────────────────────────
+apps/services/adaptive-execution-error-recovery/body*.json
+apps/services/adaptive-execution-error-recovery/demo*.json
+apps/services/adaptive-execution-error-recovery/pilot_results.json
+apps/services/adaptive-execution-error-recovery/pull_numbers*.py
+apps/services/adaptive-execution-error-recovery/fresh_tool_test_output.txt
+apps/services/adaptive-execution-error-recovery/tool_test_result*.txt
+apps/services/dynamic-planner-rag/C2_EVALUATION_RESULTS.txt

@@ -1,0 +1,114 @@
+\section{Domain and Theoretical Foundations}\label{sec:domain-foundations}
+
+\subsection*{The security-operations domain}
+
+The domain this dissertation addresses is offensive and defensive security
+operations: the systematic discovery, assessment and (where authorised)
+remediation of weaknesses in networks and applications. The operator's work is
+organised around a small set of recurring intents---discovering what is
+exposed, enumerating services, identifying known vulnerabilities, and checking
+whether specific weaknesses apply to particular targets. These intents map onto
+specialised tooling: network discovery and scanning (of which Nmap is the
+canonical example \parencite{lyon2009nmap}), and exploitation framework
+drivers (of which Metasploit is the canonical example \parencite{metasploit}).
+Two properties of this domain matter for the work in this dissertation. First,
+each intent carries a \emph{target} and a set of \emph{parameters}, so the gap
+between prose and machine dispatch is structural rather than cosmetic. Second,
+every action is bounded by authorisation: a scan may only touch targets and
+techniques within an explicitly declared engagement scope, and some intents are
+reserved for roles with the required mandate. The translation layer evaluated
+in this dissertation is exactly the component that must preserve both the
+structure and the authorisation of operator intent.
+
+\subsection*{Intent recognition and natural-language understanding}
+
+At its core, intent recognition is a natural-language understanding (NLU)
+problem: given an utterance, determine the communicative intent and extract the
+arguments that parameterise it. In a classical NLU system this is split into an
+intent-classification step, which assigns the utterance to one of a fixed set
+of intent classes, and a slot-filling (or entity-extraction) step, which
+recovers typed argument values such as hosts, networks and ports. The intent
+contract introduced in Section~\ref{sec:individual-component-context} is the
+machine-consumable record of these two steps: a resolved intent type, a target
+and recognised options, together with any validation findings. For this record
+to be useful to downstream automation it must be expressed in a
+schema-bounded, machine-parseable syntax, which is why the IRE emits a
+structured contract rather than prose.
+
+Representational infrastructure underpins the more advanced parts of the
+design. Sentence embeddings map natural-language strings into a vector space in
+which semantically similar strings are close under a distance such as cosine
+similarity; Sentence-BERT is the representative technique \parencite{reimers2019sbert}.
+These embeddings provide the two similarity signals used in this work: the
+agreement signal by which multiple model outputs are judged to express the same
+meaning, and the cache signal by which a repeated intent is recognised without
+re-invoking the model.
+
+\subsection*{Language models as stochastic components}
+
+Instruction-tuned language models are the generative core of the IRE. Their
+defining property for this dissertation is that inference is a sampling
+process: given a prompt, the model defines a probability distribution over
+output sequences, and a response is drawn from that distribution. Sampling
+temperature controls how peaked the distribution is, so the same prompt can
+yield different outputs across calls. A single response is therefore a
+\emph{sample} of the model's belief, not a deterministic verdict. This
+observation is the theoretical basis of the design's treatment of the model as
+an unreliable proposition generator whose output must be checked rather than
+trusted. It also underlies consistency-based confidence: the
+self-consistency decoding strategy samples several responses and strengthens
+confidence in answers that agree with one another \parencite{wang2023selfconsistency},
+applying a voting intuition that originates in chain-of-thought reasoning and
+transfers naturally to classification agreement.
+
+\subsection*{Hallucination as a failure class}
+
+A second property of language models is that their outputs can be fabricated
+relative to the true state of the world. The hallucinations relevant here are
+the \emph{extrinsic} form in the taxonomy of Ji \emph{et al.}: statements that
+contradict or are unverifiable against an authoritative source, rather than
+mere inconsistency with an input context \parencite{ji2023hallucination}.
+Fabricated security identifiers are a concrete instance: a model may emit a
+CVE identifier, an IP address or a port that does not exist or is not the one
+the operator intended. Because a downstream tool will act on those values, the
+practical requirement is not simply to detect fabrication in general but to
+detect it in tightly constrained value spaces (identifier formats, address
+syntaxes, port ranges), where deterministic checking is feasible.
+
+\subsection*{Agreement and uncertainty as fabrication signals}
+
+Detection without an external verifier relies on the statistical structure of
+the model's own output. Sampling-based methods compute a consistency score from
+a small set of generated responses---SelfCheckGPT scores sampled responses for
+mutual consistency \parencite{manakul2023selfcheckgpt}---while information-theoretic
+approaches frame the uncertainty of free-form answers through semantic
+entropy over meaning-equivalence clusters \parencite{kuhn2023semantic,
+farquhar2024semantic}. These methods provide the theoretical grounding for the
+self-consistency gate in the IRE design. Their common cost, however, is
+repeated generation: every extra sample multiplies inference time, which
+collides with the CPU-only, single-user latency budget adopted in this
+dissertation. That tension---between the statistical value of sampling and the
+hard cost of each sample---is a central theme returned to in the synthesis
+(Section~\ref{sec:gap-synthesis}).
+
+\subsection*{Authorisation and network boundaries}
+
+Finally, two security foundations bound what the validated contract is allowed
+to assert. The first is role-based access control (RBAC), under which a user's
+authorisation to perform an action is determined by the roles assigned to that
+user and an access matrix that grants or denies the intent for each role; the
+IRE's four-role model operationalises this standard pattern. The second is
+network-level scope: private address allocation is codified by RFC~1918
+\parencite{rfc1918}, which defines the address ranges reserved for private
+internets and provides the technical basis for distinguishing an internal
+target from an external one. Together with the operator-declared engagement
+scope, these foundations define the predicates that deterministic validation
+can and cannot decide: syntax, format and authorisation are decidable
+propositions; only meaning is delegated to the model. This division of
+responsibility is the theoretical spine of the solution designed in
+Chapter~\ref{ch:product-design}.
+
+\TODO{If the assessment rubric requires canonical textbook references for NLU
+fundamentals and for role-based access control, add formal citations for the
+intent-classification/slot-filling formulation and for the RBAC reference model;
+none are currently in the reference database.}

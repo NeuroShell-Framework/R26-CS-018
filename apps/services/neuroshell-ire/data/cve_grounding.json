@@ -1,0 +1,107 @@
+{
+  "_meta": {
+    "description": "Offline local CVE grounding dataset for NeuroShell IRE",
+    "updated_at": "2026-08-16T00:00:00Z",
+    "source": "Curated Pentest & Exploitation Scenarios"
+  },
+  "CVE-2017-0144": {
+    "description": "EternalBlue SMBv1 Remote Code Execution vulnerability in Microsoft Windows",
+    "affected_service": "SMBv1",
+    "severity": "CRITICAL"
+  },
+  "CVE-2021-44228": {
+    "description": "Log4Shell Apache Log4j2 JNDI Remote Code Execution vulnerability",
+    "affected_service": "Apache Log4j",
+    "severity": "CRITICAL"
+  },
+  "CVE-2019-0708": {
+    "description": "BlueKeep Remote Desktop Services Remote Code Execution vulnerability",
+    "affected_service": "RDP",
+    "severity": "CRITICAL"
+  },
+  "CVE-2014-6271": {
+    "description": "Shellshock GNU Bash Remote Code Execution vulnerability",
+    "affected_service": "Bash",
+    "severity": "CRITICAL"
+  },
+  "CVE-2014-0160": {
+    "description": "Heartbleed OpenSSL TLS heartbeat extension memory disclosure vulnerability",
+    "affected_service": "OpenSSL",
+    "severity": "HIGH"
+  },
+  "CVE-2021-34527": {
+    "description": "PrintNightmare Windows Print Spooler Remote Code Execution vulnerability",
+    "affected_service": "Print Spooler",
+    "severity": "CRITICAL"
+  },
+  "CVE-2020-1472": {
+    "description": "Zerologon Netlogon privilege escalation vulnerability in Microsoft Active Directory",
+    "affected_service": "Netlogon",
+    "severity": "CRITICAL"
+  },
+  "CVE-2021-26855": {
+    "description": "ProxyLogon Microsoft Exchange Server Server-Side Request Forgery vulnerability",
+    "affected_service": "Microsoft Exchange",
+    "severity": "CRITICAL"
+  },
+  "CVE-2022-0847": {
+    "description": "DirtyPipe Linux Kernel local privilege escalation vulnerability",
+    "affected_service": "Linux Kernel",
+    "severity": "HIGH"
+  },
+  "CVE-2021-4034": {
+    "description": "PwnKit Polkit pkexec local privilege escalation vulnerability",
+    "affected_service": "Polkit",
+    "severity": "HIGH"
+  },
+  "CVE-2022-22965": {
+    "description": "Spring4Shell Spring Framework Remote Code Execution vulnerability",
+    "affected_service": "Spring Framework",
+    "severity": "CRITICAL"
+  },
+  "CVE-2017-5638": {
+    "description": "Apache Struts 2 Jakarta Multipart parser Remote Code Execution",
+    "affected_service": "Apache Struts",
+    "severity": "CRITICAL"
+  },
+  "CVE-2019-19781": {
+    "description": "Citrix Application Delivery Controller and Gateway Remote Code Execution",
+    "affected_service": "Citrix ADC",
+    "severity": "CRITICAL"
+  },
+  "CVE-2020-0796": {
+    "description": "SMBGhost Windows SMBv3 compression Remote Code Execution",
+    "affected_service": "SMBv3",
+    "severity": "CRITICAL"
+  },
+  "CVE-2021-21972": {
+    "description": "VMware vCenter Server vRealize Operations plugin Remote Code Execution",
+    "affected_service": "VMware vCenter",
+    "severity": "CRITICAL"
+  },
+  "CVE-2023-34362": {
+    "description": "MOVEit Transfer SQL Injection and Remote Code Execution vulnerability",
+    "affected_service": "MOVEit Transfer",
+    "severity": "CRITICAL"
+  },
+  "CVE-2023-23397": {
+    "description": "Microsoft Outlook NTLM Hash Disclosure Elevation of Privilege",
+    "affected_service": "Microsoft Outlook",
+    "severity": "CRITICAL"
+  },
+  "CVE-2023-22515": {
+    "description": "Confluence Data Center and Server Privilege Escalation vulnerability",
+    "affected_service": "Atlassian Confluence",
+    "severity": "CRITICAL"
+  },
+  "CVE-2024-21887": {
+    "description": "Ivanti Connect Secure and Policy Secure Command Injection vulnerability",
+    "affected_service": "Ivanti VPN",
+    "severity": "CRITICAL"
+  },
+  "CVE-2024-1709": {
+    "description": "ConnectWise ScreenConnect Authentication Bypass vulnerability",
+    "affected_service": "ScreenConnect",
+    "severity": "CRITICAL"
+  }
+}

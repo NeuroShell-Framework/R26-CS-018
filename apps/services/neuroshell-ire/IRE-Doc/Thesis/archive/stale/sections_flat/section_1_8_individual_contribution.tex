@@ -1,0 +1,24 @@
+\section{Individual Contribution}\label{sec:individual-contribution}
+
+This dissertation is an individual thesis on Component 01 of the NeuroShell
+four-component research chain. The candidate's individual contribution is the
+design, implementation and evaluation of the Intent Recognition Engine, and
+comprises: (1) the architecture of the guarded NLU gateway, in which a small
+offline language model acts as a proposition generator and deterministic stages
+validate structure, target syntax and authorisation before an intent is
+emitted; (2) the security countermeasures layered around the core---including
+the authorisation checks, the adversarial-utterance detection, and the
+self-consistency and hallucination-validation gate---that enforce the safety
+invariant that every accepted intent is schema-valid, authorised and in scope;
+(3) the authoring of the annotated evaluation data set covering well-formed and
+deliberately flawed prompt categories; (4) the evaluation harness and the
+per-layer ablation protocol used to quantify the pipeline's value and each
+layer's contribution; and (5) the empirical comparison of two offline
+language-model backends under the identical guardrail stack.
+
+The other components of the NeuroShell chain---the dynamic planner, the
+adaptive executor, and the vulnerability-analysis engine---provide the context
+in which the IRE operates and are described only to the extent needed to define
+the IRE's interface contract. The candidate takes responsibility for the
+correctness of the IRE implementation and for every result reported in this
+dissertation.

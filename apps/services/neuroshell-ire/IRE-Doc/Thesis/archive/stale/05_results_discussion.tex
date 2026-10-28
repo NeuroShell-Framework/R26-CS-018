@@ -1,0 +1,54 @@
+﻿\chapter{Results and Discussion}\label{ch:results}
+
+\section{Introduction}\label{sec:results-intro}
+
+This chapter presents the empirical results from four experiments (Exp1--Exp4) conducted to evaluate the NeuroShell IRE. Results are reported as point estimates (single-run per configuration). The experiments evaluate pipeline value, backend comparison, per-layer ablation, and per-class flaw catch rates.
+
+\section{Experimental Setup}\label{sec:results-setup}
+
+Experiments were conducted on an ASUS VivoBook X513EA (Intel Core i5-1135G7, 24~GB DDR4, Windows 11) with Ollama in CPU-only mode. Evaluated backends: \texttt{qwen2.5-coder:7b} and \texttt{gemma4:e4b}. The dataset comprised 900 records total: 400 well-formed (^+$) and 500 flawed (^-$) across eight flaw categories. Metrics are DAcc, Catch, and FP as defined in \cref{sec:method-metrics}.
+
+\section{Exp1: Pipeline Value}\label{sec:results-exp1}
+
+\begin{table}[htbp]
+  \centering
+  \caption{Exp1: raw LLM vs guarded pipeline (200-prompt holdout)}
+  \label{tab:exp1}
+  \sliittablestyle
+  \begin{tabular}{lccc}
+    \toprule
+    \textbf{Configuration} & \textbf{DAcc (\%)} & \textbf{Catch (\%)} & \textbf{FP (\%)} \\
+    \midrule
+    Gemma raw & 78 & 0 & 32 \\
+    Gemma guarded & 86 & 72 & 14 \\
+    Qwen raw & 69 & 0 & 31 \\
+    Qwen guarded & 82 & 64 & 15 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+Raw output gave Catch=0\% for both backends. Guarded pipeline improved DAcc (78->86\% Gemma; 69->82\% Qwen), raised Catch (0->72\%, 0->64\%), and reduced FP (32->14\%, 31->15\%).
+
+\section{Exp2: Backend Comparison}\label{sec:results-exp2}
+
+With full guards, Gemma achieved DAcc 86\%, Catch 72\%, FP 14\%; Qwen achieved DAcc 82\%, Catch 64\%, FP 15\%. Both benefit from guardrails; Gemma shows higher absolute performance.
+
+\section{Exp3: Ablation}\label{sec:results-exp3}
+
+Ablation on Qwen (900 records) with layers disabled in turn shows the combined validation stack (schema/regex/network/scope) provides the largest joint contribution, with other layers contributing complementarily. No single layer provides complete coverage.
+
+\section{Exp4: Per-Class Catch}\label{sec:results-exp4}
+
+Per-flaw-category catch rates on Qwen with full guards show high effectiveness across deterministic-rule categories, with variation due to non-uniform category sizes.
+
+\section{Discussion}\label{sec:results-discussion}
+
+\textbf{RQ1:} Guarded pipeline substantially improves safety (Catch +64--72 pp) and usability (FP -16--18 pp, DAcc +8--13 pp). \textbf{RQ2:} Layered validation is essential; combined validation stack contributes most. \textbf{RQ3:} Guardrails generalise across both backends.
+
+\section{Limitations}\label{sec:results-limitations}
+
+Results are single-run point estimates without confidence intervals; dataset category sizes are non-uniform; evaluation uses specific hardware/model versions.
+
+\section{Summary}\label{sec:results-summary}
+
+The guarded pipeline achieves 64--72\% flaw catch rates while reducing false positives and improving accuracy. Stacked deterministic validation is necessary for robust offline intent recognition.

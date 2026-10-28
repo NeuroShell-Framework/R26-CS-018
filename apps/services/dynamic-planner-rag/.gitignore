@@ -1,0 +1,23 @@
+venv/
+.venv/
+__pycache__/
+*.pyc
+.env
+knowledge_base/chroma_db/
+data/external_datasets/isamu136/*.parquet
+# Temporary documentation/audit artifacts
+manual_text.txt
+proposal_text.txt
+scratch/
+
+# Downloaded Pentest-R1 public dataset
+data/external_datasets/pentestr1/
+
+# Local llama.cpp toolkit
+llama.cpp/
+
+# Local ML model artifacts
+*.safetensors
+*.gguf
+models/**/training_args.bin
+models/

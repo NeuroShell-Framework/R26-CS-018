@@ -1,0 +1,61 @@
+﻿\documentclass[a4paper,12pt,oneside]{report}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{setspace}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{longtable}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{url}
+\usepackage{hyperref}
+\usepackage[capitalise,noabbrev]{cleveref}
+\usepackage{biblatex}
+\addbibresource{references.bib}
+
+% Layout (approximate SLIIT-like)
+\usepackage[a4paper,left=40mm,right=25mm,top=25mm,bottom=40mm]{geometry}
+\onehalfspacing
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{6pt}
+
+% Table style helper
+\newcommand{\sliittablestyle}{\singlespacing\small\renewcommand{\arraystretch}{1.25}\selectfont}
+
+\begin{document}
+
+\begin{titlepage}
+\centering
+\vspace*{2cm}
+{\LARGE\bfseries NeuroShell Intent Recognition Engine (IRE)\par}
+\vspace{1.5cm}
+{\Large Undergraduate Dissertation\par}
+\vspace{2cm}
+{\large Kankanamlage Saman Sujith Kumara\\
+Student ID: IT12018630\par}
+\vspace{2cm}
+{\large Department of Information Technology\\
+Sri Lanka Institute of Information Technology\\
+Malabe, Sri Lanka\par}
+\vspace{2cm}
+{\large August 2026\par}
+\end{titlepage}
+
+\pagenumbering{roman}
+\tableofcontents
+\listoffigures
+\listoftables
+\clearpage
+
+\pagenumbering{arabic}
+\include{chapters/01_introduction}
+\include{chapters/02_literature_review}
+\include{chapters/03_methodology}
+\include{chapters/04_implementation}
+\include{chapters/05_results_discussion}
+\include{chapters/06_conclusions_recommendations}
+
+\printbibliography[heading=bibintoc,title={References}]
+
+\end{document}

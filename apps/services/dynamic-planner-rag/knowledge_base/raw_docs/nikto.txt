@@ -1,0 +1,116 @@
+TOOL: nikto
+VERSION: 2.1.6
+CATEGORY: Web Vulnerability Scanner
+
+DESCRIPTION:
+Nikto is an open-source web server scanner that tests web servers for dangerous files, outdated server software, configuration flaws, default file installations, insecure HTTP methods, security headers, and version-specific vulnerabilities. It performs rapid tests using a database of known web server vulnerabilities and security issues.
+
+BASIC SYNTAX:
+nikto -h <target> [options]
+
+TARGET & PORT OPTIONS:
+-h <host>       Target host IP address, hostname, or full target URL
+-p <port>       Target port or list/range of ports (default 80)
+-ssl            Force SSL/TLS encryption mode on target port
+-nossl          Disable SSL/TLS mode (force plain HTTP)
+-vhost <name>   Specify Virtual Host (Host header) to send to target server
+
+SCAN TUNING OPTIONS (-Tuning <x>):
+Tune scan checks by specifying test category numbers or letter codes:
+0  File Upload (check for unauthorized file upload scripts)
+1  Interesting File / Seen in logs (check for sensitive or leaked files)
+2  Misconfiguration / Default File (check default server configs and samples)
+3  Information Disclosure (check for server info, directory listings, version leaks)
+4  Injection (check for XSS, HTML injection, script injection flaws)
+5  Remote File Retrieval (Inside Web Root - check for accessible source files)
+6  Denial of Service (check for dangerous DoS crash conditions)
+7  Remote File Retrieval (Server Wide - check for arbitrary file read vulnerabilities)
+8  Command Execution / Remote Shell (check for web shell backdoors)
+9  SQL Injection (check for SQL syntax errors and vulnerable query parameters)
+a  Authentication Bypass (check for weak auth mechanisms and exposed portals)
+b  Software Identification (check server version banner and component signatures)
+c  Remote Source Inclusion (check for remote file inclusion vulnerabilities)
+x  Reverse Tuning (exclude listed test categories, e.g. -Tuning 1234x)
+
+PLUGINS & MANAGEMENT:
+-Plugins <name>    Run specific Nikto plugin by name or comma-separated list
+-list-plugins      List all available Nikto plugins and descriptions
+-update            Update Nikto plugin database and vulnerability definitions
+-maxtime <sec>     Maximum scan duration in seconds (stops scan when time expires)
+-timeout <sec>     HTTP connection timeout in seconds per request (default 10)
+
+MUTATION MODES (-mutate):
+-mutate <type>      Enable mutation scan techniques:
+1  Test all files in subdirectories discovered
+2  Test directory names using dictionary wordlist
+3  Brute force user names via HTTP basic auth / user home dirs
+4  Brute force user names via enumeration
+5  Test common file extensions on discovered files
+6  Guess dictionary file names on discovered paths
+-mutate-options <val> Pass additional options to mutation engine
+
+AUTHENTICATION, HEADERS & COOKIES:
+-id <user:pass>         HTTP Basic authentication credentials (format username:password)
+-id admin:password      Example HTTP Basic authentication
+-cookie <cookie_str>    Inject custom Cookie header into HTTP requests
+-headers <header_str>   Inject custom HTTP header into requests (e.g. "X-Forwarded-For: 127.0.0.1")
+
+PROXY OPTIONS:
+-useproxy          Enable proxy settings configured in nikto.conf or CLI
+-proxy <host:port> Set proxy host IP and port (e.g. http://127.0.0.1:8080 or Burp Suite)
+
+IDS EVASION TECHNIQUES (-evasion <x>):
+-evasion <x>    Encode HTTP requests to evade Intrusion Detection Systems (IDS/WAF):
+1  Random URI encoding (non-UTF8 percent encoding)
+2  Directory self-reference injection (/./ path traversal)
+3  Premature URL ending (fake parameter separator)
+4  Prepend long random string to URI
+5  Fake parameter injection to obscure query string
+6  TAB character as request URI spacer
+7  Change case of URL characters (case sensitivity trick)
+8  Use Windows backslash path separator (\ instead of /)
+
+DISPLAY & VERBOSITY OPTIONS (-Display <x>):
+-Display <x>    Control terminal stdout display details:
+1  Show HTTP redirects
+2  Show cookies received from server
+3  Show all 200 OK responses received
+4  Show URLs requiring HTTP authentication
+D  Enable Debug output mode
+V  Enable Verbose output mode
+
+OUTPUT FORMATS & REPORTING:
+-o <file>          Save scan output to specified report file path
+-Format <fmt>      Specify output format type:
+  csv   Comma Separated Values report format
+  htm   HTML formatted web report
+  txt   Plain text formatted log
+  xml   XML formatted security report
+  json  JSON formatted scan data
+-o report.html -Format htm
+-o report.xml -Format xml
+-o report.json -Format json
+
+EXECUTION & INTERACTIVE CONTROLS:
+-Pause <sec>       Pause delay between individual HTTP requests (rate limiting)
+-nointeractive     Disable interactive keyboard controls during scan execution
+
+PRACTICAL COMMAND EXAMPLES:
+nikto -h 192.168.1.1
+nikto -h 192.168.1.1 -p 443 -ssl
+nikto -h 192.168.1.1 -Tuning 4
+nikto -h 192.168.1.1 -Tuning 9
+nikto -h 192.168.1.1 -o report.html -Format htm
+nikto -h 192.168.1.1 -o report.xml -Format xml
+nikto -h 192.168.1.1 -id admin:password
+nikto -h 192.168.1.1 -evasion 1
+nikto -h 192.168.1.1 -evasion 7
+nikto -h 192.168.1.1 -maxtime 300
+nikto -h 192.168.1.1 -Display V
+nikto -h 192.168.1.1 -Tuning 1234
+nikto -h 192.168.1.1 -p 8080
+nikto -h 192.168.1.1 -useproxy -proxy 127.0.0.1:8080
+nikto -h http://192.168.1.1 -Tuning 4,9 -o web_vulns.json -Format json
+nikto -h 192.168.1.1 -p 8443 -ssl -vhost app.local
+nikto -h 192.168.1.1 -cookie "SESSIONID=xyz123" -Display 2
+nikto -h 192.168.1.1 -Plugins headers,cookies -Tuning 3

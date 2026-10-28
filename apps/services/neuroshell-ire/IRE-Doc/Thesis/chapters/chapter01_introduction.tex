@@ -1,0 +1,316 @@
+%% Chapter 1 - Introduction
+%% Self-contained chapter file. All sections (1.1 Overall project context;
+%% 1.2 Individual component context; 1.3 Problem statement; 1.4 Research gap;
+%% 1.5 Aim and objectives; 1.6 Research questions; 1.7 Scope, limitations and
+%% assumptions; 1.8 Individual contribution; 1.9 Thesis structure) are inlined
+%% below. No external section files are required.
+\chapter{Introduction}\label{ch:introduction}
+
+\section{Overall Project Context}\label{sec:overall-project-context}
+
+Modern security operations depend on specialised tooling to discover, assess and
+remediate faults across networks and applications. As the scale of this work
+grows, the manual translation of an operator's intent into safe, well-scoped tool
+actions becomes a significant bottleneck, and mistakes made at this point---an
+incorrect target, a malformed instruction, or an out-of-scope action---can affect
+production infrastructure. Large Language Models (LLMs) are attractive for this
+translation step because they can interpret natural language and emit structured,
+machine-readable instructions that drive security tooling
+\parencite{deng2024pentestgpt}. Yet a model is a stochastic component: its output
+may be malformed, misclassified, hallucinated, or the product of injected
+instructions, and a security pipeline that acts on such output without further
+checking transfers every one of these errors into the actions it executes.
+
+NeuroShell is an autonomous, natural-language-driven security orchestration
+framework developed as a four-component research chain: the Intent Recognition
+Engine (IRE), a Dynamic Planner, an Adaptive Execution and Error Recovery engine,
+and an AI-driven Vulnerability Analysis engine (project reference R26-CS-018).
+The framework is designed to let an analyst express offline security tasks in
+natural language and have the resulting validated, structured contracts drive
+downstream automation, within an explicitly configured engagement scope. It
+therefore sits at the intersection of cybersecurity automation, software
+engineering and applied machine learning. Its central concern is the first step
+of that chain: the point at which human intent is converted into a
+machine-executable form, because an error introduced there propagates through
+every stage that follows and must be detected before it takes effect.
+
+This dissertation concentrates on a single component of the framework and asks
+whether, in an offline CPU-only deployment, a small instruction-tuned language
+model can be made sufficiently reliable to serve as the head of an automated
+security pipeline when its raw output is constrained by deterministic
+validation.
+
+\section{Individual Component Context}\label{sec:individual-component-context}
+
+The Intent Recognition Engine (IRE) is the first component of the chain
+(Component 01). It acts as a domain-specific Natural Language Understanding (NLU)
+gateway: it receives natural-language security commands---for example a request
+to perform a targeted network discovery scan---and returns a structured,
+validated intent contract that downstream components consume without
+re-interpreting prose.
+
+The component boundary is deliberately narrow. The IRE is concerned with
+understanding and validating \emph{intent}; it does not decide how a task is
+scheduled, across which hosts it runs, or how execution failures are recovered.
+Those responsibilities belong to the Dynamic Planner (Component 02) and to the
+Adaptive Execution and Error Recovery engine (Component 03), which consume the
+IRE's output. The handoff is designed to be safe by construction: the output
+contract carries an explicit intent type, a resolved target, the recognised
+options and any validation findings, and the downstream contract requires that
+actions derived for rejected intents must not be executed.
+
+Because the IRE sits at the head of the chain, its reliability bounds the
+reliability of the components that follow. A target that is mislabeled, an
+intent that is misclassified, or a hallucinated identifier that is accepted would
+be inherited by every downstream action. The component therefore couples an
+instruction-tuned language model with deterministic validation and guard stages
+whose purpose is to contain model error before it can propagate to a planner or
+executor. This dissertation evaluates whether that guarded design achieves
+sufficiently accurate and error-resilient intent recognition to justify acting on
+model-produced security instructions in a controlled, offline setting.
+
+\section{Problem Statement}\label{sec:problem-statement}
+
+Security operations are bottlenecked by the manual translation of operator intent
+into tool actions. A penetration tester or analyst must map free-form
+instructions---``scan the internal network for EternalBlue'', ``check this host
+for CVE-2021-44228''---onto commands, targets and constraints while respecting
+authorisation boundaries. Recent work shows that Large Language Models (LLMs) can
+act as capable copilots for parts of this work, producing realistic attack plans
+and driving tools in controlled environments \parencite{deng2024pentestgpt,
+happe2023pwned}. Using an LLM for this translation step is attractive precisely
+because natural language is the operator's native interface.
+
+The problem is that a language model is not a reliable translator. Its output can
+be malformed, misclassified, or wholly fabricated: LLMs hallucinate identifiers
+and parameters \parencite{ji2023hallucination}, and they can be diverted by
+adversarially crafted utterances \parencite{greshake2023indirect,
+liu2023promptinjection}. In a purely conversational copilot these errors are
+display text that a human can vet. In an \emph{automated} security pipeline,
+where intent is converted directly into actions, each such error becomes a
+candidate machine-dispatched action: a fabricated CVE is looked up, a wrong
+target is scanned, or an injected instruction is obeyed. Acting on unvalidated
+model output therefore transfers every residual error of the model into the
+security toolchain it drives.
+
+The intent-recognition step concentrates this risk. A copilot that pipelines raw
+LLM output into a planner and executor must, at minimum, emit a well-formed,
+schema-conformant, authorised intent structure before any downstream component
+acts on it. Unless that structured output is validated deterministically, the
+entire framework inherits the model's failure modes. This dissertation addresses
+the resulting problem: \emph{how can a small, offline, CPU-only language model be
+made sufficiently reliable to serve as the intent-recognition head of an
+automated security pipeline, when its raw output is constrained by deterministic
+validation rather than by a human reviewer or a cloud back-end?}
+
+\section{Research Gap}\label{sec:research-gap}
+
+Three related gaps motivate this work.
+
+First, LLM copilots for security tooling validate their output informally, if at
+all. PENTESTGPT decomposes penetration-testing tasks across a reasoning,
+generation and guidance chain and does not subject its output to deterministic schema, scope
+or authorisation validation before machine consumption
+\parencite{deng2024pentestgpt}; the sparring-partner systems demonstrated by
+Happe and Cito produce plausible next actions consumed by a human
+\parencite{happe2023pwned}. When a copilot's output is fed to an
+\emph{automated} toolchain---the natural integration point for intent
+recognition---the requirement changes from plausibility to correctness: a
+hallucinated CVE, malformed structure, or injected text becomes a
+machine-dispatched action rather than display text. The OWASP Top 10 for LLM
+applications catalogues prompt injection, insecure output handling and related
+risks as first-class application concerns \parencite{owasp2025}, yet the
+systematic defence of machine-consumed intent remains largely unaddressed in the
+surveyed copilot work.
+
+Second, the defence literature either assumes interactive, cloud-hosted
+generation or takes the retrieval-augmented route. Sampling-based methods for
+detecting fabricated output, such as SelfCheckGPT \parencite{manakul2023selfcheckgpt},
+semantic uncertainty \parencite{kuhn2023semantic} and semantic entropy
+\parencite{farquhar2024semantic}, and the self-consistency decoding strategy
+\parencite{wang2023selfconsistency}, all assume repeated or interactive
+generation with generous compute. Retrieval-augmented generation
+\parencite{lewis2020rag} grounds answers externally, but introduces retrieved
+data as a prompt-injection surface \parencite{greshake2023indirect} and requires
+corpora and embeddings infrastructure at inference time. The operational setting
+targeted here---a small offline model running unattended on an operator's
+laptop, with latency budget that rules out a retry loop or a verifier LLM---is
+therefore not covered by direct prior measurements.
+
+Third, to the best of the review conducted here, no existing
+autonomous penetration-testing framework ships a dedicated, isolated
+natural-language understanding layer that reliably converts free-form
+offensive-security instructions into validated, schema-constrained machine contracts; tools either accept structured input or
+rely on general-purpose LLMs without domain-specific validation. Leaving this
+step to a general chat model without a purpose-built validation layer is exactly
+the unsafe pattern identified above. The research gap this dissertation fills is
+therefore the design and \emph{measurement} of a guarded, retrieval-free intent
+recognition engine---an isolated NLU component with deterministic validation---
+for offline, single-device security deployments.
+
+\section{Aim and Objectives}\label{sec:aim-and-objectives}
+
+The aim of this dissertation is to design, implement and evaluate a guarded
+intent-recognition engine that constrains the raw output of a small, offline,
+instruction-tuned language model with deterministic validation, so that the
+combined system can act as a reliable head of an automated security pipeline in a
+CPU-only, single-device deployment. To achieve this aim the following objectives
+are pursued:
+
+\begin{enumerate}
+\item To design and implement the Intent Recognition Engine (IRE): a component
+that receives free-text security requests and emits strictly
+schema-conformant, authorised intent contracts, consuming a small offline
+language model as a proposition generator whose output is validated
+deterministically before it is handed onward.
+\item To construct a purpose-built evaluation data set of security prompts,
+covering well-formed requests and deliberately flawed prompts across the flaw
+categories that matter in practice (adversarial phrasing, out-of-scope targets,
+ambiguous or contradictory requests, fabricated parameters and identifiers, and
+role violations), each annotated with gold labels.
+\item To establish an evaluation protocol that quantifies, on the committed
+experiment record, how much the guarded pipeline improves structured intent
+recognition and flaw catching over raw model output, and that abates each guard
+layer independently to estimate its individual contribution.
+\item To compare two offline language-model backends under the identical
+guardrail stack, in order to measure how much of the achieved safety is
+backend-independent rather than an artefact of one model.
+\end{enumerate}
+
+Each objective is addressed by a corresponding chapter of this dissertation:
+the design is developed in Chapter~\ref{ch:product-design}, the data set and protocol in
+Chapter~\ref{ch:methodology}, the implementation in
+Chapter~\ref{ch:implementation-testing}, and the evaluation and backend comparison in
+Chapter~\ref{ch:results}.
+
+\section{Research Questions}\label{sec:research-questions}
+
+The central question guiding this dissertation is whether a small, offline,
+unattended language model can be made reliable enough to drive an automated
+security copilot once its output is subject to deterministic validation.
+From this central question three concrete research questions are derived:
+
+\begin{enumerate}
+\item \textbf{RQ1 (pipeline value).} How much does a stacked validation
+pipeline improve structured intent-recognition accuracy and flaw catching over
+raw language-model output?
+\item \textbf{RQ2 (layer contribution).} Which individual guard layer
+contributes the most to the flaw-catch rate, and which layers interact
+destructively when combined?
+\item \textbf{RQ3 (generalisability).} Do the guardrails generalise across two
+different offline language-model backends, or is the measured safety an
+artefact of a single model?
+\end{enumerate}
+
+The study is conducted as an empirical, measurement-based investigation rather
+than a hypothesis-testing one: the outcomes of RQ1--RQ3 are quantified from the
+committed experiment record reported in Chapter~\ref{ch:results}, and no
+statistical significance claim is attached to the single-run measurements
+(see Section~\ref{sec:scope-limitations-assumptions}).
+
+\section{Scope, Limitations and Assumptions}\label{sec:scope-limitations-assumptions}
+
+\subsection*{Scope}
+
+This dissertation is an individual study of a single component, the Intent
+Recognition Engine (Component 01 of the NeuroShell framework, project reference
+R26-CS-018), and does not implement the downstream planner, executor or
+vulnerability-analysis components. Within that boundary, the scope covers:
+(1) a guarded NLU pipeline that accepts free-text security requests and emits
+validated intent contracts; (2) the deterministic validation and security
+countermeasures that constrain the model's output; (3) an offline, CPU-only,
+single-device deployment in which nothing is retrieved at inference time and no
+request leaves the device; and (4) a closed intent taxonomy and an
+operator-configured engagement scope that bounds permitted targets and
+techniques. Evaluation is conducted on a curated, annotated data set of prompts
+in a lab harness, not against live production traffic.
+
+\subsection*{Limitations}
+
+The principal limitation is evidential: the results reported in this
+dissertation rest on a bounded, committed experiment record of
+single-run point estimates, without confidence intervals or seed sweeps, and
+therefore carry residual uncertainty that is discussed in
+Chapter~\ref{ch:discussion}. Only two offline language-model backends are
+compared under the guardrail stack, and the evaluation data set is
+author-authored rather than drawn from observed operational traffic.
+Measurements are specific to the evaluation hardware and CPU-only inference
+runtime, so latency and throughput figures are indicative rather than
+generalisable. The framework-level benefit of the IRE is validated at the
+component level; end-to-end orchestration with the downstream components is
+outside the measured evidence presented here.
+
+\subsection*{Assumptions}
+
+The following assumptions underpin the design and evaluation:
+\begin{itemize}
+\item The operator configures the engagement scope and authorisation policy
+correctly; the scope guard can only enforce the boundary it is given.
+\item The deployment device and the downloaded model weights are trusted;
+physical compromise of the device and backdoors embedded in the model weights
+are out of scope.
+\item Downstream components consume the intent contract as specified and
+honour the contract rule that actions derived for rejected intents must not be
+executed.
+\item Because the pipeline performs no retrieval and renders no free-form
+output, indirect prompt injection via retrieved content and tool injection via
+unfiltered rendered text are structurally out of scope, narrowing the attack
+surface to the classification of the single user utterance.
+\item The annotated prompts in the evaluation data set are representative of
+the phrasing an operator would use with the system.
+\end{itemize}
+
+\section{Individual Contribution}\label{sec:individual-contribution}
+
+This dissertation is an individual thesis on Component 01 of the NeuroShell
+four-component research chain. The candidate's individual contribution is the
+design, implementation and evaluation of the Intent Recognition Engine, and
+comprises: (1) the architecture of the guarded NLU gateway, in which a small
+offline language model acts as a proposition generator and deterministic stages
+validate structure, target syntax and authorisation before an intent is
+emitted; (2) the security countermeasures layered around the core---including
+the authorisation checks, the adversarial-utterance detection, and the
+self-consistency and hallucination-validation gate---that enforce the safety
+invariant that every accepted intent is schema-valid, authorised and in scope;
+(3) the authoring of the annotated evaluation data set covering well-formed and
+deliberately flawed prompt categories; (4) the evaluation harness and the
+per-layer ablation protocol used to quantify the pipeline's value and each
+layer's contribution; and (5) the empirical comparison of two offline
+language-model backends under the identical guardrail stack.
+
+The other components of the NeuroShell chain---the dynamic planner, the
+adaptive executor, and the vulnerability-analysis engine---provide the context
+in which the IRE operates and are described only to the extent needed to define
+the IRE's interface contract. The candidate takes responsibility for the
+correctness of the IRE implementation and for every result reported in this
+dissertation.
+
+\section{Thesis Structure}\label{sec:thesis-structure}
+
+This dissertation is organised as follows. \emph{Chapter~\ref{ch:introduction}}
+(the present chapter) establishes the problem, the research gap, the aim,
+objectives, research questions and scope of the study.
+\emph{Chapter~\ref{ch:literature-review}} reviews related work on LLM copilots
+for security, adversarial attacks on LLM-integrated applications, and
+hallucination-detection and uncertainty methods, and situates the guarded
+intent-recognition approach within it.
+\emph{Chapter~\ref{ch:methodology}} presents the research approach: the
+objectives-to-method mapping, the design of the evaluation data set, the
+metrics, and the experiment and ablation protocol used to answer RQ1--RQ3.
+\emph{Chapter~\ref{ch:product-design}} develops the product and solution
+design of the Intent Recognition Engine, including the pipeline stages, the
+security countermeasures and the intent-contract interface.
+\emph{Chapter~\ref{ch:implementation-testing}} describes the implementation,
+the integration of the two offline backends, and the automated test suite.
+\emph{Chapter~\ref{ch:results}} reports the results of the pipeline-value,
+layer-ablation and backend-comparison experiments and interprets them against
+the research questions.
+\emph{Chapter~\ref{ch:discussion}} discusses the findings, the threats to
+validity, and the residual failure modes of the guarded design.
+\emph{Chapter~\ref{ch:commercialisation}} considers the commercialisation and
+sustainability of the approach.
+\emph{Chapter~\ref{ch:conclusion}} concludes the dissertation, restates the
+contributions, and outlines directions for future work. Supplementary material
+appears in the appendices: the data-set and evaluation instruments
+(Appendix~\ref{app:a}) and the declaration on academic integrity and the use of
+artificial-intelligence tools (Appendix~\ref{app:b}).

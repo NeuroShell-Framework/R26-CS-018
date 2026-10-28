@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Data Collection Plan — S-Tier Research Paper</title>
+<style>
+  :root {
+    --bg: #0b1220;
+    --bg-soft: #101a2e;
+    --panel: #15213a;
+    --panel-soft: #1b2a47;
+    --border: #25365a;
+    --text: #e8eefc;
+    --muted: #9fb0d0;
+    --accent: #4f9cf9;
+    --accent-2: #7c6cf6;
+    --green: #34d399;
+    --amber: #fbbf24;
+    --red: #f87171;
+    --purple: #c084fc;
+    --mono: "JetBrains Mono", "Fira Code", Consolas, monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
+    background:
+      radial-gradient(1200px 600px at 15% -10%, rgba(79,156,249,0.16), transparent 60%),
+      radial-gradient(1000px 500px at 90% 0%, rgba(124,108,246,0.14), transparent 55%),
+      var(--bg);
+    color: var(--text);
+    line-height: 1.65;
+    padding: 2.5rem 1.25rem 4rem;
+  }
+  .wrap { max-width: 1080px; margin: 0 auto; }
+
+  /* ── Header ─────────────────────────────────────────────── */
+  header.hero {
+    text-align: center;
+    padding: 3rem 1.5rem 2.2rem;
+    margin-bottom: 2.5rem;
+    background: linear-gradient(135deg, rgba(79,156,249,0.16), rgba(124,108,246,0.16));
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    box-shadow: 0 18px 50px rgba(0,0,0,0.35);
+  }
+  .tagline {
+    display: inline-flex; align-items: center; gap: 0.5rem;
+    font-family: var(--mono); font-size: 0.78rem; letter-spacing: 0.18em;
+    text-transform: uppercase; color: var(--accent);
+    background: rgba(79,156,249,0.12); border: 1px solid rgba(79,156,249,0.35);
+    padding: 0.35rem 0.9rem; border-radius: 999px; margin-bottom: 1.1rem;
+  }
+  header.hero h1 {
+    font-size: clamp(1.7rem, 4vw, 2.6rem);
+    font-weight: 800; letter-spacing: -0.02em; line-height: 1.15;
+    background: linear-gradient(90deg, #fff, var(--accent), var(--accent-2));
+    -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  header.hero p {
+    max-width: 640px; margin: 1rem auto 0; color: var(--muted); font-size: 1.02rem;
+  }
+  .meta-strip {
+    display: flex; flex-wrap: wrap; gap: 1rem; justify-content: center; margin-top: 1.4rem;
+  }
+  .meta-strip span {
+    font-family: var(--mono); font-size: 0.8rem; color: var(--muted);
+    background: var(--panel); border: 1px solid var(--border); padding: 0.4rem 0.85rem; border-radius: 8px;
+  }
+  .meta-strip b { color: var(--accent); font-weight: 600; }
+
+  /* ── Sections ───────────────────────────────────────────── */
+  section { margin-bottom: 2.2rem; }
+  h2 {
+    display: flex; align-items: center; gap: 0.75rem;
+    font-size: 1.45rem; font-weight: 700; margin: 1.6rem 0 1rem;
+    padding-bottom: 0.55rem; border-bottom: 1px solid var(--border);
+  }
+  h2 .phase-badge {
+    flex: 0 0 auto; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.06em;
+    padding: 0.3rem 0.7rem; border-radius: 7px; color: #081120;
+  }
+  h2.phase-1 .phase-badge { background: var(--green); }
+  h2.phase-2 .phase-badge { background: var(--amber); }
+  h2.phase-3 .phase-badge { background: var(--red); }
+  h2.phase-4 .phase-badge { background: var(--purple); }
+  h2.phase-5 .phase-badge { background: var(--accent); }
+  h2.phase-6 .phase-badge { background: var(--green); }
+  h2.phase-7 .phase-badge { background: var(--red); }
+  h2.phase-8 .phase-badge { background: var(--accent-2); }
+  h3 {
+    font-size: 1.08rem; font-weight: 600; margin: 1.2rem 0 0.5rem; color: var(--accent);
+  }
+  p { color: var(--text); margin-bottom: 0.6rem; }
+  .aim {
+    display: flex; gap: 0.6rem; align-items: flex-start;
+    background: var(--panel); border-left: 3px solid var(--accent);
+    padding: 0.75rem 1rem; border-radius: 0 10px 10px 0; margin-bottom: 1rem;
+  }
+  .aim b { color: var(--accent); white-space: nowrap; }
+  ul { margin: 0.4rem 0 1rem 1.4rem; color: var(--text); }
+  li { margin-bottom: 0.3rem; }
+  code {
+    font-family: var(--mono); font-size: 0.86em; color: #a5d8ff;
+    background: rgba(79,156,249,0.13); border: 1px solid rgba(79,156,249,0.25);
+    padding: 0.1em 0.42em; border-radius: 5px;
+  }
+  .muted { color: var(--muted); font-size: 0.95rem; }
+
+  /* ── Tables ─────────────────────────────────────────────── */
+  .table-scroll { overflow-x: auto; border-radius: 12px; border: 1px solid var(--border); }
+  table {
+    width: 100%; border-collapse: collapse; background: var(--panel);
+    font-size: 0.92rem;
+  }
+  thead th {
+    background: var(--panel-soft); color: var(--accent); text-align: left;
+    font-weight: 600; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.06em;
+    padding: 0.7rem 1rem; white-space: nowrap;
+  }
+  tbody td {
+    padding: 0.68rem 1rem; border-top: 1px solid var(--border); color: var(--text);
+    vertical-align: top;
+  }
+  tbody tr:hover td { background: rgba(79,156,249,0.06); }
+
+  /* ── Callout cards ──────────────────────────────────────── */
+  .grid { display: grid; gap: 1.1rem; }
+  .grid-2 { grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+  .card {
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 12px; padding: 1.1rem 1.2rem;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+  .card:hover { transform: translateY(-2px); box-shadow: 0 10px 28px rgba(0,0,0,0.3); }
+  .card h3 { margin-top: 0; }
+  .num {
+    font-family: var(--mono); font-size: 0.75rem; color: #081120; font-weight: 700;
+    background: var(--accent); border-radius: 7px; padding: 0.22rem 0.6rem; margin-right: 0.5rem;
+  }
+  .num-amber { background: var(--amber); }
+  .num-green { background: var(--green); }
+  .num-red { background: var(--red); }
+  .num-purple { background: var(--purple); }
+
+  /* ── Status pills ───────────────────────────────────────── */
+  .pill { font-size: 0.75rem; padding: 0.2rem 0.6rem; border-radius: 999px; white-space: nowrap; }
+  .pill-todo { background: rgba(251,191,36,0.15); color: var(--amber); border: 1px solid rgba(251,191,36,0.35); }
+  .pill-part { background: rgba(192,132,252,0.15); color: var(--purple); border: 1px solid rgba(192,132,252,0.35); }
+
+  /* ── Footer / summary ───────────────────────────────────── */
+  .summary-note {
+    background: linear-gradient(135deg, rgba(79,156,249,0.12), rgba(124,108,246,0.12));
+    border: 1px dashed var(--border); border-radius: 12px; padding: 1.2rem 1.4rem; margin-top: 1rem;
+  }
+  footer {
+    text-align: center; color: var(--muted); font-size: 0.85rem; margin-top: 3rem;
+    border-top: 1px solid var(--border); padding-top: 1.4rem;
+  }
+  footer b { color: var(--accent); }
+
+  @media (max-width: 640px) {
+    body { padding: 1.25rem 0.75rem 3rem; }
+    header.hero { padding: 2rem 1rem 1.6rem; }
+    thead th, tbody td { padding: 0.55rem 0.7rem; font-size: 0.85rem; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- ══════════ Header ══════════ -->
+  <header class="hero">
+    <span class="tagline">NeuroShell IRE &middot; Research Engineering</span>
+    <h1>Data Collection Plan</h1>
+    <p>Complete data collection strategy for an S-tier research paper on the <code>neuroshell-ire</code> NLU pipeline. Every experiment maps to a specific paper section and produces quantifiable evidence.</p>
+    <div class="meta-strip">
+      <span>Phase&nbsp;<b>1–7</b>&nbsp;|&nbsp;Experiments&nbsp;<b>1–8</b></span>
+      <span>Corners: <b>Accuracy &middot; Catch Rate</b></span>
+      <span>Outputs: <b>Table &amp; Chart Ready</b></span>
+    </div>
+  </header>
+
+  <!-- ══════════ Experiment 1 ══════════ -->
+  <section>
+    <h2 class="phase-1"><span class="phase-badge">PHASE 1 · EXP 1</span>Raw LLM Baseline vs Full Pipeline</h2>
+    <div class="aim"><b>Aim:</b><span>Prove the validation pipeline adds value over raw LLM inference.</span></div>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>What</th><th>How</th><th>Output File</th></tr></thead>
+        <tbody>
+          <tr><td>Raw Gemma baseline metrics</td><td><code>run_baseline.py</code> with <code>golden_dataset.jsonl</code></td><td><code>.baseline_summary.json</code></td></tr>
+          <tr><td>Raw Qwen baseline metrics</td><td>Modify <code>run_baseline.py</code> to use <code>qwen2.5-coder:7b</code></td><td><code>.baseline_summary_qwen.json</code></td></tr>
+          <tr><td>Full pipeline (Gemma)</td><td><code>diagnose.py golden_dataset.jsonl</code></td><td><code>full_pipeline_debug.jsonl</code></td></tr>
+          <tr><td>Full pipeline (Qwen)</td><td>Same with Qwen config</td><td><code>full_pipeline_qwen_debug.jsonl</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="muted" style="margin-top:0.8rem"><b>Metrics:</b> accuracy · hallucination catch rate · false positive rate · p50/p95 latency · per-category breakdown. &nbsp;<b>Paper section:</b> Evaluation.</p>
+  </section>
+
+  <!-- ══════════ Experiment 2 ══════════ -->
+  <section>
+    <h2 class="phase-1"><span class="phase-badge">PHASE 1 · EXP 2</span>Model Head-to-Head — Gemma 4 vs Qwen 2.5 Coder 7B</h2>
+    <div class="aim"><b>Aim:</b><span>Compare two locally-hosted models on identical inputs.</span></div>
+    <p>Same <b>200</b> records, both models, compare:</p>
+    <div class="grid grid-2">
+      <div class="card"><h3><span class="num">1</span>Intent accuracy</h3><p class="muted" style="margin:0">Accuracy per intent type.</p></div>
+      <div class="card"><h3><span class="num num-amber">2</span>Latency distribution</h3><p class="muted" style="margin:0">p50 · p95 · p99.</p></div>
+      <div class="card"><h3><span class="num num-green">3</span>Hallucination catch</h3><p class="muted" style="margin:0">Flawed-input catch rate.</p></div>
+      <div class="card"><h3><span class="num num-purple">4</span>Adversarial robustness</h3><p class="muted" style="margin:0">Which model resists injections better.</p></div>
+      <div class="card"><h3><span class="num num-red">5</span>Semantic uncertainty</h3><p class="muted" style="margin:0">Entropy / confidence calibration.</p></div>
+    </div>
+    <p class="muted" style="margin-top:0.8rem"><b>Paper section:</b> Evaluation, Model Comparison.</p>
+  </section>
+
+  <!-- ══════════ Experiment 3 ══════════ -->
+  <section>
+    <h2 class="phase-2"><span class="phase-badge">PHASE 2 · EXP 3</span>Component Contribution — Ablation</h2>
+    <div class="aim"><b>Aim:</b><span>Prove each validation layer is necessary, not just decoration.</span></div>
+    <p>Run <code>ablation.py</code> with golden dataset. Existing configs:</p>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>Config</th><th>What it proves</th></tr></thead>
+        <tbody>
+          <tr><td><code>Full Pipeline</code></td><td>Upper bound performance</td></tr>
+          <tr><td><code>Validation Stack Disabled</code></td><td>Total validation layer contribution</td></tr>
+          <tr><td><code>Self-Consistency Disabled</code></td><td>Tier-2 sampling contribution</td></tr>
+          <tr><td><code>Semantic Cache Disabled</code></td><td>Cache latency savings</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p style="margin:1rem 0 0.5rem"><b>Additional configs to add:</b></p>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>Config</th><th>What it proves</th></tr></thead>
+        <tbody>
+          <tr><td><code>No Scope Guard</code></td><td>Scope enforcement contribution</td></tr>
+          <tr><td><code>No RBAC Guard</code></td><td>Access control contribution</td></tr>
+          <tr><td><code>No Network Validator</code></td><td>CIDR / scope validation contribution</td></tr>
+          <tr><td><code>No Hallucination Validator</code></td><td>CVE / parameter checking contribution</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="muted" style="margin-top:0.8rem"><b>Output:</b> Waterfall chart data showing incremental improvement per layer. &nbsp;<b>Paper section:</b> Ablation Study.</p>
+  </section>
+
+  <!-- ══════════ Experiment 4 ══════════ -->
+  <section>
+    <h2 class="phase-3"><span class="phase-badge">PHASE 3 · EXP 4</span>Per-Hallucination-Class Analysis</h2>
+    <div class="aim"><b>Aim:</b><span>Show which hallucination types are hardest to detect.</span></div>
+    <p>Use <code>diagnose.py</code> output, filter by category:</p>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>Category</th><th>Expected Catch</th><th>Actual Catch</th><th>Missed Cases</th></tr></thead>
+        <tbody>
+          <tr><td><code>fabricated_cve</code></td><td>100%</td><td>?</td><td>List misses</td></tr>
+          <tr><td><code>target_type_mismatch</code></td><td>100%</td><td>?</td><td>List misses</td></tr>
+          <tr><td><code>contradictory_action_target</code></td><td>100%</td><td>?</td><td>List misses</td></tr>
+          <tr><td><code>fabricated_parameter</code></td><td>100%</td><td>?</td><td>List misses</td></tr>
+          <tr><td><code>adversarial_injection</code></td><td>100%</td><td>?</td><td>List misses (7 regex-bypass)</td></tr>
+          <tr><td><code>out_of_scope</code></td><td>100%</td><td>?</td><td>List misses</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p style="margin:1rem 0 0.5rem"><b>For each missed case, document:</b></p>
+    <ul>
+      <li>Why it was missed — which validation layer failed.</li>
+      <li>What would catch it — proposed improvement.</li>
+    </ul>
+    <p class="muted"><b>Paper section:</b> Hallucination Taxonomy, Error Analysis.</p>
+  </section>
+
+  <!-- ══════════ Experiment 5 ══════════ -->
+  <section>
+    <h2 class="phase-4"><span class="phase-badge">PHASE 4 · EXP 5</span>Injection Resistance</h2>
+    <div class="aim"><b>Aim:</b><span>Prove defense-in-depth works even when individual layers fail.</span></div>
+    <p><b>25</b> adversarial records, split by detection method:</p>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>Detection Layer</th><th>Caught</th><th>Missed</th></tr></thead>
+        <tbody>
+          <tr><td>Regex (<code>scope_guard</code>)</td><td>?</td><td>?</td></tr>
+          <tr><td>LLM rejection (inference)</td><td>?</td><td>?</td></tr>
+          <tr><td>RBAC guard</td><td>?</td><td>?</td></tr>
+          <tr><td>Combined</td><td>?</td><td>?</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="muted" style="margin-top:0.8rem"><b>Paper section:</b> Adversarial Analysis.</p>
+  </section>
+
+  <!-- ══════════ Experiment 6 ══════════ -->
+  <section>
+    <h2 class="phase-5"><span class="phase-badge">PHASE 5 · EXP 6</span>Performance Budget — Latency Profiling</h2>
+    <div class="aim"><b>Aim:</b><span>Show the pipeline is operationally viable (under 2s p95).</span></div>
+    <p>From <code>diagnose.py</code> output, collect:</p>
+    <div class="grid grid-2">
+      <div class="card"><h3><span class="num">1</span>Latency histogram</h3><p class="muted" style="margin:0">Buckets: 0–500ms · 500–1000ms · 1000–2000ms · 2000ms+</p></div>
+      <div class="card"><h3><span class="num num-amber">2</span>By record category</h3><p class="muted" style="margin:0">Well-formed vs flawed inputs.</p></div>
+      <div class="card"><h3><span class="num num-green">3</span>Cache impact</h3><p class="muted" style="margin:0">Cache hit vs cache miss.</p></div>
+      <div class="card"><h3><span class="num num-purple">4</span>Self-consistency impact</h3><p class="muted" style="margin:0">Tier-2 enabled vs disabled.</p></div>
+    </div>
+    <p class="muted" style="margin-top:0.8rem"><b>Paper section:</b> Performance.</p>
+  </section>
+
+  <!-- ══════════ Experiment 7 ══════════ -->
+  <section>
+    <h2 class="phase-6"><span class="phase-badge">PHASE 6 · EXP 7</span>Before / After Fine-Tuning</h2>
+    <div class="aim"><b>Aim:</b><span>Show fine-tuning improves domain-specific performance.</span></div>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>Step</th><th>How</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>Format golden dataset → SFT pairs (input → expected JSON output)</td></tr>
+          <tr><td>2</td><td>Fine-tune Gemma on <b>200</b> records (Ollama Modelfile or unsloth)</td></tr>
+          <tr><td>3</td><td>Evaluate fine-tuned model (same eval pipeline)</td></tr>
+          <tr><td>4</td><td>Compare: base vs fine-tuned (same metrics)</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="muted" style="margin-top:0.8rem"><b>Metrics:</b> improvement delta per metric, which categories improve most. &nbsp;<b>Paper section:</b> Fine-Tuning Results.</p>
+  </section>
+
+  <!-- ══════════ Experiment 8 ══════════ -->
+  <section>
+    <h2 class="phase-7"><span class="phase-badge">PHASE 7 · EXP 8</span>Failure Taxonomy — Error Analysis</h2>
+    <div class="aim"><b>Aim:</b><span>Show you understand why things fail, not just that they fail.</span></div>
+    <p>From all diagnostic runs, extract failure cases:</p>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>Failure Type</th><th>Count</th><th>Example</th><th>Root Cause</th></tr></thead>
+        <tbody>
+          <tr><td>Intent confusion</td><td>?</td><td>NETWORK_SCAN vs SERVICE_ENUMERATION</td><td>LLM ambiguity</td></tr>
+          <tr><td>Target extraction fail</td><td>?</td><td>URL parsed as domain</td><td>Regex gap</td></tr>
+          <tr><td>False rejection</td><td>?</td><td>Valid command blocked</td><td>Scope guard too strict</td></tr>
+          <tr><td>False acceptance</td><td>?</td><td>Flawed command passed</td><td>Validation gap</td></tr>
+          <tr><td>CVE hallucination pass-through</td><td>?</td><td>Fake CVE not caught</td><td>Missing from grounding DB</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="muted" style="margin-top:0.8rem"><b>Paper section:</b> Discussion, Limitations.</p>
+  </section>
+
+  <!-- ══════════ Experiment → Paper mapping ══════════ -->
+  <section>
+    <h2>Summary — Experiment-to-Paper Mapping</h2>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>Experiment</th><th>Data Collected</th><th>Paper Section</th></tr></thead>
+        <tbody>
+          <tr><td>1 · Baseline</td><td>Raw LLM accuracy, catch rate</td><td>Evaluation</td></tr>
+          <tr><td>2 · Model Comparison</td><td>Gemma vs Qwen metrics table</td><td>Evaluation</td></tr>
+          <tr><td>3 · Ablation</td><td>Per-component contribution</td><td>Ablation Study</td></tr>
+          <tr><td>4 · Hallucination Deep-Dive</td><td>Per-class catch rates</td><td>Hallucination Taxonomy</td></tr>
+          <tr><td>5 · Adversarial Robustness</td><td>Injection detection layers</td><td>Adversarial Analysis</td></tr>
+          <tr><td>6 · Latency Profiling</td><td>Distribution, cache impact</td><td>Performance</td></tr>
+          <tr><td>7 · Fine-Tuning</td><td>Before / after delta</td><td>Fine-Tuning</td></tr>
+          <tr><td>8 · Error Analysis</td><td>Failure taxonomy</td><td>Discussion</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ══════════ Visualizations ══════════ -->
+  <section>
+    <h2>Visualizations Required</h2>
+    <div class="grid grid-2">
+      <div class="card"><h3><span class="num">1</span>Confusion matrix heatmap</h3><p class="muted" style="margin:0">Intent confusion patterns — Exp 1/2.</p></div>
+      <div class="card"><h3><span class="num num-amber">2</span>Catch-rate bar chart</h3><p class="muted" style="margin:0">Per hallucination class — Exp 4.</p></div>
+      <div class="card"><h3><span class="num num-green">3</span>Ablation waterfall</h3><p class="muted" style="margin:0">Component contribution — Exp 3.</p></div>
+      <div class="card"><h3><span class="num num-purple">4</span>ROC curve</h3><p class="muted" style="margin:0">Baseline vs full pipeline — Exp 1.</p></div>
+      <div class="card"><h3><span class="num num-red">5</span>Latency histogram</h3><p class="muted" style="margin:0">Operational viability — Exp 6.</p></div>
+      <div class="card"><h3><span class="num">6</span>Category distribution</h3><p class="muted" style="margin:0">Golden dataset breadth — dataset stats.</p></div>
+      <div class="card"><h3><span class="num num-amber">7</span>Detection layer breakdown</h3><p class="muted" style="margin:0">Defense-in-depth value — Exp 5.</p></div>
+    </div>
+  </section>
+
+  <!-- ══════════ What to build first ══════════ -->
+  <section>
+    <h2>What to Build First</h2>
+    <p class="muted">The eval scripts mostly exist. Required changes:</p>
+    <ol style="padding-left:1.4rem; margin-bottom:0.5rem">
+      <li><b>Update <code>run_pipeline.py</code></b> — default dataset to <code>golden_dataset.jsonl</code></li>
+      <li><b>Add Qwen config to <code>run_baseline.py</code></b> — swap model name, separate cache file</li>
+      <li><b>Add per-layer ablation configs to <code>ablation.py</code></b> — scope guard, RBAC, network validator, hallucination validator</li>
+      <li><b>Build <code>collect_all_results.py</code></b> — runs all experiments, writes results to <code>eval/results/</code></li>
+      <li><b>Build <code>generate_charts.py</code></b> — produces all visualization data from results</li>
+    </ol>
+  </section>
+
+  <!-- ══════════ Statistical rigor ══════════ -->
+  <section>
+    <h2>Statistical Rigor</h2>
+    <div class="summary-note">
+      <ul style="margin:0">
+        <li>Run each experiment <b>3–5 times</b> with different random seeds.</li>
+        <li>Report <b>mean ± std</b> for all metrics.</li>
+        <li>Use <b>paired statistical tests</b> where applicable.</li>
+        <li style="color:var(--amber)">This separates rigorous work from "we ran it once and got 74%".</li>
+      </ul>
+    </div>
+  </section>
+
+  <footer>
+    NeuroShell IRE &middot; Data Collection Plan &mdash; <b>R26-CS-018</b> &middot; HTML conversion of <code>Data_Collection_Plan.md</code>
+  </footer>
+
+</div>
+</body>
+</html>

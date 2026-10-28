@@ -1,0 +1,550 @@
+\documentclass[10pt,journal,onecolumn]{IEEEtran}
+
+% ---------- Packages ----------
+\usepackage[T1]{fontenc}
+\usepackage{newtxtext}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{newtxmath}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{tabularx}
+\usepackage{multirow}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage[hidelinks]{hyperref}
+
+% ---------- Paragraph breaking ----------
+\emergencystretch=3em
+\tolerance=2000
+
+% ---------- Code style ----------
+\definecolor{codegray}{gray}{0.94}
+\definecolor{codebar}{gray}{0.65}
+\lstdefinestyle{srs}{
+  basicstyle=\ttfamily\footnotesize,
+  backgroundcolor=\color{codegray},
+  breaklines=true,
+  showstringspaces=false,
+  frame=single,
+  rulecolor=\color{codebar},
+  framerule=0.3pt,
+  columns=fullflexible,
+  keepspaces=true,
+  aboveskip=4pt,
+  belowskip=4pt
+}
+\lstset{style=srs}
+
+% ---------- Commands ----------
+\newcommand{\reqid}[1]{\textbf{#1}}
+
+\begin{document}
+% ---------- Title / Authors ----------
+\title{NeuroShell IRE -- Product Functions and User Classes and Characteristics}
+\author{\IEEEauthorblockN{T. Hariprasad, MSc Cybersecurity Research Project R26-CS-018 (NeuroShell Core Framework - Component 01 IRE)}
+\IEEEauthorblockA{Cyber Operations Research Group\\
+MSc Cybersecurity Research Project R26-CS-018}}
+
+\maketitle
+
+% =================== Revision History ===================
+\section*{Revision History}
+\begin{center}
+\begin{tabularx}{0.9\columnwidth}{l l l X}
+\toprule
+\textbf{Version} & \textbf{Date} & \textbf{Author} & \textbf{Changes}\\
+\midrule
+1.0 & 2026-09-05 & NeuroShell Core Team & Initial comprehensive SRS\\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\tableofcontents
+
+\newpage
+\section{NeuroShell IRE -- Product Functions and User Classes and Characteristics}
+
+\textbf{Full technical report -- Component 01 (Intent Recognition Engine) of the NeuroShell Core Framework}
+
+\begin{itemize}
+\item \textbf{Project:} NeuroShell Core Framework, MSc Cybersecurity Research Project R26-CS-018
+\item \textbf{Component:} C1 -- Intent Recognition Engine (IRE)
+\item \textbf{Report scope:} SRS sections 2.2 (Product Functions) and 2.3 (User Classes and Characteristics), expanded to implementation level
+\item \textbf{Sources:} \texttt{SRS\_NeuroShell\_IRE.md}, \texttt{IRE-Dev-Report.md}, \texttt{NeuroShell\_\allowbreak IRE\_\allowbreak Test\_\allowbreak New\_\allowbreak Results.\allowbreak md}, README, and source code under \texttt{src/}, \texttt{config/}, \texttt{data/}
+\item \textbf{Format legend:} rows marked "Module" reference the implementation file under \texttt{src/} or \texttt{config/}
+\end{itemize}
+
+\section{1. Overview and Document Scope}
+
+The IRE is a domain-specific Natural Language Understanding (NLU) gateway that converts natural-language offensive-security commands into validated, structured JSON intent contracts. This report expands the two SRS summary tables -- Product Functions (2.2) and User Classes and Characteristics (2.3) -- into a full implementation-grounded description.
+
+The report is organised into four parts:
+
+\begin{itemize}
+\item \textbf{Part A: Product Functions} -- the complete functional inventory of the IRE, grouped into core understanding, safety and security, intelligence and quality, and system and integration functions, each mapped to its implementing module.
+\item \textbf{Part B: User Classes and Characteristics} -- the RBAC role model, role-by-role characteristics, intent-permission matrix, behavioural rules, and the operational personas and machine consumers the product serves.
+\item \textbf{Part C: Traceability and Effectiveness} -- function-to-module-to-test traceability and measured functional effectiveness from the 900-record ablation study.
+\item \textbf{Appendix A} -- the hallucination-taxonomy enforcement policy in full.
+\end{itemize}
+
+\section{2. Product Functions}
+
+\subsection{Functional Architecture}
+
+Every request is processed by a deterministic seven-stage core wrapped by five middleware guards. Middleware runs around the core (before, after, or in parallel); the stages run in strict sequence.
+
+\begin{lstlisting}
+Operator command (POST /parse, role + session context)
+        v
+M1 AdversarialDetector      Layer A lexical, Layer B structural, Layer C scoring
+        v
+M2 RBAC pre-inference check Fast-fail for restricted roles
+        v
+M3 SessionContext           Multi-turn context injection
+        v
+M4 SemanticCache            Exact-hash and cosine-similarity lookup
+        v
+S1 InputNormalizer          NFKC, whitespace, slang standardization
+        v
+S2 AliasResolver            Alias to canonical CVE and tool-term mapping
+        v
+S3 OllamaInference          Local LLM, few-shot prompt, strict JSON directive
+        v
+S4 JSONParser               Extraction, thinking-tag and markdown stripping
+        v
+S5 SchemaValidator          Pydantic IntentSchema constraint enforcement
+        v
+S6 RegexValidator           IP / CIDR / CVE / port / metachar verification
+        v
+S6B NetworkValidator        Network architecture and engagement-scope validation
+        v
+S7 ScopeGuard               RFC-1918 enforcement, warn-block modes, injection gate
+        v
+M5 RBAC post-inference check Intent-role policy matrix
+        v
+ContractBuilder             PlannerContract generation, tool and command synthesis
+\end{lstlisting}
+
+\subsection{Core Understanding Functions (Pipeline Stages)}
+
+\begin{table}[h]
+\caption{Table 1.}
+\label{tab:t1}
+\begin{tabularx}{\columnwidth}{l >{\raggedright\arraybackslash}X >{\raggedright\arraybackslash}X >{\raggedright\arraybackslash}X}
+\toprule
+\textbf{\#} & \textbf{Function} & \textbf{Module} & \textbf{Primary responsibility}\\
+\midrule
+S1 & Input Normalization & \texttt{preprocessing/\allowbreak input\_\allowbreak normalizer.\allowbreak py} & NFKC canonicalisation, whitespace collapsing, case folding, slang and filler standardization\\
+S2 & Alias Resolution & \texttt{preprocessing/\allowbreak alias\_\allowbreak resolver.\allowbreak py} & Maps 22 offensive-security aliases to canonical identifiers (for example EternalBlue to CVE-2017-0144)\\
+S3 & LLM Inference & \texttt{inference/\allowbreak ollama\_\allowbreak inference\_\allowbreak engine.\allowbreak py} & Local Ollama inference (gemma4:latest default, qwen2.5-coder:7b alternative), few-shot prompt, temperature 0.1, strict JSON generation\\
+S4 & JSON Extraction & \texttt{validation/\allowbreak json\_\allowbreak parser.\allowbreak py} & Extracts JSON from LLM output, strips markdown fences and think blocks\\
+S5 & Schema Validation & \texttt{validation/\allowbreak schema\_\allowbreak validator.\allowbreak py} & Pydantic \texttt{IntentSchema} enforcement: intents, targets, ports, CVE format, confidence bounds\\
+S6 & Regex Validation & \texttt{validation/\allowbreak regex\_\allowbreak validator.\allowbreak py} & Deterministic verification of IP, CIDR, CVE, port, URL and shell-metacharacter patterns\\
+S6B & Network Architecture Validation & \texttt{validation/\allowbreak network\_\allowbreak validator.\allowbreak py} & Validates target topology: CIDR width bounds (max prefix 30, i.e. no /8-style scans), sane subnets, architecture warnings\\
+S7 & Scope Guard Enforcement & \texttt{validation/\allowbreak scope\_\allowbreak guard.\allowbreak py} & RFC-1918 and engagement-scope enforcement with strict / warn / disabled modes\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\textbf{S1 Input Normalization.} Applies NFKC Unicode normalisation, trims whitespace and punctuation artefacts, folds case, and standardises short passes such as expanded casing or slang. Produces a clean canonical token stream for the alias resolver and the LLM prompt.
+
+\textbf{S2 Alias Resolution.} Consults \texttt{data/alias\_map.json} (22 entries). Resolves exploit surnames (EternalBlue, Log4Shell, BlueKeep, ShellShock, Heartbleed, PrintNightmare, ZeroLogon, ProxyLogon, DirtyPipe, PwnKit), slang (pwn, box, brute, enum, recon) and tool terms (syn scan, ping sweep, stealthy sweep) into canonical CVEs and canonical action phrases before inference, grounding the prompt in known identifiers.
+
+\textbf{S3 LLM Inference.} Runs a local model via Ollama with a strict-JSON directive prompt. Default temperature 0.1 with 2048 max tokens and a 60 s timeout. The model emits an intent candidate as JSON; no LLM output ever reaches the caller unvalidated.
+
+\textbf{S4 JSON Extraction.} Recovers the JSON payload from LLM output by stripping code fences, markdown artefacts and thinking tags (thinking-tag stripping for Gemma chat templates). Emits a clean candidate object for schema validation.
+
+\textbf{S5 Schema Validation.} Enforces the \texttt{IntentSchema} contract: exactly one of the 9 \texttt{IntentType} values, a \texttt{TargetType} with matched value, ports in range 1 to 65535, CVE identifiers matching \texttt{CVE-YYYY-NNNN} plus 4 to 7 trailing digits, \texttt{confidence} in the closed interval 0.0 to 1.0, and the invariant that \texttt{AMBIGUOUS} requires confidence below 0.5 while \texttt{REJECTED} requires a \texttt{rejection\_reason}. Extra fields are rejected (\texttt{extra=forbid}).
+
+\textbf{S6 Regex Validation.} Deterministically re-verifies every entity the LLM produced: IPv4 addresses and CIDR ranges, CVE syntax, port ranges, URL structure, and absence of shell metacharacter injection. This closes the loop on formats the model might emit even inside a valid JSON envelope.
+
+\textbf{S6B Network Architecture Validation.} Applies engagement-scope and topology rules: targets must fall inside the configured engagement CIDR (default \texttt{192.168.0.0/16}); the widest allowed scan prefix is 30 (a /16 is the largest scan permitted), the narrowest is 32; malformed topologies and type/value mismatches fail here. Generates \texttt{ARCH\_WARNING} and \texttt{SCOPE\_WARNING} entries surfaced to the operator and the downstream planner.
+
+\textbf{S7 Scope Guard.} Final enforcement gate: blocks or warns on engagement-scope violations depending on \texttt{engagement\_mode} (strict, warn, disabled) and \texttt{scope\_mode} (research, strict, production). Also serves as the final injection gate for adversarial input escalation.
+
+\subsection{Safety and Security Functions}
+
+\subsubsection{Adversarial Input Detection (M1)}
+
+Module \texttt{middleware/\allowbreak adversarial\_\allowbreak detector.\allowbreak py}. A three-layer detector classifies every input before inference. Signals carry weights; the cumulative threat score is capped at 1.0.
+
+\textbf{Detection layers and key signal weights:}
+
+\begin{table}[h]
+\caption{Table 2.}
+\label{tab:t2}
+\begin{tabularx}{\columnwidth}{l >{\raggedright\arraybackslash}X >{\raggedright\arraybackslash}X >{\raggedright\arraybackslash}X}
+\toprule
+\textbf{Layer} & \textbf{Mechanism} & \textbf{Example signals} & \textbf{Weight range}\\
+\midrule
+A -- Lexical & 15 injection phrase patterns & ignore previous instructions, forget everything, DAN mode, role-prefix injection, Gemma / Llama / ChatML control tokens & 0.8 to 1.0\\
+B -- Structural & anomaly patterns plus heuristics & hex/URL-encoded sequences, base64 payloads, script tags, template expressions, code-execution attempts, destructive commands & 0.3 to 0.9\\
+C -- Scoring & combination logic & auto-block on any critical signal (weight 0.95+); else block when cumulative score reaches the threshold & threshold 0.7\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\textbf{Rules:} any signal with weight at or above 0.95 auto-blocks immediately (for example the explicit jailbreak keyword or a Gemma control-token injection). Otherwise the input is blocked when the cumulative threat score reaches the configured threshold (default 0.7). A dedicated special-character-density check (above 30\%) and abnormal single-token length (above 100 characters) reinforce the structural layer.
+
+\subsubsection{Hallucination Detection (S5/S6/S6B combined)}
+
+Module \texttt{validation/\allowbreak hallucination\_\allowbreak taxonomy.\allowbreak py}. The pipeline classifies every failed validation into one of six \texttt{HallucinationClass} categories, and every check produces an audit-grade \texttt{ValidationFinding} (validator, passed, class, detail, severity).
+
+\textbf{The six hallucination classes and their enforcement modes} (from \texttt{config/\allowbreak enforcement\_\allowbreak policy.\allowbreak py}):
+
+\begin{table}[h]
+\caption{Table 3.}
+\label{tab:t3}
+\begin{tabularx}{\columnwidth}{l >{\raggedright\arraybackslash}X >{\raggedright\arraybackslash}X >{\raggedright\arraybackslash}X}
+\toprule
+\textbf{HallucinationClass} & \textbf{Detection locus} & \textbf{Enforcement} & \textbf{Reasoning}\\
+\midrule
+FABRICATED\_CVE & Schema + Regex (CVE syntax) & block & Malformed CVE syntax indicates complete LLM hallucination\\
+TARGET\_TYPE\_MISMATCH & Schema + Network & block & Structural mismatch between target type and value blocks downstream execution\\
+CONTRADICTORY\_ACTION\_TARGET & Schema + Semantic policy & block & Incompatible action-target pairings or missing intent violate safety invariants\\
+FABRICATED\_PARAMETER & Regex + Schema & block & Out-of-bounds parameters or shell metacharacter injection present immediate execution risk\\
+UNGROUNDED\_CONFIDENCE & CVE grounding + semantic policy & warn & Syntactically valid but unindexed CVEs may be novel external vulnerabilities; advisory only\\
+OUT\_OF\_SCOPE\_TARGET & Network + Scope guard & warn / block & Warned in research mode, blocked in strict production mode\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsubsection{Role-Based Access Control (M2 / M5)}
+
+Module \texttt{config/rbac\_policy.py} and \texttt{middleware/\allowbreak rbac\_\allowbreak guard.\allowbreak py}. See Part B for the full role model. Functionally, RBAC is enforced in two phases: a pre-inference fast-fail (M2) rejects restricted roles before any model cost, and a post-inference check (M5) validates the detected intent against the role matrix. Three intents are classed as sensitive (EXPLOITATION, PASSWORD\_ATTACK, DIRECTORY\_BRUTEFORCE) and are operator-plus only.
+
+\subsubsection{Audit Logging}
+
+Module \texttt{audit/audit\_logger.py}. Every parse produces an append-only audit record persisted to \texttt{data/audit\_log.db} (SQLite). Operator content is privacy-preserved via SHA-256 hashing while keeping intent, target type, role, latency and outcome as structured fields for later review.
+
+\subsubsection{Escalation Queue (Human-in-the-Loop)}
+
+Admin-facing functions route high-severity findings to human review with an HTTP 202 pattern: \texttt{GET /admin/escalations}, \texttt{POST /\allowbreak admin/\allowbreak escalations/\allowbreak \{audit\_\allowbreak id\}/\allowbreak resolve}. Explanatory and exploit-relevant intents require explicit human approval before execution.
+
+\subsection{Intelligence and Quality Functions}
+
+\subsubsection{Sub-Intent Classification}
+
+Module \texttt{middleware/\allowbreak sub\_\allowbreak intent\_\allowbreak classifier.\allowbreak py}. Refines the top-level intent into one of 26 hierarchical sub-intents that drive tool selection in Component 02:
+
+\begin{itemize}
+\item \textbf{NETWORK\_SCAN (6):} ICMP\_DISCOVERY, SYN\_STEALTH, UDP\_SWEEP, VERSION\_DETECT, OS\_DETECT, FULL\_PORT
+\item \textbf{EXPLOITATION (4):} REMOTE\_CODE\_EXEC, PRIV\_ESC, LATERAL\_MOVEMENT, PERSISTENCE
+\item \textbf{VULNERABILITY\_AUDIT (3):} CVE\_SPECIFIC, SERVICE\_SPECIFIC, FULL\_SCAN
+\item \textbf{SERVICE\_ENUMERATION (4):} BANNER\_GRAB, VERSION\_DETECT, SMB, SNMP
+\item \textbf{PASSWORD\_ATTACK (3):} BRUTE\_FORCE, SPRAY, CREDENTIAL\_STUFFING
+\item \textbf{PASSIVE\_RECON (3):} DNS, WHOIS, OSINT
+\item \textbf{DIRECTORY\_BRUTEFORCE (3):} WEB, API, FILES
+\end{itemize}
+
+For example \texttt{NETWORK\_\allowbreak SCAN.\allowbreak SYN\_\allowbreak STEALTH} maps to \texttt{nmap -sS}; \texttt{SERVICE\_ENUMERATION.SMB} maps to \texttt{enum4linux}.
+
+\subsubsection{Secondary Intent Detection}
+
+Compound commands can carry a \texttt{secondary\_intents} list (intent plus confidence, optionally with target). The response reports both the primary intent and the secondary context for downstream orchestration.
+
+\subsubsection{Self-Consistency Voting and Uncertainty}
+
+A two-tier scheme. Tier 1 runs a single low-temperature pass (0.1). When its confidence falls below the trigger threshold (default 0.7), Tier 2 re-samples N=5 candidates at temperature 0.7 and performs majority/consensus voting. Semantic entropy is computed over the candidate set and mapped into an uncertainty band: low below 0.3, high above 0.8. Outputs carry \texttt{uncertainty\_band}, \texttt{raw\_entropy}, \texttt{tier\_triggered}, \texttt{resolution\_method}, and \texttt{calibration\_method}; ambiguous results can surface a \texttt{clarification\_request}.
+
+\subsubsection{Semantic Caching}
+
+Module \texttt{middleware/\allowbreak semantic\_\allowbreak cache.\allowbreak py}. Two lookup channels: an exact-hash key compare and a cosine-similarity match over embeddings of the request. The cache is invalidated when the CVE-grounding hash changes (a reindexed CVE database must not serve stale responses), and evicted LRU-style under the configured size limit. Cache hits short-circuit the pipeline, cutting p50 latency from seconds to tens of milliseconds (measured \textasciitilde\{\}380x speedup per hit).
+
+\subsubsection{Session Management}
+
+Module \texttt{middleware/\allowbreak session\_\allowbreak context.\allowbreak py}. Per-session turn tracking with a time-to-live expiry, injection of the last N turns (configurable memory window) into the inference prompt, last-target carry-over for anaphoric follow-ups, and session introspection and deletion via the API.
+
+\subsubsection{Explainability (XAI)}
+
+Optional token-level attribution (integrated-gradients style) with a decision path, enabled through the \texttt{X-IRE-Explain} header; returned as an \texttt{XAIBlock} with \texttt{top\_tokens} and \texttt{decision\_path}.
+
+\subsection{Contract Generation and Integration Functions}
+
+\subsubsection{PlannerContract Generation}
+
+Module \texttt{pipeline/\allowbreak contract\_\allowbreak builder.\allowbreak py}. After validation, IRE synthesises a downstream-ready \texttt{PlannerContract} (\texttt{schemas/\allowbreak planner\_\allowbreak contract.\allowbreak py}) with a strict, fully-validated field set: intent, sub\_intent, validated target, ports, modifiers, CVE IDs, tool hint, schedule, confidence, rejection reason, scope warnings and session ID. The contract also carries a human-readable description, a priority level and a generated suggested command.
+
+\textbf{Priority determination:} SCHEDULED when a cron schedule exists; CRITICAL for exploitation; HIGH for CVE-specific vulnerability audits; MEDIUM for scans, enumeration and generic audits; LOW otherwise.
+
+\textbf{Tool synthesis (intent to tool):}
+
+\begin{table}[h]
+\caption{Table 4.}
+\label{tab:t4}
+\begin{tabularx}{\columnwidth}{l >{\raggedright\arraybackslash}X}
+\toprule
+\textbf{Intent} & \textbf{Suggested tool}\\
+\midrule
+NETWORK\_SCAN & nmap\\
+VULNERABILITY\_AUDIT & nmap (nikto when target is a URL)\\
+SERVICE\_ENUMERATION & nmap\\
+DIRECTORY\_BRUTEFORCE & gobuster\\
+PASSWORD\_ATTACK & manual (requires human approval)\\
+EXPLOITATION & manual (requires human approval)\\
+PASSIVE\_RECON & none\\
+AMBIGUOUS & none\\
+REJECTED & none\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+Modifier-to-flag mapping translates semantic modifiers (stealth, aggressive, version detection, OS detection, udp and others) into tool flags for nmap and gobuster. CVE context and safety notes (for example the requirement of human approval for exploitation) are attached to the contract.
+
+\subsubsection{API Surface}
+
+\begin{table}[h]
+\caption{Table 5.}
+\label{tab:t5}
+\begin{tabularx}{\columnwidth}{l >{\raggedright\arraybackslash}X >{\raggedright\arraybackslash}X}
+\toprule
+\textbf{Endpoint} & \textbf{Method} & \textbf{Function}\\
+\midrule
+/health & GET & Health and readiness (status, Ollama connectivity, model, cache size)\\
+/parse & POST & Core parse: natural-language command to IREResponse V2\\
+/execute & POST & Synchronous C1-to-C2 chain (parse then forward to planner), returns both outputs\\
+/metrics & GET & Pipeline performance metrics (latency percentiles, error counts, intent distribution, uptime)\\
+/session/\{session\_id\} & GET / DELETE & Session introspection and clearing\\
+/admin/rbac/\{role\} & GET & Role summary (permitted intents, RBAC state)\\
+/admin/features & GET / POST /reload & Feature-flag inspection and hot reload\\
+/admin/models & GET / POST /switch & Model listing and runtime model switching\\
+/admin/enforcement-policy & GET & Live enforcement policy summary\\
+/admin/escalations & GET / POST resolve & Human-in-the-loop escalation queue\\
+/admin/audit/summary & GET & Audit trail summary\\
+/admin/chain-cache & GET / DELETE & Persistent chain-cache inspection and flush\\
+/engagement/scope & GET & Engagement scope configuration\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsubsection{Downstream Integration}
+
+Outbound, non-blocking by default: \texttt{POST /parse} dispatches to the Dynamic Planner (Component 02, port 8002) via a background task when enabled (\texttt{planner\_enabled}). \texttt{/execute} performs the synchronous chain and persists a chain cache so identical inputs short-circuit. \texttt{integration/\allowbreak planner\_\allowbreak client.\allowbreak py} and \texttt{integration/\allowbreak executor\_\allowbreak client.\allowbreak py} implement the authenticated service clients with API keys. All downstream components are optional and feature-flagged.
+
+\subsubsection{Operational Functions}
+
+\texttt{metrics\_collector.py} records latency percentiles, error counts by stage and intent distribution. Rate limiting (30 requests per minute per IP) protects the LLM backend. Feature flags (\texttt{config/features.yaml}, \texttt{feature\_flags.py}) toggle adversarial detection, RBAC, caching and downstream push without redeploys. The engagement scope and model family are administratively reconfigurable at runtime.
+
+\section{3. User Classes and Characteristics}
+
+\subsection{The RBAC Role Model}
+
+IRE defines four privilege tiers in a strict hierarchy. Every request carries a \texttt{role} (schema field, default \texttt{analyst}). Enforcement is applied twice: once at the pre-inference gate and again after the intent is known.
+
+\begin{table}[h]
+\caption{Table 6.}
+\label{tab:t6}
+\begin{tabularx}{\columnwidth}{l >{\raggedright\arraybackslash}X >{\raggedright\arraybackslash}X >{\raggedright\arraybackslash}X >{\raggedright\arraybackslash}X}
+\toprule
+\textbf{Role} & \textbf{Hierarchy} & \textbf{Privilege character} & \textbf{Read-only?} & \textbf{Typical persona}\\
+\midrule
+viewer & 0 (least) & Observation only; pre-inference fast-fail & Yes & Auditor, board reviewer, passive observer\\
+analyst & 1 & Passive recon, network scan and audit & Effectively & SOC analyst, security researcher, student\\
+operator & 2 & All operations including exploitation and password attacks & No & Red-team operator, penetration tester\\
+admin & 3 (most) & Full: all intents plus model, policy and feature management & No & Platform administrator, team lead\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+Unknown roles are treated as \texttt{viewer}, the most restrictive class, so a bad role value can never grant capability.
+
+\subsection{Intent-by-Role Permission Matrix}
+
+\begin{table}[h]
+\caption{Table 7.}
+\label{tab:t7}
+\begin{tabularx}{\columnwidth}{l >{\raggedright\arraybackslash}X >{\raggedright\arraybackslash}X >{\raggedright\arraybackslash}X >{\raggedright\arraybackslash}X}
+\toprule
+\textbf{Intent} & \textbf{viewer} & \textbf{analyst} & \textbf{operator} & \textbf{admin}\\
+\midrule
+NETWORK\_SCAN & No & Yes & Yes & Yes\\
+VULNERABILITY\_AUDIT & No & Yes & Yes & Yes\\
+SERVICE\_ENUMERATION & No & Yes & Yes & Yes\\
+PASSIVE\_RECON & No & Yes & Yes & Yes\\
+AMBIGUOUS & No & Yes & Yes & Yes\\
+REJECTED & No & Yes & Yes & Yes\\
+DIRECTORY\_BRUTEFORCE & No & No & Yes & Yes\\
+EXPLOITATION & No & No & Yes & Yes\\
+PASSWORD\_ATTACK & No & No & Yes & Yes\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+Sensitive intents (EXPLOITATION, PASSWORD\_ATTACK, DIRECTORY\_BRUTEFORCE) are operator-plus; the three rows they occupy are the exact firewall between the analyst class and the operator class.
+
+\subsection{Role Characteristics in Detail}
+
+\subsubsection{viewer}
+
+\begin{itemize}
+\item \textbf{Capabilities:} none for execution; the role exists so that observation and review channels are technically possible without granting action.
+\item \textbf{Restrictions:} pre-inference fast-fail. The request is rejected before any model inference or cache work, and every intent attempt is denied (\texttt{role in RESTRICTED\_\allowbreak ROLES}).
+\item \textbf{Use case:} an auditor or reviewer who must be provably unable to cause actions.
+\end{itemize}
+
+\subsubsection{analyst}
+
+\begin{itemize}
+\item \textbf{Default role.} When no role is supplied, the caller is treated as an analyst.
+\item \textbf{Capabilities:} NETWORK\_SCAN, VULNERABILITY\_AUDIT, SERVICE\_ENUMERATION, PASSIVE\_RECON, plus the meta-classes AMBIGUOUS and REJECTED.
+\item \textbf{Characteristics:} passive and observational operations only. An analyst can map a network, enumerate services, run a vulnerability audit and perform passive reconnaissance -- everything a defensive/blue-team or research workflow needs -- but cannot brute-force directories, exploit a host or attack credentials.
+\item \textbf{Typical engagement:} blue-team assessments, safe lab research, vulnerability discovery and reporting.
+\end{itemize}
+
+\subsubsection{operator}
+
+\begin{itemize}
+\item \textbf{Capabilities:} all 9 intents, including the sensitive DIRECTORY\_BRUTEFORCE, EXPLOITATION and PASSWORD\_ATTACK intents.
+\item \textbf{Characteristics:} the active-operations class. An operator may commence exploitation flows and credential attacks, each of which is additionally gated by human approval (ContractBuilder marks these as requiring human approval, and the escalation queue provides the review path).
+\item \textbf{Typical engagement:} offensive red-team operations inside an authorised engagement boundary.
+\end{itemize}
+
+\subsubsection{admin}
+
+\begin{itemize}
+\item \textbf{Capabilities:} all intents plus platform administration: model switching (POST /admin/models/switch), feature-flag reload, enforcement-policy inspection, escalation resolution and audit review.
+\item \textbf{Characteristics:} the trust boundary of the platform. Only admins reconfigure policy, so the enforcement matrix itself is protected from lower roles.
+\item \textbf{Typical engagement:} platform operation and governance of engagements.
+\end{itemize}
+
+\subsection{Behavioural Rules and Defaults}
+
+\begin{table}[h]
+\caption{Table 8.}
+\label{tab:t8}
+\begin{tabularx}{\columnwidth}{l >{\raggedright\arraybackslash}X}
+\toprule
+\textbf{Rule} & \textbf{Behaviour}\\
+\midrule
+Default role & \texttt{analyst} when no role is present\\
+Unknown roles & Coerced to \texttt{viewer} (least privilege, implicit deny)\\
+Restricted roles & \texttt{viewer} blocked pre-inference for any intent (fast-fail, no model cost)\\
+Sensitive intents & EXPLOITATION, PASSWORD\_ATTACK, DIRECTORY\_BRUTEFORCE require operator or admin\\
+Denied intent response & RBAC error names the denied intent and lists the caller's permitted intents\\
+Engagement scope & All targets must fall within the configured engagement CIDR; mode strict/warn/disabled\\
+Exploit / password flows & Require explicit human approval (escation-queue pattern)\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{Machine Users and Human-in-the-Loop Classes}
+
+The IRE serves two kinds of consumers beyond direct human operators:
+
+\textbf{Downstream machine consumers.} Component 02 (Dynamic Planner) ingests \texttt{PlannerContract} objects over \texttt{POST /parse} push or \texttt{/execute}; Component 03 (AEERE executor) and Component 04 (AVAE vulnerability analysis) consume the validated downstream outcomes. These service-to-service users are trusted via shared API keys and feature-flagged integration, and they are strict contract consumers: they never receive free-form LLM output, only validated schemas.
+
+\textbf{Human-in-the-loop reviewers.} The escalation queue defines a review class distinct from the four RBAC roles: reviewers and auditors who resolve high-severity findings (audit IDs), confirm or reject escalation, and inspect the append-only audit trail. In practice these are operators or admins with additional review duties, or external auditors using viewer-style observation.
+
+\subsection{Typical User Contexts}
+
+\begin{table}[h]
+\caption{Table 9.}
+\label{tab:t9}
+\begin{tabularx}{\columnwidth}{l >{\raggedright\arraybackslash}X >{\raggedright\arraybackslash}X}
+\toprule
+\textbf{Context} & \textbf{Primary role} & \textbf{Characteristic workflow}\\
+\midrule
+Security researcher / student lab & analyst & passive recon, scans, audits inside the lab CIDR\\
+SOC analyst / blue team & analyst & continuous service enumeration and vulnerability audits\\
+Penetration tester / red team & operator & scans then exploitation and credential workflows with approvals\\
+Platform administrator & admin & policy, models, features, escalations, audit review\\
+Governance / auditor & viewer & provably read-only observation and audit inspection\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\section{4. Traceability and Effectiveness}
+
+\subsection{Function-to-Module-to-Test Traceability}
+
+\begin{table}[h]
+\caption{Table 10.}
+\label{tab:t10}
+\begin{tabularx}{\columnwidth}{l >{\raggedright\arraybackslash}X >{\raggedright\arraybackslash}X}
+\toprule
+\textbf{Function group} & \textbf{Primary modules} & \textbf{Test files}\\
+\midrule
+Input normalization & preprocessing/input\_normalizer.py & tests/unit/test\_input\_normalizer.py\\
+Alias resolution & preprocessing/alias\_resolver.py & tests/unit/test\_alias\_resolver.py\\
+JSON extraction & validation/json\_parser.py & tests/unit/test\_json\_parser.py\\
+Schema validation & validation/schema\_validator.py & tests/unit/test\_schema\_validator.py\\
+Regex validation & validation/regex\_validator.py & tests/unit/test\_regex\_validator.py\\
+Scope and injection gate & validation/scope\_guard.py & tests/unit/test\_scope\_guard.py\\
+Network architecture & validation/network\_validator.py & tests/unit/test\_network\_validator.py\\
+Semantic cache & middleware/semantic\_cache.py & tests/unit/test\_semantic\_cache.py\\
+Session context & middleware/session\_context.py & tests/unit/test\_session\_context.py\\
+Adversarial detection & middleware/adversarial\_detector.py & tests/unit/test\_adversarial\_detector.py\\
+Sub-intent classification & middleware/sub\_intent\_classifier.py & tests/unit/test\_sub\_intent\_classifier.py\\
+Feature flags & config/feature\_flags.py & tests/unit/test\_feature\_flags.py\\
+RBAC guard & middleware/rbac\_guard.py & tests/unit/test\_rbac\_guard.py\\
+Contract generation & pipeline/contract\_builder.py & tests/unit/test\_planner\_contract.py\\
+API and integration & api/main.py, integration/* & tests/integration/test\_api.py + test\_api\_v2.py\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+Measured total: 482 tests (regex over test definitions, 2026-08-26), comprising unit and async integration tests across all 14 function groups above.
+
+\subsection{Measured Functional Effectiveness}
+
+\textbf{Golden dataset:} 900 records (400 well-formed + 500 deliberately flawed across eight categories); Exp3 ablation ran 8 configurations over all 900 records (7,200 pipeline runs).
+
+\begin{table}[h]
+\caption{Table 11.}
+\label{tab:t11}
+\begin{tabularx}{\columnwidth}{l >{\raggedright\arraybackslash}X >{\raggedright\arraybackslash}X >{\raggedright\arraybackslash}X}
+\toprule
+\textbf{Configuration} & \textbf{Decision accuracy \%} & \textbf{Flawed-input catch \%} & \textbf{False-positive \%}\\
+\midrule
+Full baseline pipeline & 73.5 & 84 & 34\\
+Validation stack removed & 69.0 & 46 & 34\\
+Schema + Regex removed & 64.0 & 67 & 34\\
+RBAC removed & 79.5 & 69 & 34\\
+Scope guard + adversarial removed & 69.0 & 77 & 34\\
+Semantic cache removed & 71.0 & 84 & 34\\
+Network validator removed & 73.0 & 85 & 34\\
+Tier-2 self-consistency removed & 72.5 & 85 & 34\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\textbf{Interpretation for the function portfolio:}
+
+\begin{itemize}
+\item The validation stack (S5, S6, S6B, S7) is the single largest safety contributor: removing it halves the catch rate (from 84\% to 46\%).
+\item Schema and Regex validators (S5, S6) are the most accuracy-critical functions (-9.5 pp accuracy when removed).
+\item RBAC looks like an accuracy cost (-6 pp with removal) but it deliberately blocks well-formed-but-unauthorised intent classes, which is why catch rate falls 15 pp when removed.
+\item Adversarial detection and scope enforcement contribute a combined 7 pp to catch rate.
+\item Semantic cache and network validator have negligible safety impact (they are latency and topology functions respectively).
+\end{itemize}
+
+Full per-class Exp4 results: adversarial injection caught at 95.6\%, fabricated parameter 87.5\%, target-type mismatch 81.2\%, fabricated CVE 78.1\%, contradictory action-target 59.4\%, out-of-scope 46.7\%, ambiguous 40\%.
+
+\section{5. Summary}
+
+Product Functions: the IRE delivers twelve headline functions (intent classification, target and entity extraction, hallucination detection, adversarial detection, RBAC enforcement, session management, semantic caching, self-consistency voting, contract generation, audit logging, escalation queue) implemented as eight pipeline stages plus five middleware guards, exposed through fourteen REST endpoints, and validated by 482 tests.
+
+User Classes and Characteristics: four RBAC roles in a strict hierarchy (viewer, analyst, operator, admin) with a 9-intent permission matrix, three sensitive intents, a default of analyst, and implicit-denial treatment of unknown roles -- complemented by machine consumers (planner, executor, vulnerability analyzer) and human-in-the-loop reviewers in the escalation queue.
+
+\section{Appendix A -- Enforcement Policy (config/enforcement\_policy.py)}
+
+\begin{table}[h]
+\caption{Table 12.}
+\label{tab:t12}
+\begin{tabularx}{\columnwidth}{l >{\raggedright\arraybackslash}X >{\raggedright\arraybackslash}X}
+\toprule
+\textbf{Class} & \textbf{Mode} & \textbf{Why}\\
+\midrule
+FABRICATED\_PARAMETER & block & Out-of-bounds parameters or shell metacharacter injection present immediate execution risk\\
+CONTRADICTORY\_ACTION\_TARGET & block & Incompatible action-target pairings or missing intent violate safety invariants\\
+TARGET\_TYPE\_MISMATCH & block & Structural mismatch prevents downstream planner execution\\
+FABRICATED\_CVE & block & Malformed CVE syntax indicates complete LLM hallucination\\
+UNGROUNDED\_CONFIDENCE & warn & Valid syntax but unindexed CVE may be a novel external vulnerability\\
+OUT\_OF\_SCOPE\_TARGET & warn / block & Warned in research mode; blocked in strict production mode\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+
+\end{document}

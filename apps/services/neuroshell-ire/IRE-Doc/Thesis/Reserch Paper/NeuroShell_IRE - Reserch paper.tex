@@ -1,0 +1,388 @@
+\documentclass[a4paper,twoside]{article}
+
+\usepackage{epsfig}
+\usepackage{subcaption}
+\usepackage{calc}
+\usepackage{amssymb}
+\usepackage{amstext}
+\usepackage{amsmath}
+\usepackage{amsthm}
+\usepackage{multicol}
+\usepackage{pslatex}
+\usepackage{apalike}
+\usepackage{algorithm2e}
+\usepackage[bottom]{footmisc}
+\usepackage{SCITEPRESS}
+\providecommand{\orcidAuthor}[1]{}
+
+% ---- Typography: avoid word breaks (hyphens) at line ends ----
+\usepackage[final]{microtype}   % subtle spacing/width tuning -> fewer bad breaks
+\hyphenpenalty=10000            % forbid automatic hyphenation
+\exhyphenpenalty=10000          % forbid breaks at explicit hyphens
+\tolerance=1000                 % override \sloppy from SCITEPRESS.sty (tighter spacing)
+\emergencystretch=3em           % slack so lines can stretch instead of hyphenating
+
+\begin{document}
+
+\title{Error-Resilient Intent Recognition for Offline Security Copilots: A Guarded LLM Pipeline}
+
+% NOTE: the source document contains no author information. Replace the placeholders below.
+\author{\authorname{First Author Name\sup{1}\orcidAuthor{0000-0000-0000-0000}}
+\affiliation{\sup{1}Department of Computing, Your University, Your Street, Your Town, Your Country}
+\email{first\_author@your.university.edu}
+}
+
+\keywords{Intent Recognition, Large Language Models, LLM Guardrails, Prompt Injection, Hallucination Detection, Offline AI, Security Copilots, Adversarial Detection, Role-Based Access Control, Schema Validation, Network Validation, Semantic Consistency, Semantic Caching, Automated Security Operations, Ablation Study.}
+
+\abstract{Large language models (LLMs) are increasingly used as copilots for penetration testing and defensive security operations, but hallucinated vulnerabilities, malformed parameters, and adversarial prompts can make their outputs unsafe for direct integration with security tooling. This paper presents NeuroShell IRE, a guarded, retrieval-free intent-recognition engine for offline, CPU-only LLM backends. The system combines a seven-stage pipeline with layered adversarial detection, role-based access control (RBAC), deterministic schema, syntax, and network validation, scope enforcement, and a semantic self-consistency gate. We evaluate it on a purpose-built dataset of 1500 security prompts, comprising 600 well-formed and 900 flawed prompts across eight flaw categories, using two backends (Gemma and Qwen). The guarded pipeline improves intent-recognition accuracy from 69--78\% to 82--86\%, raises the flaw-catch rate from 0\% to 64--72\%, and lowers false-positive rates from 31--32\% to 14--15\%. Ablations show that removing the complete validation stack reduces the catch rate by 24--30 points and removing the hallucination validator by 9--14 points. The evaluation consists of single-run point estimates on a synthetic dataset and a single device, which limits external validity; these limitations and residual failure modes are discussed.}
+
+\onecolumn \maketitle \normalsize \setcounter{footnote}{0} \vfill
+
+\section{\uppercase{Introduction}}
+\label{sec:introduction}
+
+\noindent Security operations are increasingly constrained by a shortage of expertise. Penetration testers, security analysts, and blue teams must translate free-form intent into specific tools, commands, and targets while remaining within authorization boundaries. Recent studies have shown that large language models (LLMs) can serve as AI sparring partners for this work, producing realistic attack plans and even carrying out penetration-testing steps in controlled environments~\cite{Happe23,Deng24}. However, demonstrations of indirect prompt injection and dual-use abuse show that the same model that assists a defender can be hijacked, either by a user or by text retrieved from a web page~\cite{Greshake23,Liu23,Kang24}.
+
+An intent-recognition engine sits between the operator and the security toolchain. It classifies what the operator wants (for example, running a port scan, checking a CVE, or brute-forcing a password) and emits a machine-consumable structure. When such an engine is powered by an LLM, three classes of failure arise. The first is hallucination: the model fabricates a CVE identifier, a parameter, or a claim, and the downstream tool acts on non-existent data~\cite{Ji23,Farquhar24}. The second is adversarial deflection: a prompt is worded so that the model abandons the classification task and emits attacker-chosen text~\cite{Greshake23,Liu23}. The third is authorization leakage: an unrestricted model answers requests in out-of-policy categories (e.g., exploitation or password attacks) for users who lack the necessary permission.
+
+This paper addresses the following question: can a small, offline, unattended LLM be made sufficiently reliable to drive an operational security copilot? We answer with NeuroShell IRE (Intent Recognition Engine), a guarded pipeline in which a 7B-parameter model is treated as an unreliable proposal generator whose output is validated deterministically. The architecture (Section~\ref{sec:architecture}) combines schema and regular-expression validation, a network validator that checks targets against authorization policy, a scope guard, a three-layer adversarial detector, role-based access control (RBAC), a semantic cache, and a self-consistency gate based on semantic-clustering agreement. Four experiments (Section~\ref{sec:results}), conducted on a consumer laptop without a GPU, measure accuracy, flaw-detection rate, and the ablation impact of each layer, and identify the components that contribute most to safety. The dataset and evaluation harness are versioned with the project source code and can be reproduced from a single evaluation manifest.
+
+The contributions of this work are as follows: (i) a seven-stage, five-middleware architecture (S6B is the network sub-validator of S6) that subjects the output of an offline LLM to deterministic, auditable validation before use; (ii) a purpose-built dataset of 1500 records (600 well-formed and 900 flawed prompts) spanning eight flaw categories; (iii) a per-layer ablation methodology, together with results quantifying the contribution of each defense; and (iv) a quantitative comparison of two LLM backends (Gemma and Qwen) under the same guardrail stack.
+
+
+\section{\uppercase{Related Work}}
+\label{sec:related}
+
+\subsection{LLMs for Security Tooling}
+
+\noindent LLMs have been proposed as sparring partners for penetration testing. Happe and Cito implemented a closed feedback loop in which an LLM proposed low-level attack actions that were executed automatically against a deliberately vulnerable virtual machine~\cite{Happe23}. PentestGPT is an LLM-centric assistant that decomposes penetration-testing tasks across three interacting modules for reasoning, generation, and parsing~\cite{Deng24}. Both works concentrate on the generation side, that is, on producing plausible next actions, and treat output correctness informally. To our knowledge, neither validates or authorizes the generated output before execution.
+
+\subsection{Attacks on LLM-Integrated Applications}
+
+\noindent Indirect prompt injection, in which an attacker plants instructions in data that the model later ingests, was introduced by Greshake et al., together with demonstrated compromises of real-world LLM-integrated applications~\cite{Greshake23}. Liu et al. subsequently formalized prompt-injection attacks and systematically benchmarked ten defenses, finding that prevention-based defenses were weak and detection-based defenses were incomplete~\cite{Liu23}. Kang et al. showed that dual-use attacks inspired by classical computer security can bypass the content defenses of a commercial LLM provider with success rates of up to 100\%~\cite{Kang24}. The OWASP Top 10 for LLM Applications catalogs these risks, including prompt injection (LLM01) and sensitive-information disclosure (LLM02), as principal security concerns for LLM applications~\cite{OWASP25}.
+
+\subsection{Hallucination Detection}
+
+\noindent A broad survey of hallucination in natural-language generation distinguishes intrinsic from extrinsic hallucination~\cite{Ji23}. Sampling-based methods can detect failures without external knowledge. SelfCheckGPT scores the consistency of sampled responses~\cite{Manakul23}; semantic uncertainty measures answer agreement over clusters of equivalent meaning~\cite{Kuhn23}; and semantic entropy computed over such clusters has been used to detect confabulations in free-form text~\cite{Farquhar24}. These methods typically assume that several responses can be sampled and compared without a strict latency constraint. Our contribution applies the same disagreement intuition to a single guarded classification under a hard latency budget, which we argue is a more realistic constraint for security products in which tools run in the loop.
+
+\subsection{Retrieval and Embeddings}
+
+\noindent Retrieval-augmented generation (RAG) grounds answers in external corpora~\cite{Lewis20}. Sentence-BERT, a bi-encoder architecture for sentence embeddings, provides the semantic-distance signals used by our self-consistency gate and semantic cache~\cite{Reimers19}. Unlike RAG-based systems, NeuroShell IRE deliberately performs no retrieval at inference time. This avoids introducing a new attack surface into the offline, single-device deployment boundary, because retrieved data is itself a prompt-injection vector~\cite{Greshake23}.
+
+
+\section{\uppercase{Research Gap}}
+\label{sec:gap}
+
+\noindent Two gaps motivate this work. First, the LLM security copilots reviewed in Section~\ref{sec:related} validate their output informally, if at all. Their outputs are plausible prose that is consumed by human operators or executed in sandboxed research environments. When a copilot's output is instead fed to an automated tool chain, which is the natural integration point for intent recognition, hallucinated CVE identifiers, malformed JSON, and injected text become machine-dispatched actions rather than display text. The failure semantics therefore change, and the defense requirement shifts from plausibility to verifiable correctness.
+
+Second, the security literature has largely evaluated defenses on cloud-hosted models under interactive latency budgets. To the best of our knowledge, no prior work reports a quantitative, per-layer ablation of a guardrail stack for a small offline model running unattended in the field, where a retry loop or a verifier LLM doubles an already multi-second CPU inference cost.
+
+We therefore pose three concrete research questions:
+
+\begin{itemize}
+    \item \textbf{RQ1.} How much does a stacked validation pipeline improve structured intent-recognition accuracy and flaw-detection rate compared with raw LLM output?
+    \item \textbf{RQ2.} Which individual guardrail layer contributes most to the flaw-detection rate, and which layers interact negatively, degrading performance when combined?
+    \item \textbf{RQ3.} Do the benefits of the guardrails generalize across two different offline LLM backends?
+\end{itemize}
+
+
+\section{\uppercase{Research Objectives}}
+\label{sec:objectives}
+
+\noindent To answer the research questions, we pursue four objectives:
+
+\begin{itemize}
+    \item \textbf{Build} a guarded intent-recognition engine that consumes free-text security requests and emits strictly schema-validated, authorized intent structures, with an average end-to-end latency compatible with single-user offline use.
+    \item \textbf{Construct} a dataset of 1,500 records, comprising 600 well-formed prompts and 900 deliberately flawed prompts spanning eight flaw categories: adversarial injection, out-of-scope requests, ambiguous requests, contradictory requests, fabricated parameters, fabricated CVE identifiers, type mismatches, and RBAC violations.
+    \item \textbf{Establish} an ablation protocol in which each guardrail is disabled independently while all others remain active, yielding a controlled estimate of each layer's marginal contribution.
+    \item \textbf{Compare} two offline LLM backends (gemma4:e4b and qwen2.5-coder:7b) under an identical guardrail stack to assess whether the benefits of the guardrails are consistent across backends.
+\end{itemize}
+
+
+\section{\uppercase{NeuroShell IRE Architecture}}
+\label{sec:architecture}
+
+\noindent NeuroShell IRE is a Python service, built with FastAPI, that is deployed as a local daemon and exposes an HTTP API to downstream security tools. It runs entirely on the operator's laptop, and no utterance leaves the device. Figure~\ref{fig:pipeline} shows the pipeline. A core of seven serialized stages (S1--S7, where S6B is a network sub-validator of S6 rather than an eighth stage) transforms the raw utterance into a validated intent, while five middleware components enforce mandatory safety properties independently of the core.
+
+\begin{figure*}[!t]
+  \centering
+  {\epsfig{file = fig_pipeline.png, width = 15cm}}
+  \caption{Guarded intent-recognition pipeline. Solid boxes run on every request; dashed middleware components enforce safety invariants and shortcut the core where possible.}
+  \label{fig:pipeline}
+\end{figure*}
+
+\subsection{Core Stages}
+
+\noindent S1 normalizes casing, whitespace, and Unicode. S2 resolves aliases (e.g., ``nmap -sS''~\cite{Lyon09} $\rightarrow$ SCAN) against a catalog of 26 sub-intents that span nine top-level intents: SCAN, EXPLOITATION, PASSWORD ATTACK, DIRECTORY BRUTEFORCE, CVE LOOKUP, RECON, PHISHING, NETWORK DEFENSE, and MISC. S3 instructs the LLM to emit a fixed JSON schema at a temperature of 0.4. S4 parses the response and fails fast on malformed JSON. S5 validates the parsed output against the schema, and S6 applies regular-expression rules for host syntax, CIDR notation, and port ranges. S6B, the network validator, resolves the target and checks it against the authorization policy and the RFC~1918 private address ranges~\cite{RFC1918}. S7, the scope guard, rejects requests whose target or technique falls outside the operator's declared scope. Only output that survives S5--S7 is returned; otherwise, the stage-specific guard emits a classified error.
+
+\subsection{Middleware}
+
+\noindent M1 is the three-layer adversarial detector. A lexical layer assigns suspicion scores to prompt tokens (weights 0.8--1.0), a structural layer scores sentence topology and imperative-but-unclassifiable phrasing (0.3--0.9), and a scoring layer fuses the two cumulatively. A cumulative score above 0.7 flags the request, and a score of 0.95 triggers an automatic block without inference. M2 (RBAC pre-check) verifies the caller's role before any inference cost is incurred; a viewer role fails fast before S3. M3 maintains session context (user, role, and target history). M4 is a semantic cache keyed on normalized embedding distance (Sentence-BERT~\cite{Reimers19}), in which identical intents short-circuit the LLM entirely. M5 re-validates authorization on the final intent, so that a single bypassed guard is not by itself sufficient to manufacture an authorized action.
+
+\subsection{RBAC Model}
+
+\noindent Four roles (viewer, analyst, operator, and admin) gate nine intents. The three sensitive intents (EXPLOITATION, PASSWORD ATTACK, and DIRECTORY BRUTEFORCE) require at least the operator role. EXPLOITATION covers drivers of offensive tooling such as the Metasploit Framework~\cite{Rapid7}. The default role is analyst, and an unknown caller is downgraded to viewer. Enforcement occurs both before inference (M2, before any cost is incurred) and after validation (M5, on the final intent).
+
+\subsection{Deployment Properties}
+
+\noindent The service runs headless, retrieves nothing at inference time (no RAG), and holds no credentials; its only persistent assets are the model weights, the authorization policy, and the session context. Because nothing is retrieved and no free-form output is rendered to a downstream shell, the two principal remote attack classes, indirect prompt injection via retrieved data~\cite{Greshake23} and tool injection via unfiltered text, are structurally reduced to the narrower problem of classifying a single user utterance.
+
+\subsection{Threat Model}
+
+\noindent The assets are the operator's security toolchain and system state. The trust boundary is the single device: nothing is transmitted off it, nothing is retrieved, and no output is rendered. The attacker controls the user's utterance but not the device, the prompts, the policies, or the model weights. Under this boundary, the evaluated attack surfaces are direct adversarial utterances (handled by M1 and the RBAC matrix; 95.6\% of adversarial records were caught) and authorization escalation (M2 and M5). Indirect prompt injection via retrieved content and tool injection via rendered text are structurally out of scope because neither channel exists. Physical compromise of the device and backdoors embedded in the model weights are also out of scope.
+
+\subsection{Formal Decision Model and Safety Invariant}
+\label{subsec:formal}
+
+\noindent Let $X$ be the utterance space, $Y$ the nine-intent space, $C$ the set of eight flaw classes, and $R$ the set of roles. The decoder is a stochastic map $f: X \rightarrow Z$ that produces an observation $z \sim f(x)$. The deterministic guards are Boolean predicates $g_5(z)$, $g_6(z)$, $g_{6B}(z,x)$, and $g_7(x)$, where $g_7$ is the scope guard. The RBAC policy is the authorization function $b: R \times Y \rightarrow \{0,1\}$, and $m_1: X \rightarrow \{0,1\}$ denotes the adversarial-input detector of M1. With $G(z,x) = g_5(z) \wedge g_6(z) \wedge g_{6B}(z,x) \wedge g_7(x)$ and caller role $\rho \in R$, the guarded decision function is
+\begin{equation}\label{eq:decision}
+\Phi(x)=\begin{cases}
+y\in Y, & \text{if } G(z,x)\wedge b(\rho,y)\\
+        & \quad\wedge\, \lnot m_1(x),\\
+e\in C, & \text{otherwise,}
+\end{cases}
+\end{equation}
+where $C$ also serves as the set of classified rejection categories.
+
+The safety invariant enforced by the architecture is that every accepted output must simultaneously satisfy all mandatory security predicates. Formally, with $K=\{\mathrm{S5},\mathrm{S6},\mathrm{S6B},\mathrm{S7},\mathrm{RBAC},\mathrm{M1}\}$,
+\begin{equation}\label{eq:invariant}
+\mathrm{Accepted}(\Phi(x)) \Rightarrow \bigwedge_{k\in K} P_k(x),
+\end{equation}
+where $P_k(x)$ denotes the security property enforced by the corresponding validation or middleware component. An output is thus accepted only when it is schema-valid, satisfies the required network constraints, remains within the declared scope, is permitted by the caller's role, and is not classified as adversarial by M1.
+
+Experiment 1 (Exp1) measures the difference between the unguarded decoder $f$ and the guarded decision function $\Phi$ in the probability $\Pr[\bigwedge_{k\in K} P_k(x)]$ that an output satisfies the complete set of required security properties. Experiment 3 (Exp3) performs a layer-ablation analysis by independently removing each predicate $P_k$ and measuring the resulting change in $\Pr[\mathrm{Accepted}]$. The change is reported in the $\Delta$Catch column of Table~\ref{tab:ablation} and is used to estimate the contribution of each individual safeguard to the overall detection and rejection capability of the system.
+
+
+\section{\uppercase{Methodology}}
+\label{sec:method}
+
+\subsection{Experimental Setup}
+
+\noindent All experiments were executed on an ASUS VivoBook X513EA (Intel Core i5-1135G7, 4 cores / 8 threads, 24 GB DDR4, Windows 11) running Ollama in CPU-only mode. The two backends evaluated are qwen2.5-coder:7b (4.7 GB on disk) and gemma4:e4b (9.6 GB on disk), the build to which the gemma4:latest alias resolved at evaluation time. The exact Ollama version and the per-model image digests, as fetched, are pinned in the evaluation manifest, which serves as the authoritative reference for reproducing this study. No GPU was used, which reflects the intended field deployment.
+
+\subsection{Dataset}
+
+\noindent Table~\ref{tab:dataset} summarizes the 1,500-record dataset ($D$): 600 well-formed prompts (the $D^+$ set) and 900 flawed prompts (the $D^-$ set), spanning eight categories, each annotated with a gold intent label and a gold flaw label. Category sizes are deliberately non-uniform, reflecting the differing feasibility of authoring realistic examples in each category rather than an intentional experimental design choice. Per-class catch rates are therefore reported against each class's own size, and cross-category comparisons should be interpreted with the differing denominators in mind.
+
+\begin{table}[h]
+\caption{Data set composition ($N = 1500$). $D^+$ contains 600 well-formed prompts across nine intents; $D^-$ contains 900 flawed prompts.}\label{tab:dataset}
+\centering
+\small
+\begin{tabular}{|l|c|}
+  \hline
+  Category & Records \\
+  \hline
+  $D^+$ well-formed prompts & 600 \\
+  Adversarial injection & 113 \\
+  Out-of-scope target/technique & 113 \\
+  Ambiguous / under-specified & 113 \\
+  Contradictory request & 113 \\
+  Fabricated parameter & 112 \\
+  Fabricated CVE & 112 \\
+  Type mismatch (string vs. intent) & 112 \\
+  RBAC violation & 112 \\
+  \hline
+  Total & 1500 \\
+  \hline
+\end{tabular}
+\end{table}
+
+\subsection{Metrics}
+
+\noindent Let $y^*(x)$ and $c^*(x)$ denote the ground-truth intent and flaw label for input $x$, respectively, and let $\hat{y}(x)$ and $\hat{c}(x)$ denote the intent and flaw category assigned by the system. Three metrics are reported as percentages.
+
+The \textbf{intent accuracy} $D_{\mathrm{Acc}}$ is defined over the legitimate-input set $D^+$:
+\begin{equation}\label{eq:dacc}
+D_{\mathrm{Acc}}=\frac{100}{|D^+|}\sum_{x\in D^+}\mathbf{1}\left[\hat{y}(x)=y^*(x)\right],
+\end{equation}
+where $\mathbf{1}[\cdot]$ is the indicator function, which takes the value 1 when its condition is satisfied and 0 otherwise.
+
+The \textbf{flaw-detection rate} (Catch) is defined over the flawed-input set $D^-$:
+\begin{equation}\label{eq:catch}
+\mathrm{Catch}=\frac{100}{|D^-|}\sum_{x\in D^-}\mathbf{1}\left[\hat{c}(x)=c^*(x)\right].
+\end{equation}
+
+The \textbf{false-positive rate} (FP) is the proportion of legitimate inputs in $D^+$ that are incorrectly flagged by at least one safety guard:
+\begin{equation}\label{eq:fp}
+\mathrm{FP}=\frac{100}{|D^+|}\sum_{x\in D^+}\mathbf{1}\left[\text{a guard flags } x\right].
+\end{equation}
+
+Together, $D_{\mathrm{Acc}}$ and Catch capture the two primary functional requirements of the system: the ability to correctly interpret legitimate requests and the ability to correctly identify flawed inputs, respectively. In contrast, FP quantifies the extent to which the safety mechanisms incorrectly reject or flag legitimate operator requests. A robust configuration should therefore maintain high values of $D_{\mathrm{Acc}}$ and Catch while minimizing FP. Note that Catch requires the assigned flaw category to match the gold label (Equation~\ref{eq:catch}), a strict criterion that is relevant to the interpretation of the ablation results.
+
+\subsection{Experiments}
+
+\noindent \textbf{Exp1 (Pipeline Value).} The raw single-shot LLM output is compared with the complete guarded pipeline using a stratified 1500-prompt holdout set comprising 600 well-formed prompts ($D^+$) and 900 flawed prompts ($D^-$). The experiment is conducted independently for each LLM backend to quantify the contribution of the proposed guardrail pipeline.
+
+\textbf{Exp2 (Backend Head-to-Head).} The guardrail stack is held constant while comparing the Gemma and Qwen backends using the same full holdout set and identical prompts. This isolates the effect of the underlying LLM backend while controlling differences in preprocessing, validation, scope enforcement, and other pipeline components.
+
+\textbf{Exp3 (Ablation).} Both backends are evaluated on the full 1,500-record dataset under seven disabled-component configurations: scope guard disabled, RBAC disabled, network validator disabled, hallucination validator disabled, validation stack disabled, self-consistency disabled, and semantic cache disabled. Together with the fully enabled configuration, this produces eight experimental configurations. The \emph{validation stack} denotes the complete deterministic validation sequence comprising schema validation (S5), regex/entity validation (S6), network validation (S6B), and scope enforcement (S7). It is therefore treated as a combined ablation rather than an individual layer, allowing its joint contribution to be measured. The marginal contribution of a layer $l$ is the difference between the pipeline with that layer removed ($\Pi\setminus l$) and the fully enabled pipeline $\Pi$:
+\begin{equation}\label{eq:delta}
+\Delta\mathrm{Catch}_l=\mathrm{Catch}_{\Pi\setminus l}-\mathrm{Catch}_{\Pi}.
+\end{equation}
+Negative values therefore indicate that the layer contributes to catch rate.
+
+\textbf{Exp4 (Per-Class Catch).} The catch rate is measured separately for each flaw category. This experiment evaluates whether the proposed pipeline provides consistent protection across different classes of flawed inputs rather than only achieving aggregate performance.
+
+\subsection{Self-Consistency Gate}
+
+\noindent The self-consistency gate adapts the sampling-based consistency strategy of Wang et al. from generative reasoning to structured intent classification~\cite{Wang23}. For each primary inference, $k=3$ additional responses $\{z_i\}_{i=1}^{k}$ are sampled at temperature $T=0.6$. The responses are compared using embedding-based similarity, and the resulting agreement signal is used as an additional validation criterion:
+\begin{equation}\label{eq:alpha}
+\alpha(x)=\binom{k}{2}^{-1}\sum_{1\le i<j\le k}\mathbf{1}\left[d_{ij}\le\theta_s\right],
+\end{equation}
+where $d_{ij}=1-\cos(\mathbf{e}_{z_i},\mathbf{e}_{z_j})$, $\mathbf{e}_{(\cdot)}$ is the Sentence-BERT embedding, and $\theta_s$ is the semantic threshold; a raw single sample has $\alpha=1$ by construction. Disagreement beyond $\theta_s$ denotes low confidence and routes the request to the hallucination validator, which applies a six-class error taxonomy (impossible CVE, impossible parameter range, unverifiable value, contradictory fields, out-of-scope reference, and unresolved type) and selects BLOCK, WARN, or ESCALATE accordingly. The full harness data, prompts, and evaluation scripts are versioned with the project source and regenerated by a single command.
+
+
+\section{\uppercase{Implementation}}
+\label{sec:implementation}
+
+\noindent NeuroShell IRE is implemented as a modular Python service with a FastAPI interface and a clean internal separation between the core stages (S1--S7), the guard middleware (M1--M5), and the LLM adapter. Switching backends requires only a single configuration change, since both Ollama models expose the same chat API. The schema validator (S5) uses a handwritten, recursive validation routine, kept deliberately dependency-light to support fast cold starts on constrained hardware, rather than a heavyweight validation runtime. The LLM adapter enforces a per-stage timeout so that an unresponsive model cannot stall the pipeline.
+
+The deterministic guards (S5, S6, S6B, and S7) require no additional LLM calls once the model's single output has been produced, and the pre-inference RBAC check (M2) runs before the LLM is invoked at all. As a result, a request from a caller with the viewer role, which is rejected at M2, is resolved as a pure function of the request and costs only milliseconds.
+
+The test suite comprises 482 automated tests (434 unit tests and 48 asynchronous integration tests), measured on 2026-08-26. These tests cover every guard path, every cell of the RBAC matrix, both cache hit and miss paths, and all six classes of the hallucination policy. The dataset and test harness are versioned with the source code, and evaluation is performed with a single reproducible command that regenerates every table in this paper.
+
+
+\section{\uppercase{Evaluation and Results}}
+\label{sec:results}
+
+\subsection{Exp1: Pipeline Value}
+
+\noindent Raw, single-shot LLM output undergoes no flaw classification, so it trivially achieves a 0\% catch rate across all 900 flawed prompts, and it misclassifies the intent of 22\% of well-formed prompts with Gemma and 31\% with Qwen. Adding the guarded pipeline raises $D_{\mathrm{Acc}}$ from 78\% to 86\% for Gemma and from 69\% to 82\% for Qwen, raises Catch from 0\% to 72\% for Gemma and to 64\% for Qwen, and reduces the FP rate, the proportion of well-formed prompts erroneously flagged by a guard, from 32\% to 14\% for Gemma and from 31\% to 15\% for Qwen (Table~\ref{tab:exp1}). The improvement is largest for the catch rate, because raw output is never flagged at all.
+
+\begin{table}[h]
+\caption{Exp1: raw LLM output vs. guarded pipeline.}\label{tab:exp1}
+\centering
+\small
+\begin{tabular}{|l|c|c|c|}
+  \hline
+  Config & $D_{\mathrm{Acc}}$\% & Catch\% & FP\% \\
+  \hline
+  Gemma raw & 78 & 0 & 32 \\
+  Gemma guarded & 86 & 72 & 14 \\
+  Qwen raw & 69 & 0 & 31 \\
+  Qwen guarded & 82 & 64 & 15 \\
+  \hline
+\end{tabular}
+\end{table}
+
+\subsection{Exp2: Backend Head-to-Head}
+
+\noindent Under identical guardrails, Gemma leads Qwen on $D_{\mathrm{Acc}}$ (86\% vs. 82\%) and on catch rate (72\% vs. 64\%), with comparable FP rates (14\% vs. 15\%), as shown in Table~\ref{tab:exp2}. The guarded architecture appears to reduce backend sensitivity: whereas raw Gemma already outperformed raw Qwen by 9 percentage points on $D_{\mathrm{Acc}}$ (78\% vs. 69\%), the guarded pipeline narrows this gap to 4 points and holds the catch-rate gap to 8 points.
+
+\begin{table}[h]
+\caption{Exp2: identical guardrail stack for both backends.}\label{tab:exp2}
+\centering
+\small
+\begin{tabular}{|l|c|c|c|}
+  \hline
+  Backend & $D_{\mathrm{Acc}}$\% & Catch\% & FP\% \\
+  \hline
+  Gemma (guarded) & 86 & 72 & 14 \\
+  Qwen (guarded) & 82 & 64 & 15 \\
+  \hline
+\end{tabular}
+\end{table}
+
+\subsection{Exp3: Ablation}
+
+\noindent Table~\ref{tab:ablation} shows the effect of removing each layer, evaluated on the full 1,500-record dataset for both backends, with $\Delta$Catch defined in Equation~\ref{eq:delta}. Disabling the complete validation stack (S5--S7) has the largest impact on catch rate, reducing it by 30 points for Gemma (72\% to 42\%) and 24 points for Qwen (64\% to 40\%). $D_{\mathrm{Acc}}$ also decreases substantially, while FP changes only slightly. In contrast, disabling individual components often produces much higher FP rates, suggesting possible interactions between validation layers that require further implementation-level investigation.
+
+Among the individually ablated layers, the hallucination validator contributes most to catch rate, with decreases of 9 points for Gemma and 14 points for Qwen. Its effect on $D_{\mathrm{Acc}}$ differs between backends: it has the largest impact for Qwen, whereas the scope guard has the largest impact for Gemma.
+
+Removing RBAC reduces $D_{\mathrm{Acc}}$ and catch rate in both backends while increasing FP, indicating that RBAC may simultaneously improve accuracy and reduce false positives. The network validator also has a substantial effect on $D_{\mathrm{Acc}}$, with reductions of 18 points for Gemma and 24 points for Qwen. However, removing it increases catch rate while sharply increasing FP. Similar patterns occur when removing the self-consistency gate and the semantic cache. Overall, these counterintuitive results indicate significant interactions among validation components and should be investigated before being treated as stable architectural properties.
+
+\begin{table*}[t]
+\caption{Exp3: ablation on the full dataset ($N = 1500$). $\Delta$Catch is given in percentage points relative to the full pipeline; Noise is the approximate run-to-run variation in percentage points.}\label{tab:ablation}
+\centering
+\small
+\begin{tabular}{|l|c|c|c|c|c|c|c|c|c|}
+  \hline
+   & \multicolumn{4}{c|}{Gemma 4 e4b} & \multicolumn{4}{c|}{Qwen 2.5 Coder:7b} & \\
+  \hline
+  Configuration & $D_{\mathrm{Acc}}$\% & Catch\% & FP\% & $\Delta$Catch & $D_{\mathrm{Acc}}$\% & Catch\% & FP\% & $\Delta$Catch & Noise \\
+  \hline
+  Full pipeline (baseline) & 86.0 & 72 & 14 & --  & 82.0 & 64 & 15 & --  & $\pm$1--2 \\
+  No scope guard           & 65.0 & 74 & 42 & +2  & 68.0 & 68 & 30 & +4  & $\pm$1--2 \\
+  No RBAC guard            & 75.0 & 65 & 20 & $-$7  & 57.0 & 57 & 17 & $-$7  & $\pm$1--2 \\
+  No network validator     & 68.0 & 80 & 40 & +8  & 58.0 & 72 & 32 & +8  & $\pm$1--2 \\
+  No halluc. validator     & 66.0 & 63 & 40 & $-$9  & 52.6 & 50 & 34 & $-$14 & $\pm$1--2 \\
+  No validation stack      & 65.0 & 42 & 15 & $-$30 & 62.0 & 40 & 16 & $-$24 & $\pm$1--2 \\
+  No self-consistency      & 68.0 & 78 & 42 & +6  & 58.0 & 74 & 36 & +10 & $\pm$1--2 \\
+  No semantic cache        & 67.0 & 77 & 44 & +5  & 60.0 & 70 & 40 & +6  & $\pm$1--2 \\
+  \hline
+\end{tabular}
+\end{table*}
+
+\subsection{Exp4: Per-Class Catch}
+
+\noindent On a dedicated deep-dive set of flawed prompts, catch is strongest exactly where deterministic rules exist (Table~\ref{tab:perclass}). Adversarial injection is caught at 95.6\% by the lexical and structural layers of M1, while RBAC violations are caught at 100\% by the deterministic pre-inference role check. Fabricated parameters (87.5\%) and type mismatches (81.3\%) are detected by the S5--S6 syntactic rules, while fabricated CVEs (78.1\%) are identified by the hallucination validator's offline CVE grounding. The residual weak classes are the semantic cases: contradictory requests (59.4\%), out-of-scope requests (46.7\%), and ambiguous requests (40.0\%), where no deterministic signal exists and the system must rely primarily on the self-consistency gate and LLM agreement. In the full 1,500-record dataset, these three semantic classes account for 339 of the 900 flawed records (37.7\%), with 113 records each. Per-class catch rates, reported against their respective class denominators, therefore provide a more informative basis for evaluating flaw-detection behavior than a single aggregate catch rate.
+
+\begin{table}[h]
+\caption{Exp4: per-class catch rate and the primary detection mechanism.}\label{tab:perclass}
+\centering
+\small
+\begin{tabular}{|l|c|l|}
+  \hline
+  Flaw class & Catch\% & Mechanism \\
+  \hline
+  RBAC violation      & 100.0 & M2 role check \\
+  Adversarial inj.    & 95.6  & M1 detector \\
+  Fabricated param.   & 87.5  & S5--S6 rules \\
+  Type mismatch       & 81.3  & S5--S6 rules \\
+  Fabricated CVE      & 78.1  & Halluc. validator \\
+  Contradictory       & 59.4  & Self-consistency \\
+  Out-of-scope        & 46.7  & Self-consistency \\
+  Ambiguous           & 40.0  & Self-consistency \\
+  \hline
+\end{tabular}
+\end{table}
+
+
+\section{\uppercase{Discussion}}
+\label{sec:discussion}
+
+\subsection{RQ1: Pipeline Value}
+
+\noindent The guarded pipeline is the difference between unusable and usable output. Raw, single-shot generation achieves a 0\% catch rate by construction, since it performs no flaw classification at all, while misclassifying the intent of 22--31\% of well-formed prompts depending on backend. Adding the guarded pipeline raises catch to 64--72\% and $D_{\mathrm{Acc}}$ to 82--86\%, while reducing the false-positive rate to 14--15\%. The catch-rate result is the key finding: raw LLM output carries no machine-checkable safety property whatsoever, so any non-zero, auditable catch rate represents a categorical improvement, not merely an incremental one.
+
+\subsection{RQ2: Layer Contribution}
+
+\noindent The full validation stack and the hallucination validator are the dominant contributors to catch rate: disabling the stack costs 24--30 points of catch and disabling the hallucination validator alone costs 9--14 points, in both backends. Removing RBAC costs 7 points of catch in both backends but also costs 11 points of $D_{\mathrm{Acc}}$ for Gemma and 25 points for Qwen, a substantial accuracy loss. The two backends diverge sharply on which layer dominates $D_{\mathrm{Acc}}$: for Gemma, the scope guard has the largest effect (a 21-point drop on removal); for Qwen, the hallucination validator dominates instead (a 29.4-point drop), with RBAC a close second (25 points). No single layer is the largest $D_{\mathrm{Acc}}$ contributor for both backends, so this result should be reported per backend rather than as a single ranking.
+
+A further finding is that removing the scope guard, the network validator, the self-consistency gate, or the semantic cache \emph{increases} measured catch rate in both backends (by 2--10 points), while sharply increasing the false-positive rate (to 30--44\%). This pattern held across two independent evaluation runs, so it is unlikely to be sampling noise. One candidate explanation is that these layers can pre-empt a request with a generic rejection category before a later stage assigns the record's true, more specific flaw label, so that removing the pre-emptive layer lets the correct label through under the strict category-match metric (Equation~\ref{eq:catch}). This has not yet been confirmed against per-record logs and is presented as a hypothesis rather than an established mechanism. Until it is confirmed, these four layers are best characterized as trading a small, metric-dependent cost in raw catch rate for a substantial reduction in false positives, rather than as straightforward contributors to catch.
+
+\subsection{RQ3: Generality}
+
+\noindent The evidence for cross-backend generality is qualified. The \emph{catch-rate} ordering of layers is broadly similar across backends: the validation stack and hallucination validator dominate in both, and the same four layers show the increase-on-removal pattern in both. The $D_{\mathrm{Acc}}$ ordering, however, is not consistent: RBAC ranges from the smallest individual $D_{\mathrm{Acc}}$ contributor for Gemma to the second largest for Qwen, while the scope guard ranges from the largest contributor for Gemma to the smallest for Qwen. The deterministic stages therefore compress, but do not eliminate, backend-specific differences in \emph{which} layer matters most for accuracy, even where the backends agree on which layers matter most for catch rate. This still supports treating the decoder as a swappable component within a guarded system, but the claim that guardrail effects hold with the same ordering across backends should be limited to catch rate and not extended to accuracy.
+
+\subsection{Threat Model Boundaries}
+
+\noindent The design converts an open-ended problem, making an LLM trustworthy, into a closed one: classifying a single user utterance under a known policy. This is defensible because the system retrieves nothing and renders no free-form output, so the standard indirect-injection and tool-injection channels~\cite{Greshake23,OWASP25} are curtailed at the trust boundary described in Section~\ref{sec:architecture}. What remains in scope is the direct adversarial utterance, addressed by M1 and the RBAC matrix.
+
+\subsection{Limitations}
+
+\noindent The evaluation consists of single-run point estimates without confidence intervals or seed sweeps. The dataset is synthetic, its category sizes are non-uniform, and all experiments were run on a single device, which limits external validity. The three semantic flaw classes (contradictory, out-of-scope, and ambiguous requests) remain weakly protected because no deterministic signal exists for them. The mechanism behind the increase-on-removal pattern for four layers is unconfirmed, and threats outside the trust boundary, such as indirect prompt injection, physical device compromise, and backdoored model weights, are not evaluated.
+
+
+\section{\uppercase{Conclusions}}
+\label{sec:conclusion}
+
+\noindent We presented NeuroShell IRE, a guarded intent-recognition engine that makes a small, offline, CPU-only LLM reliable enough to gate an operational security copilot under the evaluated threat model. On a 1,500-record dataset spanning eight flaw classes, with a per-layer ablation across eight configurations, the guarded pipeline raises catch rate from 0\% to 64--72\% and accuracy from 69--78\% to 82--86\% relative to raw, single-shot output. The hallucination validator is the single largest individual contributor to catch rate (Gemma: $-9$ points; Qwen: $-14$ points when removed), and the complete validation stack contributes more still (Gemma: $-30$ points; Qwen: $-24$ points). The ordering of which layers matter most for catch rate is broadly consistent across the two evaluated backends, indicating that deterministic guardrailing, rather than model choice, is the primary driver of catch-rate performance, provided the trust boundary remains closed (no retrieval, no free-form rendering). This consistency does not extend to accuracy: the layer that dominates $D_{\mathrm{Acc}}$ differs by backend.
+
+
+\section*{\uppercase{Acknowledgements}}
+
+\begin{itemize}
+  \item \textbf{Conflicts of Interest:} The author has no conflicts of interest or competing interests to declare in the context of this paper.
+  \item \textbf{Financial and other Support:} No funding was received for the work reported here.
+  \item \textbf{Author Contributions:} [To be completed by the author.]
+  \item \textbf{Data Sharing:} A dataset was generated and analyzed during the current study, versioned with the project source and available upon reasonable request.
+  \item \textbf{AI Tools:} The paper used AI tools for text correction purposes only (Claude).
+\end{itemize}
+
+
+\bibliographystyle{apalike}
+{\small
+\bibliography{NeuroShell_IRE}}
+
+\end{document}

@@ -1,0 +1,43 @@
+FROM python:3.12-slim
+
+ENV PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1
+
+# System dependencies (build-essential for native wheels, libgomp1 for torch)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    curl \
+    libgomp1 \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Install Python dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy application source and required runtime assets
+COPY src/ ./src/
+COPY taxonomy/ ./taxonomy/
+COPY kali_data/ ./kali_data/
+
+# Runtime data directory (audit log)
+RUN mkdir -p data
+
+# Environment defaults (override via docker-compose or .env)
+ENV REDIS_URL=redis://redis:6379 \
+    KALI_IMAGE=neuroshell-kali \
+    OLLAMA_URL=http://host.docker.internal:11434 \
+    OLLAMA_MODEL=gemma4:latest \
+    AUDIT_DB_PATH=/app/data/audit.db \
+    PORT=8003
+
+EXPOSE 8003
+
+HEALTHCHECK --interval=30s --timeout=10s --retries=5 \
+    CMD curl -fsS http://localhost:8003/health || exit 1
+
+CMD ["uvicorn", "src.api.main:app", \
+     "--host", "0.0.0.0", \
+     "--port", "8003", \
+     "--workers", "1"]

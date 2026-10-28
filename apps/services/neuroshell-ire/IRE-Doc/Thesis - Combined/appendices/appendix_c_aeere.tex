@@ -1,0 +1,112 @@
+\section{Asian and scope of the instrument}
+
+This appendix reproduces the research instruments of the Adaptive Execution and
+Error-Recovery Engine (AEERE, Component~3): the error taxonomy and error list,
+the data set design, the noise-injection protocol, the three safety checks, the
+verification targets, and the public API.
+
+\section{Error taxonomy and the error-type lists}
+
+The engine keeps two error lists. Step 1 of the labelling cascade uses a list of
+eight hand-written error types made just for Kali offensive-security tool
+failures, each encoded by hand-written patterns and documented with its fix,
+retry limit and wait rule (Table~4 in the component report). The full test data
+set extends this to \textbf{ten} error types, adding the two additional classes
+distinguished only by the text model and the AI step. The ten types are
+\emph{service\_error}, \emph{file\_not\_found}, \emph{port\_conflict},
+\emph{syntax\_error}, \emph{dependency\_error}, \emph{network\_error},
+\emph{permission\_error}, \emph{authentication\_error}, \emph{package\_not\_found},
+and \emph{command\_not\_found}. Each type carries a default retry limit and a
+tool-swap rule; retries stop at the limit for the type, and a swap rule decides
+when a different tool is the right fix (for example gobuster may be swapped for
+ffuf or dirb for folder scanning, and nmap for masscan or rustscan for network
+scanning).
+
+\section{The 8,000-case data set}
+
+The training and test data set contains 8,000 labelled command-failure cases.
+Each case records the command, the raw error message, the exit code, the correct
+error type, the cause, and the best fix. The case count per error type is shown
+below; the set covers more than eighteen tools (including netcat, gobuster,
+sqlmap, hashcat, nikto, ssh, nmap, docker, dirsearch, and john) and three
+difficulty levels.
+
+\begin{center}
+\begin{tabular}{@{}lcc@{}}
+  \toprule
+  \textbf{Error type} & \textbf{Cases} & \textbf{Share}\\
+  \midrule
+  service\_error & 839 & 10.5\\
+  file\_not\_found & 811 & 10.1\\
+  port\_conflict & 812 & 10.2\\
+  syntax\_error & 812 & 10.2\\
+  dependency\_error & 807 & 10.1\\
+  network\_error & 806 & 10.1\\
+  permission\_error & 802 & 10.0\\
+  authentication\_error & 797 & 10.0\\
+  package\_not\_found & 759 & 9.5\\
+  command\_not\_found & 755 & 9.4\\
+  \midrule
+  Total & 8,000 & 100.0\\
+  \bottomrule
+\end{tabular}
+\end{center}
+
+All addresses in the cases are private RFC-1918 lab addresses. The set is split
+into training (70\%, 5,600 cases) and test (30\%, 2,400 cases) sets, stratified
+by error type, under a fixed random seed so the measurement can be repeated.
+
+\section{Noise-injection protocol}
+
+To test whether the labeller generalises beyond clean, hand-typed errors, each
+test message is degraded with controlled noise that is realistic for a real
+terminal: log prefixes and timestamps, trailing text, changed letter case,
+keyboard-style typos, and truncation. The noise level is raised step by step
+from 0\% to 60\%. The text model is only ever trained on the clean training
+half, so any degradation in the noised test is an honest measure of
+generalisation.
+
+\section{The three safety checks}
+
+Every fixed command must pass all three checks before it is allowed to run:
+
+\begin{enumerate}
+  \item \textbf{Format check} -- the AI's reply must parse as the expected JSON
+  plan.
+  \item \textbf{Dangerous-word check} -- blocks destructive or
+  fetch-and-execute patterns (for example \texttt{rm -rf}, disk wiping, or
+  downloading and running code).
+  \item \textbf{Confidence-and-scope check} -- requires a minimum confidence
+  level and rejects any target outside private RFC-1918 address ranges.
+\end{enumerate}
+
+Every blocked case is written to a log in an SQLite database, which provides
+the evidence base for the dangerous-command block-rate target.
+
+\section{Verification targets}
+
+\begin{center}
+\begin{tabular}{@{}p{0.40\textwidth}p{0.28\textwidth}p{0.22\textwidth}@{}}
+  \toprule
+  \textbf{Target} & \textbf{Success criterion} & \textbf{Status}\\
+  \midrule
+  SO1 Fix rate & \(\geq\)80\% of failures fixed & Pending live engine\\
+  SO2 Speed and cost of a fix & A full fix within 10 s, cost below 1 US cent & Pending live engine\\
+  SO3 Labelling score & \(\geq\)90\% macro-F1 on the data set & Measured: 100\% clean / 99.1\% at 30\% noise\\
+  SO4 Dangerous-command block rate & 100\% of dangerous commands blocked & Pending live engine\\
+  \bottomrule
+\end{tabular}
+\end{center}
+
+The pending targets require the full engine running on real hardware with
+Docker and Ollama, which was not available when the component report was
+written; their tables are intentionally left blank in the report.
+
+\section{Public API}
+
+The AEERE exposes a FastAPI \texttt{/execute} endpoint that accepts a
+\texttt{PlannerOutput} (command and context) and returns an
+\texttt{ExecutionResult} with a status of \texttt{success}, \texttt{recovered},
+or \texttt{failed}, a fix log, and a failure report, together with a
+\texttt{/health} check reporting whether the service and Docker are up. Sample
+test cases accompany the component report.

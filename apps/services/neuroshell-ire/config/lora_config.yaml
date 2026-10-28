@@ -1,0 +1,63 @@
+# NeuroShell IRE — LoRA Fine-Tuning Configuration
+# Target: Kaggle + HuggingFace pipeline
+# Base model: google/gemma-4-27b-it (upgrade from E4B for fine-tuning)
+
+model:
+  name: "google/gemma-4-27b-it"
+  fallback: "google/gemma-4-e4b-it"
+  quantization: "4bit"               # bitsandbytes NF4
+  max_seq_length: 512
+  dtype: "float16"
+
+lora:
+  r: 16
+  lora_alpha: 32
+  target_modules:
+    - "q_proj"
+    - "v_proj"
+    - "k_proj"
+    - "o_proj"
+    - "gate_proj"
+    - "up_proj"
+  lora_dropout: 0.05
+  bias: "none"
+  task_type: "CAUSAL_LM"
+
+training:
+  num_epochs: 3
+  per_device_train_batch_size: 4
+  gradient_accumulation_steps: 4      # effective batch size = 16
+  learning_rate: 0.0002
+  lr_scheduler: "cosine"
+  warmup_ratio: 0.05
+  fp16: true
+  load_in_4bit: true
+  save_steps: 200
+  eval_steps: 200
+  logging_steps: 50
+  max_grad_norm: 1.0
+  weight_decay: 0.01
+
+dataset:
+  path: "data/synthetic/ire_dataset"
+  train_split: "train"
+  validation_split: "validation"
+  test_split: "test"
+  target_size: 20000
+  train_ratio: 0.80
+  val_ratio: 0.10
+  test_ratio: 0.10
+
+evaluation:
+  targets:
+    ner_f1: 0.95
+    intent_accuracy: 0.93
+    json_validity_rate: 0.98
+    regex_pass_rate: 0.95
+    hallucination_rate: 0.03
+    latency_p95_ms: 2000
+
+output:
+  adapter_path: "models/ire-lora-adapter"
+  hub_repo: "neuroshell-ire-lora"
+  push_to_hub: true

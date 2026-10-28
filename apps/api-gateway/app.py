@@ -2,8 +2,9 @@
 
 import time
 from contextlib import asynccontextmanager
-from typing import Any, AsyncGenerator
+from typing import AsyncGenerator
 
+import httpx
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -103,7 +104,6 @@ def create_app() -> FastAPI:
     return app
 
 
-import httpx
 from app import routes as gateway_routes
 
 app = create_app()

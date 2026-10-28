@@ -1,0 +1,30 @@
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+.env
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+.mypy_cache/
+*.log
+models/gemma*/
+models/ire-lora-adapter/
+data/synthetic/*.json
+data/raw/*.json
+notebooks/.ipynb_checkpoints/
+*.gguf
+
+# Runtime data
+data/audit_log.db
+
+# Eval caches and checkpoints
+eval/.baseline_cache.json
+eval/.ollama_inference_cache.json
+eval/full_pipeline_debug.jsonl
+eval/full_pipeline_debug_category_metrics.json
+eval/results.md
+eval/Data Collection/cache/
+eval/Data Collection/results/checkpoint_*.json

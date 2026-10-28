@@ -1,0 +1,422 @@
+%% ============================================================================
+%%  NEUROSHELL COMBINED GROUP DISSERTATION
+%%  "NEUROSHELL: AN AUTONOMOUS NATURAL LANGUAGE-DRIVEN ORCHESTRATION FRAMEWORK
+%%   FOR OFFENSIVE SECURITY OPERATIONS"
+%%  Group R26-CS-018 - Sri Lanka Institute of Information Technology (SLIIT)
+%%  Faculty of Computing - Department of Computer Systems Engineering
+%%
+%%  BUILT ON: the SLIIT undergraduate dissertation template (v1.0)
+%%  BUILD:    pdflatex -> biber -> pdflatex x2   (biblatex + biber)
+%%  CONFIG:   edit §E USER CONFIGURATION below; then write content in chapters/
+%% ============================================================================
+
+%% ============================================================================
+%%  §E  USER CONFIGURATION
+%% ============================================================================
+\documentclass[a4paper,12pt,oneside]{report}
+
+%% --- Candidate list (title page, cover, declaration). One line per student. ---
+\newcounter{sliitcand}
+\newcommand{\addcandidate}[2]{%
+  \stepcounter{sliitcand}%
+  \expandafter\gdef\csname sliitcn\arabic{sliitcand}\endcsname{#1}%
+  \expandafter\gdef\csname sliitci\arabic{sliitcand}\endcsname{#2}}
+\addcandidate{Karunarathna P.M.T.L}{IT22249852}
+\addcandidate{Herath H.M.C.H.K}{IT22121592}
+\addcandidate{Umayanga H.L.A}{IT22230010}
+\addcandidate{Sahan H.P.T}{IT22083678}
+
+%% --- Document metadata -------------------------------------------------------
+\newcommand{\DissertationTitle}{NeuroShell: An Autonomous Natural
+Language-Driven Orchestration Framework for Offensive Security Operations}
+\newcommand{\DissertationSubtitle}{}          % optional
+\newcommand{\DegreeFull}{Bachelor of Science (Hons) in Information Technology}
+\newcommand{\DegreeShort}{B.Sc. (Hons) Degree in Information Technology}
+\newcommand{\Specialization}{Cyber Security}
+\newcommand{\DepartmentName}{Department of Computer Systems Engineering}
+\newcommand{\InstituteName}{Sri Lanka Institute of Information Technology}
+\newcommand{\CountryName}{Sri Lanka}
+\newcommand{\SubmissionDate}{October 2026}
+\newcommand{\SupervisorName}{Prof. Harinda Fernando}\newcommand{\CoSupervisorName}{Mr. Indunil Daluwatte (Co-Supervisor)}
+\newcommand{\CitationStyle}{ieee}              % apa | ieee
+\newcommand{\BibResource}{references.bib}
+
+%% --- Switches (true/false) ---------------------------------------------------
+\newif\ifHardCover            \HardCoverfalse
+\newif\ifIncludeDedication    \IncludeDedicationfalse
+\newif\ifIncludeListOfFigures \IncludeListOfFigurestrue
+\newif\ifIncludeListOfTables  \IncludeListOfTablestrue
+\newif\ifIncludeAbbreviations \IncludeAbbreviationstrue
+\newif\ifIncludeAppendices    \IncludeAppendicestrue
+\newif\ifIncludeBibliography  \IncludeBibliographyfalse
+\newif\ifIncludeGlossary      \IncludeGlossaryfalse
+\newif\ifArabicNumberCentered \ArabicNumberCenteredfalse
+\newif\ifTocSingleSpaced      \TocSingleSpacedfalse
+
+%% ============================================================================
+%%  §F  STANDARDS ENFORCEMENT (preamble + helper macros)
+%% ============================================================================
+
+%% --- Fonts: Times New Roman (or closest metric-compatible clone) -------------
+\usepackage{iftex}
+\ifPDFTeX
+  \usepackage[T1]{fontenc}
+  \usepackage{amsmath}
+  \IfFileExists{newtxtext.sty}{\usepackage{newtxtext,newtxmath}}{\usepackage{mathptmx}}
+  \renewcommand{\ttdefault}{pcr}
+\else
+  \usepackage{amsmath}
+  \usepackage{fontspec}
+  \IfFontExistsTF{Times New Roman}{\setmainfont{Times New Roman}}{%
+    \IfFontExistsTF{Liberation Serif}{\setmainfont{Liberation Serif}}{%
+      \IfFontExistsTF{TeX Gyre Termes}{\setmainfont{TeX Gyre Termes}}{%
+        \IfFontExistsTF{Nimbus Roman}{\setmainfont{Nimbus Roman}}{}}}}
+  \IfFontExistsTF{Courier New}{\setmonofont{Courier New}}{%
+    \IfFontExistsTF{Liberation Mono}{\setmonofont{Liberation Mono}}{%
+      \IfFontExistsTF{TeX Gyre Cursor}{\setmonofont{TeX Gyre Cursor}}{}}}
+\fi
+\usepackage{microtype}
+
+%% --- Page geometry -----------------------------------------------------------
+\usepackage[a4paper,left=40mm,right=25mm,top=25mm,bottom=40mm,
+            headheight=14.5pt,headsep=5mm,footskip=15mm]{geometry}
+
+%% --- Helper packages ---------------------------------------------------------
+\usepackage{etoolbox}
+\usepackage{setspace}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{array}
+\usepackage{longtable}
+\usepackage{booktabs}
+\usepackage{enumitem}
+\usepackage{csquotes}
+\usepackage{pagecolor}
+\definecolor{sliitgold}{RGB}{212,175,55}
+
+%% --- Line spacing + paragraphs ------------------------------------------------
+\onehalfspacing
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{6pt plus 1pt}
+\clubpenalty=10000 \widowpenalty=10000
+\setlist{topsep=3pt,itemsep=0pt,parsep=0pt}
+\renewenvironment{quote}{\list{}{\leftmargin=10mm\rightmargin=10mm}\item\relax\singlespacing}{\endlist}
+\AtBeginEnvironment{quotation}{\singlespacing}
+
+%% --- Heading numbering depth ---------------------------------------------------
+\setcounter{secnumdepth}{2}
+\setcounter{tocdepth}{2}
+
+%% --- Headings: chapter ALL CAPS 14 pt bold; section/sub-section 12 pt bold ----
+\usepackage{titlesec}
+\newcommand{\sliitheadalign}{\raggedright}
+\newcommand{\sliitUC}[1]{\MakeUppercase{#1}}
+\newcommand{\sliitchapfont}{\bfseries\fontsize{14}{16.8}\selectfont}
+\newcommand{\sliitsecfont}{\bfseries\fontsize{12}{14.4}\selectfont}
+\newcommand{\sliitchaplabel}{\thechapter.}
+\makeatletter
+\def\@makechapterhead#1{{\parindent\z@\sliitheadalign\sliitchapfont
+  \sliitchaplabel\hspace{0.6em}\sliitUC{#1}\par\nobreak\vskip 24\p@}}
+\def\@makeschapterhead#1{{\parindent\z@\sliitheadalign\sliitchapfont
+  \sliitUC{#1}\par\nobreak\vskip 24\p@}}
+\makeatother
+\titleformat{\section}{\sliitheadalign\sliitsecfont}{\thesection}{0.6em}{}
+\titleformat{\subsection}{\sliitheadalign\sliitsecfont}{\thesubsection}{0.6em}{}
+\titleformat{\subsubsection}{\sliitheadalign\sliitsecfont\itshape}{\thesubsubsection}{0.6em}{}
+\titlespacing*{\section}{0pt}{18pt plus 2pt minus 2pt}{6pt}
+\titlespacing*{\subsection}{0pt}{12pt plus 2pt minus 2pt}{4pt}
+\titlespacing*{\subsubsection}{0pt}{12pt plus 2pt minus 2pt}{4pt}
+
+%% --- Contents / lists layout --------------------------------------------------
+\usepackage{tocloft}
+\renewcommand{\cftdotsep}{2}
+\renewcommand{\cftchapfont}{\normalfont}
+\renewcommand{\cftchappagefont}{\normalfont}
+\renewcommand{\cftchapleader}{\cftdotfill{\cftdotsep}}
+\renewcommand{\cftchapaftersnum}{.}
+\setlength{\cftbeforechapskip}{0pt}
+\setlength{\cftbeforesecskip}{0pt}
+\setlength{\cftbeforesubsecskip}{0pt}
+\setlength{\cftchapindent}{0pt}   \setlength{\cftchapnumwidth}{2em}
+\setlength{\cftsecindent}{2em}    \setlength{\cftsecnumwidth}{2.5em}
+\setlength{\cftsubsecindent}{4.5em}\setlength{\cftsubsecnumwidth}{3.2em}
+\renewcommand{\cftfigpresnum}{Figure~}  \setlength{\cftfigindent}{0pt}\setlength{\cftfignumwidth}{5.5em}
+\renewcommand{\cfttabpresnum}{Table~}   \setlength{\cfttabindent}{0pt}\setlength{\cfttabnumwidth}{5em}
+\setlength{\cftbeforefigskip}{0pt}
+\setlength{\cftbeforetabskip}{0pt}
+
+%% --- Page numbering / footers ---------------------------------------------------
+\usepackage{fancyhdr}
+\newcommand{\sliitsetfooter}[1]{%
+  \fancypagestyle{plain}{\fancyhf{}\fancyfoot[#1]{\thepage}%
+    \renewcommand{\headrulewidth}{0pt}\renewcommand{\footrulewidth}{0pt}}%
+  \fancypagestyle{sliit}{\fancyhf{}\fancyfoot[#1]{\thepage}%
+    \renewcommand{\headrulewidth}{0pt}\renewcommand{\footrulewidth}{0pt}}%
+  \pagestyle{sliit}}
+\newcommand{\sliitsetbodyfooter}{%
+  \ifArabicNumberCentered\sliitsetfooter{C}\else\sliitsetfooter{R}\fi}
+\newcommand{\sliitstartbody}{\clearpage\pagenumbering{arabic}\sliitsetbodyfooter}
+
+%% --- Captions, floats, tables ---------------------------------------------------
+\usepackage{caption}
+\captionsetup{labelsep=colon,justification=centering,font={normalsize,singlespacing}}
+\captionsetup[figure]{position=bottom,skip=8pt}
+\captionsetup[table]{position=top,skip=6pt}
+\newcommand{\sliittablestyle}{\singlespacing\small\renewcommand{\arraystretch}{1.25}\selectfont}
+\AtBeginEnvironment{figure}{\centering}
+\AtBeginEnvironment{table}{\centering\sliittablestyle}
+\AtBeginEnvironment{longtable}{\singlespacing\renewcommand{\arraystretch}{1.25}\selectfont}
+\setlength{\LTpre}{4pt}\setlength{\LTpost}{4pt}
+\newcommand{\sliitsource}[1]{\par\vspace{3pt}{\centering\singlespacing\small\textit{Source:} #1\par}}
+\newcommand{\OriginalInColor}{(Original in Color)}
+
+%% --- Bibliography: APA or IEEE via biblatex/biber ------------------------------
+\ifdefstring{\CitationStyle}{ieee}
+  {\usepackage[backend=biber,style=ieee,defernumbers=true]{biblatex}}
+  {\usepackage[backend=biber,style=apa,defernumbers=true]{biblatex}}
+
+%% --- Hyperlinks + cross references ----------------------------------------------
+\usepackage[hidelinks,bookmarksnumbered,pdfpagelabels=true,plainpages=false]{hyperref}
+\AtBeginDocument{\hypersetup{pdftitle={\DissertationTitle},pdfauthor={\csname sliitcn1\endcsname}}}
+\usepackage[capitalise,noabbrev]{cleveref}
+\crefname{figure}{Figure}{Figures}\Crefname{figure}{Figure}{Figures}
+\crefname{table}{Table}{Tables}\Crefname{table}{Table}{Tables}
+\crefname{chapter}{Chapter}{Chapters}\Crefname{chapter}{Chapter}{Chapters}
+\crefname{section}{Section}{Sections}\Crefname{section}{Section}{Sections}
+\crefname{appendix}{Appendix}{Appendices}\Crefname{appendix}{Appendix}{Appendices}
+
+%% --- Helper macros ----------------------------------------------------------------
+\newcommand{\TODO}[1]{\textbf{[TODO: #1]}\PackageWarning{sliit}{TODO: #1}}
+\newlength{\sliitline}\setlength{\sliitline}{24pt}
+\newlength{\sliittopgap}
+
+\newcounter{sliitcandi}
+\newcommand{\sliitforcands}[1]{%
+  \setcounter{sliitcandi}{0}%
+  \whileboolexpr{test{\ifnumcomp{\value{sliitcandi}}{<}{\value{sliitcand}}}}{%
+    \stepcounter{sliitcandi}%
+    \expandafter\let\expandafter\sliitcn\csname sliitcn\arabic{sliitcandi}\endcsname
+    \expandafter\let\expandafter\sliitci\csname sliitci\arabic{sliitcandi}\endcsname
+    #1}}
+
+\newcommand{\sliitprelimchapter}[1]{%
+  \chapter*{#1}\phantomsection\addcontentsline{toc}{chapter}{#1}}
+
+\newcommand{\sliitcomputetopgap}{%
+  \setlength{\sliittopgap}{8\sliitline}%
+  \sliitforcands{\addtolength{\sliittopgap}{-2\sliitline}}%
+  \ifdim\sliittopgap<0pt \setlength{\sliittopgap}{0pt}\fi}
+
+%% --- Cover page (hard-bound final copy only) -------------------------------------
+\newcommand{\sliitmakecover}{%
+  \begingroup\sliitcomputetopgap
+  \pagecolor{black}\color{sliitgold}%
+  \thispagestyle{empty}\centering\singlespacing\setlength{\parskip}{0pt}
+  \vbox to \dimexpr 9in-25mm\relax{%
+    \vskip\sliittopgap
+    {\bfseries\fontsize{16}{24}\selectfont\MakeUppercase{\DissertationTitle}\par}%
+    \vskip 1\sliitline
+    \sliitforcands{{\fontsize{14}{21}\selectfont\sliitcn\par}{\fontsize{14}{21}\selectfont(\sliitci)\par}}%
+    \vskip 2\sliitline
+    {\fontsize{14}{21}\selectfont \DegreeShort\par Specializing in \Specialization\par
+     \DepartmentName\par \InstituteName\par \CountryName\par}%
+    \vss}%
+  {\fontsize{14}{21}\selectfont\SubmissionDate\par}%
+  \clearpage
+  \endgroup
+  \nopagecolor}
+
+%% --- Title page ---------------------------------------------------------------------
+\newcommand{\sliitmaketitlepage}{%
+  \begingroup\sliitcomputetopgap
+  \thispagestyle{empty}\centering\singlespacing\setlength{\parskip}{0pt}
+  \vspace*{\sliittopgap}%
+  {\bfseries\fontsize{16}{24}\selectfont\MakeUppercase{\DissertationTitle}\par}%
+  \ifdefempty{\DissertationSubtitle}{}{\vskip .5\sliitline
+    {\bfseries\fontsize{14}{21}\selectfont\DissertationSubtitle\par}}%
+  \vskip 1\sliitline
+  \sliitforcands{{\fontsize{14}{21}\selectfont\sliitcn\par}{\fontsize{14}{21}\selectfont(\sliitci)\par}}%
+  \vskip 2\sliitline
+  {\fontsize{12}{18}\selectfont Dissertation submitted in partial fulfillment of the requirements\\
+   for the \DegreeFull\par}%
+  \vskip 2\sliitline
+  {\fontsize{14}{21}\selectfont \DepartmentName\par \InstituteName\par \CountryName\par}%
+  \vskip 1\sliitline
+  {\fontsize{14}{21}\selectfont\SubmissionDate\par}%
+  \clearpage
+  \endgroup}
+
+%% --- Declaration page -----------------------------------------------------------------
+\newcommand{\sliitdeclaration}{%
+  \sliitprelimchapter{Declaration of the Candidates \& Supervisors}%
+  We declare that this is our own work and this dissertation does not incorporate without
+  acknowledgement any material previously submitted for a Degree or Diploma in any other
+  University or institute of higher learning and to the best of our knowledge and belief it
+  does not contain any material previously published or written by another person except
+  where the acknowledgement is made in the text.
+
+  Also, we hereby grant to \InstituteName, the nonexclusive right to reproduce and distribute
+  this dissertation, in whole or in part in print, electronic or other medium. We retain the
+  right to use this content in whole or part in future works (such as articles or books).
+
+  \begingroup\singlespacing\vspace{6pt}%
+  \sliitforcands{%
+    \noindent\textbf{\sliitcn} (\sliitci)\par\vspace{14pt}
+    \noindent Signature:\ \underline{\hspace{6cm}}\hfill Date:\ \underline{\hspace{3.5cm}}\par
+    \vspace{12pt}}%
+  \endgroup
+
+  \vspace{1\sliitline}
+  \textbf{Statement of the supervisor}
+
+  The above \ifnum\value{sliitcand}>1 candidates have\else candidate has\fi\ carried out
+  research for the bachelor's degree dissertation under my supervision.
+
+  \begingroup\singlespacing\vspace{14pt}%
+  \noindent Signature of the supervisor:\ \underline{\hspace{5cm}}\hfill Date:\ \underline{\hspace{3.5cm}}\par
+  \noindent\SupervisorName\par
+  \noindent\CoSupervisorName\par
+  \endgroup}
+
+%% --- Dedication (optional) -------------------------------------------------------------
+\newcommand{\sliitdedication}[1]{%
+  \sliitprelimchapter{Dedication}\vspace*{\fill}\begin{center}\textit{#1}\end{center}\vspace*{\fill}}
+
+%% --- Abstract --------------------------------------------------------------------------
+\newenvironment{sliitabstract}
+  {\clearpage\phantomsection\addcontentsline{toc}{chapter}{Abstract}%
+   {\sliitheadalign\bfseries\fontsize{12}{14.4}\selectfont Abstract\par}\vspace{12pt}%
+   \begingroup\singlespacing\fontsize{11}{13.2}\selectfont}
+  {\par\endgroup\clearpage}
+\newcommand{\sliitkeywords}[1]{\par\vspace{6pt}\noindent\textbf{Keywords:} #1\par}
+
+%% --- Table of contents + lists -----------------------------------------------------------
+\makeatletter
+\newcommand{\sliittocspacing}{\ifTocSingleSpaced\singlespacing\fi}
+\newcommand{\sliittoc}{%
+  \clearpage\phantomsection\addcontentsline{toc}{chapter}{Table of Contents}%
+  \chapter*{Table of Contents}%
+  \begingroup\sliittocspacing\@starttoc{toc}\endgroup}
+\newcommand{\sliitlistoffigures}{%
+  \clearpage\phantomsection\addcontentsline{toc}{chapter}{List of Figures}%
+  \chapter*{List of Figures}{\noindent\hfill\textbf{Page}\par}%
+  \begingroup\sliittocspacing\@starttoc{lof}\endgroup}
+\newcommand{\sliitlistoftables}{%
+  \clearpage\phantomsection\addcontentsline{toc}{chapter}{List of Tables}%
+  \chapter*{List of Tables}{\noindent\hfill\textbf{Page}\par}%
+  \begingroup\sliittocspacing\@starttoc{lot}\endgroup}
+\newcommand{\l@appendix}{\@dottedtocline{1}{0em}{7.5em}}
+\newcommand{\sliitlistofappendices}{%
+  \clearpage\phantomsection\addcontentsline{toc}{chapter}{List of Appendices}%
+  \chapter*{List of Appendices}%
+  {\noindent\makebox[7.5em][l]{\bfseries Appendix}\bfseries Description\hfill\bfseries Page\par}%
+  \begingroup\sliittocspacing\@starttoc{loa}\endgroup}
+\makeatother
+
+%% --- Abbreviations / glossary helpers -----------------------------------------------------
+\newcommand{\abbrevrow}[2]{#1 & #2\\[3pt]}
+\newcommand{\glossentry}[2]{\noindent\textbf{#1} --- #2\par}
+
+%% --- Appendices ---------------------------------------------------------------------------
+\newcommand{\sliitbeginappendices}{%
+  \clearpage
+  \appendix
+  \renewcommand{\sliitchaplabel}{\MakeUppercase{Appendix}~\thechapter:}%
+  \addtocontents{toc}{\protect\renewcommand{\protect\cftchappresnum}{Appendix~}%
+    \protect\renewcommand{\protect\cftchapaftersnum}{:}%
+    \protect\setlength{\protect\cftchapnumwidth}{6.5em}}}
+\newcommand{\sliitappendix}[1]{%
+  \chapter{#1}\addcontentsline{loa}{appendix}{\protect\numberline{Appendix \thechapter}#1}}
+
+%% --- Reference list ------------------------------------------------------------------------
+\defbibheading{sliitbib}{\clearpage\phantomsection\addcontentsline{toc}{chapter}{Reference List}%
+  \chapter*{Reference List}}
+\defbibheading{sliitbibliography}{\clearpage\phantomsection\addcontentsline{toc}{chapter}{Bibliography}%
+  \chapter*{Bibliography}}
+\newcommand{\sliitprintreferences}{%
+  \begingroup\singlespacing\selectfont\setlength{\bibitemsep}{\baselineskip}%
+  \printbibliography[heading=sliitbib,notkeyword=bibliographyonly]%
+  \endgroup}
+\newcommand{\sliitprintbibliography}{%
+  \begingroup\singlespacing\selectfont\setlength{\bibitemsep}{\baselineskip}%
+  \nocite{*}\printbibliography[heading=sliitbibliography,keyword=bibliographyonly]%
+  \endgroup}
+
+\addbibresource{\BibResource}
+
+%% Figures: component media folders are referenced in place (relative paths).
+%% C-01 <C-01-Intetrecodnition Engine.pdf/vertopal_433ccb30063e47f1ba4c32a79683aeea/media>
+%% C-02 <C-02-Dynamic planner and rag enginee/vertopal_80eb40840323498cb949d017d9b2b63a/media>
+%% C-03 <C-03-Adoptive executer and error Recovery engine/vertopal_05e97fad080746c9b767567e93f99da6/media>
+%% C-04 <C-04-AI-Driven Vulnerability Analysis Engine/vertopal_0d07bf200b61446895bb385b0aa02c6b/media>
+
+%% ============================================================================
+%%  §G  DOCUMENT BODY
+%% ============================================================================
+\begin{document}
+
+%% ---- Cover (hard copy) + Title page -----------------------------------------
+\pagenumbering{gobble}\pagestyle{empty}
+\ifHardCover\sliitmakecover\fi
+\sliitmaketitlepage
+
+%% ---- Preliminary pages: i, ii, iii ... centred at bottom ---------------------
+\pagenumbering{roman}\sliitsetfooter{C}
+
+\sliitdeclaration
+
+\ifIncludeDedication
+  \sliitdedication{To our families and to the security community.}
+\fi
+
+\begin{sliitabstract}
+  \input{frontmatter/abstract}
+\end{sliitabstract}
+
+\sliitprelimchapter{Acknowledgement}
+\input{frontmatter/acknowledgement}
+
+\sliittoc
+\ifIncludeListOfFigures\sliitlistoffigures\fi
+\ifIncludeListOfTables\sliitlistoftables\fi
+
+\ifIncludeAbbreviations
+  \sliitprelimchapter{List of Abbreviations}
+  \input{frontmatter/abbreviations}
+\fi
+
+\ifIncludeAppendices\sliitlistofappendices\fi
+
+%% ---- Body: Arabic numerals restart at 1 -------------------------------------
+\sliitstartbody
+
+\input{chapters/chapter01_introduction}
+\input{chapters/chapter02_methodology}
+\input{chapters/chapter03_results}
+\input{chapters/chapter04_conclusions}
+
+%% ---- Back matter --------------------------------------------------------------
+\sliitprintreferences
+
+\ifIncludeBibliography\sliitprintbibliography\fi
+
+\ifIncludeGlossary
+  \sliitprelimchapter{Glossary}
+  \input{frontmatter/glossary}
+\fi
+
+\ifIncludeAppendices
+  \sliitbeginappendices
+  \sliitappendix{Research Instruments: IRE Data Set and Evaluation Protocol}\label{app:a}
+  \input{appendices/appendix_a_ire}
+  \sliitappendix{Research Instruments: Dynamic Planner and RAG Engine}\label{app:b}
+  \input{appendices/appendix_b_planner}
+  \sliitappendix{Research Instruments: Adaptive Execution and Error-Recovery Engine}\label{app:c}
+  \input{appendices/appendix_c_aeere}
+  \sliitappendix{Research Instruments: AI-Driven Vulnerability Analysis Engine}\label{app:d}
+  \input{appendices/appendix_d_avae}
+  \sliitappendix{Academic Integrity and AI Use Disclosure}\label{app:e}
+  \input{appendices/appendix_e_ai_disclosure}
+\fi
+
+\end{document}

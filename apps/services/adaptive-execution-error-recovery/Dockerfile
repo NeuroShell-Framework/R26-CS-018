@@ -1,30 +1,32 @@
-FROM python:3.11-slim as builder
+FROM kalilinux/kali-rolling
 
-WORKDIR /app
+ENV DEBIAN_FRONTEND=noninteractive
 
-RUN apt-get update && apt-get install -y --no-install-recommends gcc libffi-dev && rm -rf /var/lib/apt/lists/*
+# Update and install all penetration testing tools in one layer
+RUN apt-get update -q && apt-get install -y \
+    nmap \
+    curl \
+    wget \
+    gobuster \
+    nikto \
+    ffuf \
+    dirb \
+    hydra \
+    sqlmap \
+    whatweb \
+    masscan \
+    medusa \
+    wfuzz \
+    netcat-openbsd \
+    enum4linux \
+    dnsutils \
+    whois \
+    iputils-ping \
+    net-tools \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
-COPY pyproject.toml .
-COPY shared/pyproject.toml shared/
-COPY shared/src shared/src
+# Verify key tools are installed
+RUN which nmap && which curl && which gobuster && nmap -V
 
-RUN pip install poetry && \
-    poetry config virtualenvs.in-project true && \
-    poetry install --no-dev --no-interaction
-
-FROM python:3.11-slim
-
-WORKDIR /app
-
-COPY --from=builder /app/.venv /app/.venv
-COPY app /app/app
-COPY main.py /app/
-
-ENV PATH="/app/.venv/bin:$PATH" \
-    PYTHONPATH="/app" \
-    APP_NAME="adaptive-execution-error-recovery" \
-    ENVIRONMENT="production"
-
-EXPOSE 8000
-
-CMD ["python", "main.py"]
+WORKDIR /workspace

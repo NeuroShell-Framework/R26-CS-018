@@ -1,0 +1,32 @@
+\addvspace {10\p@ }
+\contentsline {table}{\numberline {1.1}{\ignorespaces Positioning of NeuroShell against existing system categories.}}{5}{table.caption.17}%
+\addvspace {10\p@ }
+\contentsline {table}{\numberline {2.1}{\ignorespaces The four parts of NeuroShell and their responsibilities.}}{11}{table.caption.20}%
+\contentsline {table}{\numberline {2.2}{\ignorespaces Functional requirements of the IRE and the stages/middleware that realise them (from the IEEE 830-based requirements specification).}}{14}{table.caption.22}%
+\contentsline {table}{\numberline {2.3}{\ignorespaces Non-functional requirements of the IRE and the design provisions.}}{15}{table.caption.23}%
+\contentsline {table}{\numberline {2.4}{\ignorespaces Deterministic checks performed by the validation stages S5 to S7 including S6B.}}{16}{table.caption.24}%
+\contentsline {table}{\numberline {2.5}{\ignorespaces The middleware components of the IRE and their responsibilities.}}{17}{table.caption.25}%
+\contentsline {table}{\numberline {2.6}{\ignorespaces Hallucination classes and their enforcement outcomes.}}{17}{table.caption.26}%
+\contentsline {table}{\numberline {2.7}{\ignorespaces The seven principal design decisions of the IRE.}}{18}{table.caption.27}%
+\contentsline {table}{\numberline {2.8}{\ignorespaces The eight error types of the AEERE error list and how each is fixed.}}{22}{table.caption.31}%
+\contentsline {table}{\numberline {2.9}{\ignorespaces Standards and references that shaped the NeuroShell design.}}{25}{table.caption.34}%
+\contentsline {table}{\numberline {2.10}{\ignorespaces Consolidated technology stack of NeuroShell.}}{28}{table.caption.35}%
+\contentsline {table}{\numberline {2.11}{\ignorespaces Selected software verification results of the planner.}}{29}{table.caption.36}%
+\addvspace {10\p@ }
+\contentsline {table}{\numberline {3.1}{\ignorespaces Composition of the IRE evaluation data set.}}{32}{table.caption.37}%
+\contentsline {table}{\numberline {3.2}{\ignorespaces Experiment 1: raw versus guarded pipeline (full data set, \(N=1500\)).}}{32}{table.caption.38}%
+\contentsline {table}{\numberline {3.3}{\ignorespaces Per-layer ablation (Experiment 3): each row removes one protection from the full pipeline. DAcc = decision accuracy; Catch = catch rate; FP = false-positive rate. Run-to-run noise is approximately \(\pm 1\)--2 points.}}{33}{table.caption.39}%
+\contentsline {table}{\numberline {3.4}{\ignorespaces Per-class catch rate of the IRE on the deep-dive subset.}}{35}{table.caption.41}%
+\contentsline {table}{\numberline {3.5}{\ignorespaces Product-integrity and verification facts of the IRE.}}{35}{table.caption.42}%
+\contentsline {table}{\numberline {3.6}{\ignorespaces Component 1 to Component 2 integration checks and outcomes.}}{36}{table.caption.43}%
+\contentsline {table}{\numberline {3.7}{\ignorespaces Per-tool strict exact-match rates of the adapted model on the held-out assessment.}}{37}{table.caption.44}%
+\contentsline {table}{\numberline {3.8}{\ignorespaces Labelling accuracy as message noise rises (test set of 2,400). The text model catches the cases the patterns miss.}}{40}{table.caption.47}%
+\contentsline {table}{\numberline {3.9}{\ignorespaces Accuracy for each error type at 30\% message noise (test set).}}{42}{table.caption.50}%
+\contentsline {table}{\numberline {3.10}{\ignorespaces Provisional classification results of the AVAE classifier, reported exactly as stated in the component report. Final conclusions require the confirmed evaluation of the final model configuration.}}{43}{table.caption.51}%
+\contentsline {table}{\numberline {3.11}{\ignorespaces Summary of each student's contribution to the four components.}}{46}{table.caption.52}%
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\addvspace {10\p@ }

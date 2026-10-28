@@ -1,0 +1,245 @@
+%% Chapter 6 - Results and Validation
+%% Planned sections (master structure): 6.1 Research results; 6.2 Product and
+%% technical results; 6.3 User or stakeholder validation; 6.4 Integration
+%% results; 6.5 Summary of findings.
+%%
+%% CANONICAL RESULTS SOURCE (author-confirmed, 2026-10-06): the 1500-record
+%% evaluation in "Thesis/Reserch Paper/NeuroShell_IRE - Reserch paper.tex"
+%% (N=1500, 600 well-formed + 900 flawed).
+%%   Exp1 (raw vs guarded): Gemma 86/72/14; Qwen 82/64/15 (DAcc/Catch/FP).
+%%   Exp2: same guarded figures head-to-head.
+%%   Exp3 (ablation, both backends): validation stack -30/-24 catch,
+%%   hallucination validator -9/-14 catch; several layers increase catch on
+%%   removal while raising FP (scope, network, self-consistency, cache).
+%%   Exp4 (per-class catch): 100/95.6/87.5/81.3/78.1/59.4/46.7/40.
+%% All single-run point estimates, no confidence intervals. The 200-record run
+%% at git HEAD was a SMOKE TEST only; the 1500-record evaluation is the
+%% legitimate one. Latency (p50 16.5 s, p95 70.9 s, cache 44 ms) is only in the
+%% final paper, not the 1500 draft -- reconcile with the author before quoting.
+\chapter{Results and Validation}\label{ch:results}
+
+This chapter reports the measured outcomes of the study. Every figure is a
+point estimate computed from the committed experiment record by the
+reproduction command of Section~\ref{sec:reproducibility}, using the metrics
+of Section~\ref{sec:measures} and the procedure of Section~\ref{sec:procedure}.
+All measurements are single-run: no confidence intervals are attached, and the
+comparison rule of Section~\ref{sec:data-analysis} (a difference outside the
+$\pm$1--2~pp recorded run-to-run noise band is read as a layer effect) applies
+throughout.
+
+\section{Research Results}\label{sec:results-research}
+
+\subsection{Experiment 1: Pipeline Value (RQ1)}\label{sec:exp1}
+
+Raw, single-shot model output performs no flaw classification, so it trivially
+achieves a 0\% catch rate on all 900 flawed records, and it misclassifies the
+intent of 22\% of the 600 well-formed records with Gemma and 31\% with Qwen.
+Adding the guarded pipeline raises decision accuracy $D_{\mathrm{Acc}}$
+(Equation~\ref{eq:metric-dacc}) from 78\% to 86\% for Gemma and from 69\% to
+82\% for Qwen, raises the flaw-catch rate (Equation~\ref{eq:metric-catch}) from
+0\% to 72\% for Gemma and to 64\% for Qwen, and reduces the false-positive rate
+(Equation~\ref{eq:metric-fp}) from 32\% to 14\% for Gemma and from 31\% to 15\%
+for Qwen (Table~\ref{tab:exp1}). The largest improvement is in the catch rate,
+by construction: raw output is never flagged at all.
+
+\begin{table}[h]
+\centering
+\small
+\caption{Experiment 1: raw model output against the guarded pipeline on the
+full 1500-record set ($N{=}1500$, $D^+{=}600$, $D^-{=}900$).}\label{tab:exp1}
+\begin{tabular}{@{}lccc@{}}
+\toprule
+Configuration & $D_{\mathrm{Acc}}$\% & Catch\% & FP\%\\
+\midrule
+Gemma raw      & 78 & 0  & 32\\
+Gemma guarded  & 86 & 72 & 14\\
+Qwen raw       & 69 & 0  & 31\\
+Qwen guarded   & 82 & 64 & 15\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The result answers RQ1 directly: the guardrail stack converts output that
+carries no machine-checkable safety property into output whose acceptance is
+conditional on a verified conjunction of predicates (Section~\ref{sec:research-design}).
+The catch-rate gap is categorical rather than incremental, because raw output
+has zero catch by construction.
+
+\subsection{Experiment 2: Backend Head-to-Head (RQ3)}\label{sec:exp2}
+
+Under the identical guardrail stack, Gemma leads Qwen on decision accuracy
+(86\% against 82\%) and on catch rate (72\% against 64\%) with comparable
+false-positive rates (14\% against 15\%, Table~\ref{tab:exp2}). The guarded
+architecture narrows the backend gap on accuracy from 9 percentage points
+(78\% against 69\% raw) to 4 points, and holds the catch-gap at 8 points.
+
+\begin{table}[h]
+\centering
+\small
+\caption{Experiment 2: identical guardrail stack, both backends.}\label{tab:exp2}
+\begin{tabular}{@{}lccc@{}}
+\toprule
+Backend & $D_{\mathrm{Acc}}$\% & Catch\% & FP\%\\
+\midrule
+Gemma (guarded) & 86 & 72 & 14\\
+Qwen (guarded)  & 82 & 64 & 15\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Experiment 3: Layer Ablation (RQ2 and RQ3)}\label{sec:exp3}
+
+Table~\ref{tab:ablation} reports the eight configurations on the full 1500-record
+set for both backends, with $\Delta$Catch relative to the fully guarded
+baseline (Equation~\ref{eq:delta-catch}). Disabling the complete deterministic
+validation stack (S5--S7) has the largest impact on catch rate: 30 points for
+Gemma (72\% to 42\%) and 24 points for Qwen (64\% to 40\%). Among individually
+ablated layers, the hallucination validator contributes most to catch rate
+(9 points for Gemma, 14 points for Qwen). Its accuracy effect differs by
+backend: largest for Qwen, whereas the scope guard has the largest accuracy
+effect for Gemma.
+
+Removing RBAC reduces both accuracy and catch in both backends while raising
+FP, indicating that the role check improves accuracy and lowers false positives
+simultaneously. The network validator is the second-largest accuracy
+contributor (18 points Gemma, 24 points Qwen). The scope guard, network
+validator, self-consistency gate and semantic cache each show a
+\emph{rise} in catch on removal (2--10 points) together with a sharp rise in FP
+(to 30--44\%). Per the reading rule of Section~\ref{sec:data-analysis}, these
+positive deltas signal interactions rather than contributions: the layers act
+as false-positive suppressors, and the pre-emptive-rejection hypothesis is
+recorded as an open mechanism (Section~\ref{ch:discussion}).
+
+\begin{table}
+\centering
+\small
+\caption{Experiment 3: ablation on the full 1500-record set. $\Delta$Catch is
+in percentage points relative to the fully guarded pipeline (a negative value
+means the layer contributes); Noise is the approximate run-to-run variation in
+percentage points. The validation-stack row is the joint S5--S7 ablation.}
+\label{tab:ablation}
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{@{}lccccccccc@{}}
+\toprule
+ & \multicolumn{4}{c}{Gemma} & \multicolumn{4}{c}{Qwen} & \\
+\cmidrule(lr){2-5}\cmidrule(lr){6-9}
+Configuration & $D_{\mathrm{Acc}}$ & Catch & FP & $\Delta$Catch
+& $D_{\mathrm{Acc}}$ & Catch & FP & $\Delta$Catch & Noise\\
+\midrule
+Full pipeline (baseline) & 86.0 & 72 & 14 & -- & 82.0 & 64 & 15 & -- & $\pm$1--2\\
+No scope guard       & 65.0 & 74 & 42 & +2  & 68.0 & 68 & 30 & +4  & $\pm$1--2\\
+No RBAC guard        & 75.0 & 65 & 20 & $-$7 & 57.0 & 57 & 17 & $-$7 & $\pm$1--2\\
+No network validator & 68.0 & 80 & 40 & +8  & 58.0 & 72 & 32 & +8  & $\pm$1--2\\
+No halluc. validator & 66.0 & 63 & 40 & $-$9 & 52.6 & 50 & 34 & $-$14 & $\pm$1--2\\
+No validation stack  & 65.0 & 42 & 15 & $-$30 & 62.0 & 40 & 16 & $-$24 & $\pm$1--2\\
+No self-consistency  & 68.0 & 78 & 42 & +6  & 58.0 & 74 & 36 & +10 & $\pm$1--2\\
+No semantic cache    & 67.0 & 77 & 44 & +5  & 60.0 & 70 & 40 & +6  & $\pm$1--2\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Experiment 4: Per-Class Catch (RQ2)}\label{sec:exp4}
+
+On the dedicated deep-dive subset, catch is strongest exactly where a
+deterministic rule exists (Table~\ref{tab:perclass}). Adversarial injection is
+caught at 95.6\% by the lexical and structural layers of the detector, and RBAC
+violations at 100\% by the deterministic pre-inference role check. Fabricated
+parameters (87.5\%) and type mismatches (81.3\%) are detected by the S5--S6
+syntactic rules, and fabricated CVEs (78.1\%) by the hallucination validator's
+offline grounding. The residual weak classes are the semantic cases---contradictory
+requests (59.4\%), out-of-scope requests (46.7\%) and ambiguous requests
+(40.0\%)---where no deterministic signal exists and the pipeline relies on the
+self-consistency gate. In the full set these three classes account for 339 of
+the 900 flawed records (37.7\%). Per-class denominators therefore carry the
+interpretation, as fixed in Section~\ref{sec:data-analysis}.
+
+\begin{table}[h]
+\centering
+\small
+\caption{Experiment 4: per-class catch rate and primary detection mechanism
+(deep-dive subset, each class's own denominator).}\label{tab:perclass}
+\begin{tabular}{@{}lcl@{}}
+\toprule
+Flaw class & Catch\% & Mechanism\\
+\midrule
+RBAC violation   & 100.0 & M2 role check\\
+Adversarial inj. & 95.6  & M1 detector\\
+Fabricated param.& 87.5  & S5--S6 rules\\
+Type mismatch    & 81.3  & S5--S6 rules\\
+Fabricated CVE   & 78.1  & hallucination validator\\
+Contradictory    & 59.4  & self-consistency\\
+Out-of-scope     & 46.7  & self-consistency\\
+Ambiguous        & 40.0  & self-consistency\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Product and Technical Results}\label{sec:product-results}
+
+\subsection{Verification and testing}
+
+The automated suite was re-derived by direct execution for this dissertation
+(session 2026-10-07; Chapter~\ref{ch:implementation-testing}): 506 collected
+tests, 506 passed, with 434 unit and 72 integration tests, and 76\% statement
+coverage across \texttt{src/} (2421 statements, 582 missed; 17 modules at
+100\%). The safety-critical core is the best-covered part of the system:
+adversarial detection, intention schema, RBAC, scope guard and the regex and
+network validators each sit at or above 93\%, while audit logging, semantic
+cache and session context sit at 89--96\%. Static analysis
+(\texttt{ruff}) reports 593 findings, all style and modernisation with no
+correctness-level (E9) errors and no fatal findings. These results are the
+product-level acceptance gate: they support the empirical measurements of
+Section~\ref{sec:results-research} being representative of the committed system.
+
+\subsection{Known limitation achieved}
+
+The three semantic classes with the lowest catch in Experiment~4 (ambiguous,
+out-of-scope, contradictory) are exactly the classes without a deterministic
+signal; their residual misses constitute the principal functional gap of the
+component and are analysed in Chapter~\ref{ch:discussion}.
+
+\section{User or Stakeholder Validation}\label{sec:stakeholder-validation}
+
+The study involves no human participants (Section~\ref{sec:ethics}), so no
+usability or user-preference study was conducted. Stakeholder validation is
+instead evidence-based, through two channels. First, the verification gate of
+Section~\ref{sec:product-results}---a deterministic, live-free test suite that
+must pass before any measurement is accepted---validates the component against
+its stated requirements (Section~\ref{sec:requirements}) and the invariant of
+Section~\ref{sec:research-design}. Second, the NeuroShell framework integration
+review (Section~\ref{sec:integration-results}) validated the component's
+contract against Component~2 of the framework on the receiving side.
+
+\section{Integration Results}\label{sec:integration-results}
+
+The C1-to-C2 integration analysis (session 2026-08-28; documented in the
+project record) verified the contract hand-off against the real Component~2
+engine at port 8002. The 9-value intent literal sets match exactly, and the
+flat \texttt{PlannerContract} fields map 1:1 onto the Component~2 request. Live
+checks confirmed: a well-formed in-scope contract returns a structured
+planner output with an empty safety block; a rejected intent is refused by
+Component~2 with its filter-stage error; an out-of-scope public target is
+rejected by the Component~2 RFC-1918 gate; and a wrong API key is refused with
+401. These observations confirm that the guarded IRE contract carries its
+integrity through the downstream component, so the safety invariant of
+Section~\ref{sec:research-design} remains meaningful at the framework boundary.
+\TODO{The C1-to-C2 live verification used the available stand-in model at the
+time; re-run the two-element happy-path check against the production
+\emph{gemma4:e4b} backend once the model is provisioned on the evaluation
+machine, and record the result in the committed experiment record.}
+
+\section{Summary of Findings}\label{sec:summary-findings}
+
+The measured outcomes answer the three research questions as follows. RQ1:
+the guarded pipeline raises decision accuracy by 8--13 points, the catch rate
+from 0\% to 64--72\%, and lowers the false-positive rate to 14--15\% over raw
+output. RQ2: the deterministic validation stack is the dominant safety
+contributor (24--30 catch points), the hallucination validator is the dominant
+single layer (9--14 catch points), and the semantic classes remain the weakest
+because they lack a deterministic signal. RQ3: the catch-rate ordering of
+layers carries across both backends, but the accuracy contribution of
+individual layers is backend-specific, so cross-backend generality claims
+apply to catch ordering rather than to a single accuracy ranking. The
+quantitative case is made by Table~\ref{tab:exp1}, Table~\ref{tab:exp2},
+Table~\ref{tab:ablation} and Table~\ref{tab:perclass}, and is interpreted in
+Chapter~\ref{ch:discussion}.

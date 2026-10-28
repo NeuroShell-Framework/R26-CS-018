@@ -3,7 +3,7 @@ _transform: true
 
 services:
   - name: adaptive-execution-error-recovery
-    url: http://adaptive-execution-error-recovery:8000
+    url: http://adaptive-execution-error-recovery:8003
     routes:
       - name: adaptive-error-recovery-route
         paths:
@@ -17,7 +17,7 @@ services:
           fault_tolerant: true
 
   - name: ai-vulnerability-analysis
-    url: http://ai-vulnerability-analysis:8000
+    url: http://ai-vulnerability-analysis:8004
     routes:
       - name: ai-vulnerability-analysis-route
         paths:
@@ -31,7 +31,7 @@ services:
           fault_tolerant: true
 
   - name: dynamic-planner-rag
-    url: http://dynamic-planner-rag:8000
+    url: http://dynamic-planner-rag:8002
     routes:
       - name: dynamic-planner-rag-route
         paths:
@@ -45,7 +45,7 @@ services:
           fault_tolerant: true
 
   - name: intent-recognition
-    url: http://intent-recognition:8000
+    url: http://intent-recognition:8001
     routes:
       - name: intent-recognition-route
         paths:
@@ -82,7 +82,7 @@ plugins:
         - Accept
         - Authorization
         - Content-Type
-      credentials: true
+      credentials: false
       max_age: 3600
 
   - name: request-transformer

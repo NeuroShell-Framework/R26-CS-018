@@ -1,10 +1,17 @@
-version: "3.8"
+# NeuroShell production-style stack.
+#
+# Host access: Kong :8000 | C1 :8001 | C2 :8002 | C3 :8003 | C4 :8004 | Neo4j :7474
+# Ollama runs on the HOST and is reached via host.docker.internal:11434.
+# C3 spawns throwaway Kali containers through the mounted Docker socket, so the
+# `neuroshell-kali` image must already exist on the host.
 
 services:
+  # ── API Gateway ─────────────────────────────────────────────────────
   kong:
     build:
       context: ../kong
       dockerfile: Dockerfile
+    image: neuroshell-kong:latest
     container_name: neuroshell-kong
     ports:
       - "8000:8000"
@@ -28,19 +35,62 @@ services:
     networks:
       - neuroshell-network
 
-  adaptive-execution-error-recovery:
-    build:
-      context: ../../apps/services/adaptive-execution-error-recovery
-      dockerfile: Dockerfile
-    image: neuroshell-adaptive-error-recovery:latest
-    container_name: neuroshell-adaptive-error-recovery
+  # ── Supporting infra ────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: neuroshell-redis
     ports:
-      - "8001:8000"
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - neuroshell-network
+
+  neo4j:
+    image: neo4j:5.20
+    container_name: neuroshell-neo4j
+    ports:
+      - "7474:7474"
+      - "7687:7687"
     environment:
-      - APP_NAME=adaptive-execution-error-recovery
+      - NEO4J_AUTH=neo4j/neuroshell2026
+    volumes:
+      - neo4j-data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:7474 >/dev/null 2>&1 || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+    restart: unless-stopped
+    networks:
+      - neuroshell-network
+
+  # ── C1 — Intent Recognition Engine ──────────────────────────────────
+  intent-recognition:
+    build:
+      context: ../../apps/services/neuroshell-ire
+      dockerfile: Dockerfile
+    image: neuroshell-intent-recognition:latest
+    container_name: neuroshell-intent-recognition
+    ports:
+      - "8001:8001"
+    environment:
       - ENVIRONMENT=production
-      - DEBUG=false
-      - LOG_LEVEL=INFO
+      - PORT=8001
+      - SCOPE_MODE=research
+      - PLANNER_ENABLED=true
+      - PLANNER_URL=http://dynamic-planner-rag:8002
+      - PLANNER_API_KEY=neuroshell-c2-secret-key
+      - COMPONENT3_URL=http://adaptive-execution-error-recovery:8003
+      - COMPONENT4_URL=http://ai-vulnerability-analysis:8004
+      - OLLAMA_BASE_URL=http://host.docker.internal:11434
+      - OLLAMA_MODEL=gemma4:latest
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     restart: unless-stopped
     deploy:
       resources:
@@ -50,50 +100,18 @@ services:
         reservations:
           cpus: "0.5"
           memory: 512M
+    depends_on:
+      - redis
     networks:
       - neuroshell-network
-    depends_on:
-      - kong
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      test: ["CMD", "curl", "-fsS", "http://localhost:8001/health"]
       interval: 30s
       timeout: 10s
-      retries: 3
+      retries: 5
       start_period: 40s
 
-  ai-vulnerability-analysis:
-    build:
-      context: ../../apps/services/ai-vulnerability-analysis
-      dockerfile: Dockerfile
-    image: neuroshell-ai-vulnerability-analysis:latest
-    container_name: neuroshell-ai-vulnerability-analysis
-    ports:
-      - "8002:8000"
-    environment:
-      - APP_NAME=ai-vulnerability-analysis
-      - ENVIRONMENT=production
-      - DEBUG=false
-      - LOG_LEVEL=INFO
-    restart: unless-stopped
-    deploy:
-      resources:
-        limits:
-          cpus: "1.0"
-          memory: 1024M
-        reservations:
-          cpus: "0.5"
-          memory: 512M
-    networks:
-      - neuroshell-network
-    depends_on:
-      - kong
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
-
+  # ── C2 — Dynamic Planner / RAG ──────────────────────────────────────
   dynamic-planner-rag:
     build:
       context: ../../apps/services/dynamic-planner-rag
@@ -101,12 +119,66 @@ services:
     image: neuroshell-dynamic-planner-rag:latest
     container_name: neuroshell-dynamic-planner-rag
     ports:
-      - "8003:8000"
+      - "8002:8002"
     environment:
-      - APP_NAME=dynamic-planner-rag
       - ENVIRONMENT=production
-      - DEBUG=false
-      - LOG_LEVEL=INFO
+      - PORT=8002
+      - OLLAMA_HOST=http://host.docker.internal:11434
+      - OLLAMA_MODEL=neuroshell-c2-gemma2-final
+      - REDIS_URL=redis://redis:6379
+      - RAG_SCORE_THRESHOLD=0.30
+      - API_KEY=neuroshell-c2-secret-key
+      - ANONYMIZED_TELEMETRY=False
+    volumes:
+      - c2-vectordb:/app/knowledge_base/chroma_db
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 2048M
+        reservations:
+          cpus: "0.5"
+          memory: 1024M
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - neuroshell-network
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8002/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  # ── C3 — Adaptive Execution & Error Recovery ────────────────────────
+  adaptive-execution-error-recovery:
+    build:
+      context: ../../apps/services/adaptive-execution-error-recovery
+      dockerfile: Dockerfile.api
+    image: neuroshell-adaptive-error-recovery:latest
+    container_name: neuroshell-adaptive-error-recovery
+    ports:
+      - "8003:8003"
+    environment:
+      - ENVIRONMENT=production
+      - PORT=8003
+      - REDIS_URL=redis://redis:6379
+      - KALI_IMAGE=neuroshell-kali
+      - OLLAMA_HOST=http://host.docker.internal:11434
+      - OLLAMA_URL=http://host.docker.internal:11434
+      - OLLAMA_MODEL=gemma4:latest
+      - AUDIT_DB_PATH=/app/data/audit.db
+      - CONTAINER_MEM_LIMIT=512m
+      - CONTAINER_CPU_QUOTA=50000
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - aeere-data:/app/data
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     restart: unless-stopped
     deploy:
       resources:
@@ -116,50 +188,77 @@ services:
         reservations:
           cpus: "0.5"
           memory: 512M
+    depends_on:
+      redis:
+        condition: service_healthy
     networks:
       - neuroshell-network
-    depends_on:
-      - kong
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      test: ["CMD", "curl", "-fsS", "http://localhost:8003/health"]
       interval: 30s
       timeout: 10s
-      retries: 3
+      retries: 5
+      start_period: 60s
+
+  # ── C4 — AI Vulnerability Analysis Engine ───────────────────────────
+  ai-vulnerability-analysis:
+    build:
+      context: ../../apps/services/ai-vulnerability-analysis
+      dockerfile: Dockerfile
+    image: neuroshell-ai-vulnerability-analysis:latest
+    container_name: neuroshell-ai-vulnerability-analysis
+    ports:
+      - "8004:8004"
+    environment:
+      - ENVIRONMENT=production
+      - PORT=8004
+      - NEO4J_URI=bolt://neo4j:7687
+      - NEO4J_USER=neo4j
+      - NEO4J_PASSWORD=neuroshell2026
+      - OFFLINE_CACHE_PATH=./data/offline_cache.db
+    volumes:
+      - c4-data:/app/data
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 1024M
+        reservations:
+          cpus: "0.5"
+          memory: 512M
+    depends_on:
+      - neo4j
+    networks:
+      - neuroshell-network
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8004/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
       start_period: 40s
 
-  intent-recognition:
+  # ── API Gateway app (routed by Kong at /api/gateway) ────────────────
+  api-gateway:
     build:
-      context: ../../apps/services/intent-recognition
+      context: ../../apps/api-gateway
       dockerfile: Dockerfile
-    image: neuroshell-intent-recognition:latest
-    container_name: neuroshell-intent-recognition
-    ports:
-      - "8004:8000"
+    image: neuroshell-api-gateway:latest
+    container_name: neuroshell-api-gateway
     environment:
-      - APP_NAME=intent-recognition
+      - APP_NAME=api-gateway
       - ENVIRONMENT=production
-      - DEBUG=false
-      - LOG_LEVEL=INFO
+      - PORT=8000
     restart: unless-stopped
-    deploy:
-      resources:
-        limits:
-          cpus: "1.0"
-          memory: 1024M
-        reservations:
-          cpus: "0.5"
-          memory: 512M
     networks:
       - neuroshell-network
-    depends_on:
-      - kong
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
 
 networks:
   neuroshell-network:
     driver: bridge
+
+volumes:
+  neo4j-data:
+  aeere-data:
+  c4-data:
+  c2-vectordb:
